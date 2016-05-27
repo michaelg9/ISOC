@@ -7,5 +7,5 @@ import (
 
 func main() {
 	http.HandleFunc("/", Index)
-	log.Fatal(http.ListenAndServeTLS(":8080", "cert.pem", "key.pem", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
