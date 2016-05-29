@@ -3,9 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"net/url"
-
-	"github.com/gorilla/mux"
 )
 
 // Index handles /
@@ -13,22 +10,13 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Welcome!")
 }
 
-/* TODO: Make login and logout hidden functions and handle
- *       /auth/0.1/{query} in one function
- */
-
-// Login handles /auth/0.1/login/{loginQuery}
+// Login handles /auth/0.1/login
 func Login(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
+	uname := r.FormValue("username")
+	pwd := r.FormValue("password")
+	// TODO: Check if non-empty
 
-	q, err := url.ParseQuery(vars["loginQuery"])
-	if err != nil {
-		// TODO: Proper error handling
-		return
-	}
-
-	// TODO: Check if right parameters are entered
-	fmt.Fprintf(w, "Username: %s Password: %s", q.Get("username"), q.Get("password"))
+	fmt.Fprintf(w, "Username: %s Password: %s", uname, pwd)
 }
 
 // Logout handles /app/0.1/logout
@@ -41,14 +29,11 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Upload")
 }
 
-// Download handles /data/0.1/{query}
+// Download handles /data/0.1/q
 func Download(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	q, err := url.ParseQuery(vars["query"])
-	if err != nil {
-		// TODO: Proper error handling
-		return
-	}
+	key := r.FormValue("appid")
+	// TODO: Check if non-empty
+	// TODO: Change query params?
 
-	fmt.Fprintf(w, "API key: %v", q.Get("appid"))
+	fmt.Fprintf(w, "API key: %v", key)
 }

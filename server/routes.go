@@ -23,7 +23,7 @@ var routes = Routes{
 	Route{
 		"Login",
 		"GET",
-		"/auth/0.1/login/{loginQuery}",
+		"/auth/0.1/login",
 		Login,
 	},
 	Route{
@@ -41,7 +41,7 @@ var routes = Routes{
 	Route{
 		"Download",
 		"GET",
-		"/data/0.1/{query}",
+		"/data/0.1/q",
 		Download,
 	},
 }
