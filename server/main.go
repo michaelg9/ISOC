@@ -1,11 +1,17 @@
 package main
 
 import (
-	"log"
 	"net/http"
+
+	"github.com/urfave/negroni"
 )
 
 func main() {
-	http.HandleFunc("/", Index)
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	router := NewRouter()
+
+	n := negroni.New()
+	n.Use(negroni.NewLogger())
+	n.UseHandler(router)
+
+	http.ListenAndServe(":8080", n)
 }

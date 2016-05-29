@@ -23,7 +23,7 @@ var routes = Routes{
 	Route{
 		"Login",
 		"GET",
-		"/auth/0.1/login?uname={uname}&pwd={pwd}",
+		"/auth/0.1/login",
 		Login,
 	},
 	Route{
@@ -35,13 +35,13 @@ var routes = Routes{
 	Route{
 		"Upload",
 		"POST",
-		"/auth/0.1/upload",
+		"/app/0.1/upload",
 		Upload,
 	},
 	Route{
 		"Download",
 		"GET",
-		"/data/0.1/q?appid={apikey}",
+		"/data/0.1/appid/{apikey}",
 		Download,
 	},
 }

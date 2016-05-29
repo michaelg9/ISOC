@@ -10,7 +10,7 @@ func Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Welcome!")
 }
 
-// Login handles /app/0.1/login?uname={}&pwd{}
+// Login handles /app/0.1/login
 func Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Login")
 }
@@ -25,7 +25,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Upload")
 }
 
-// Download handles /data/0.1/q?appid={}
+// Download handles /data/0.1/appid/{apikey}
 func Download(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Download")
 }
