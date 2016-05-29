@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/xml"
 	"fmt"
 	"net/http"
 )
@@ -26,14 +27,21 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 // Upload handles /app/0.1/upload
 func Upload(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Upload")
+	decoder := xml.NewDecoder(r.Body)
+
+	var d Data
+	err := decoder.Decode(&d)
+	if err != nil {
+		//TODO: Error handling
+	}
+
+	fmt.Fprintln(w, d)
 }
 
 // Download handles /data/0.1/q
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 	// TODO: Check if non-empty
-	// TODO: Change query params?
 
 	fmt.Fprintf(w, "API key: %v", key)
 }
