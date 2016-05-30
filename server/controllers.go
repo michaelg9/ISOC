@@ -4,6 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Index handles /
@@ -13,11 +15,21 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 // Login handles /auth/0.1/login
 func Login(w http.ResponseWriter, r *http.Request) {
-	uname := r.FormValue("username")
-	pwd := r.FormValue("password")
+	username := r.FormValue("username")
+	password := r.FormValue("password")
 	// TODO: Check if non-empty
 
-	fmt.Fprintf(w, "Username: %s Password: %s", uname, pwd)
+	hashedPassword := GetHashedPassword(username)
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+
+	var success bool
+	if err != nil {
+		success = false
+	} else {
+		success = true
+	}
+
+	fmt.Fprintf(w, "Username: %s Password: %s Success: %t", username, password, success)
 }
 
 // Logout handles /app/0.1/logout
