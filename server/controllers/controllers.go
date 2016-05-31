@@ -1,10 +1,12 @@
-package main
+package controllers
 
 import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
 
+	"github.com/michaelg9/ISOC/server/core/mysql"
+	"github.com/michaelg9/ISOC/server/services/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,11 +21,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	// TODO: Check if non-empty
 
-	hashedPassword := GetHashedPassword(username)
+	hashedPassword := mysql.GetHashedPassword(username)
 	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 
 	var success bool
 	if err != nil {
+		// TODO: Error handling
 		success = false
 	} else {
 		success = true
@@ -41,7 +44,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 func Upload(w http.ResponseWriter, r *http.Request) {
 	decoder := xml.NewDecoder(r.Body)
 
-	var d Data
+	var d models.Data
 	err := decoder.Decode(&d)
 	if err != nil {
 		//TODO: Error handling

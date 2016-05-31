@@ -1,6 +1,10 @@
-package main
+package routers
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/michaelg9/ISOC/server/controllers"
+)
 
 // Route struct for creating routes
 type Route struct {
@@ -18,30 +22,30 @@ var routes = Routes{
 		"Index",
 		"GET",
 		"/",
-		Index,
+		controllers.Index,
 	},
 	Route{
 		"Login",
 		"GET",
 		"/auth/0.1/login",
-		Login,
+		controllers.Login,
 	},
 	Route{
 		"Logout",
 		"GET",
 		"/auth/0.1/logout",
-		Logout,
+		controllers.Logout,
 	},
 	Route{
 		"Upload",
 		"POST",
 		"/app/0.1/upload",
-		Upload,
+		controllers.Upload,
 	},
 	Route{
 		"Download",
 		"GET",
 		"/data/0.1/q",
-		Download,
+		controllers.Download,
 	},
 }
