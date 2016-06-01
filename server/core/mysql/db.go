@@ -6,6 +6,7 @@ import (
 
 	// mysql database driver
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/michaelg9/ISOC/server/services/models"
 )
 
 const (
@@ -73,6 +74,29 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 }
 
 // GetBatteryData gets all battery data from a given API key
-func GetBatteryData(apiKey string) {
-	// TODO: Implement
+// TODO: Testing
+func GetBatteryData(apiKey string) (*[]models.Battery, error) {
+	stmt, err := db.Prepare(getAllBattery)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(apiKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var batteries []models.Battery
+	for rows.Next() {
+		var b models.Battery
+		err = rows.Scan(&b.Time, &b.Value)
+		if err != nil {
+			return nil, err
+		}
+		batteries = append(batteries, b)
+	}
+
+	return &batteries, nil
 }

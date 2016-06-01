@@ -11,7 +11,6 @@ type Data struct {
 // percentage element
 type Battery struct {
 	Time  string `xml:"time,attr"`
-	Unit  string `xml:"unit,attr"`
 	Value int    `xml:",chardata"`
 }
 

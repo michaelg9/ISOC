@@ -71,5 +71,11 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	fmt.Fprintf(w, "API key: %v", key)
+	_, err := mysql.GetBatteryData(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "Success")
 }
