@@ -11,10 +11,6 @@ import (
 const (
 	user = "treigerm"
 	pwd  = "Hip$terSWAG"
-
-	passwordQuery     = "SELECT passwordHash FROM User WHERE username = ?"
-	insertIntoData    = "INSERT INTO Data (device, timestamp) VALUES (?, ?);"
-	insertIntoBattery = "INSERT INTO BatteryStatus VALUES (?, ?);"
 )
 
 var db *sql.DB
@@ -74,4 +70,9 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 	}
 
 	return nil
+}
+
+// GetBatteryData gets all battery data from a given API key
+func GetBatteryData(apiKey string) {
+	// TODO: Implement
 }
