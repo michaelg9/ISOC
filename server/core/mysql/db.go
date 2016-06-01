@@ -28,18 +28,16 @@ func init() {
 }
 
 // GetHashedPassword gets the hash of the password from a given user
-func GetHashedPassword(username string) (hash string) {
+func GetHashedPassword(username string) (hash string, err error) {
 	stmt, err := db.Prepare(passwordQuery)
 	if err != nil {
-		// TODO: Error handling
-		panic(err)
+		return "", err
 	}
 	defer stmt.Close()
 
 	err = stmt.QueryRow(username).Scan(&hash)
 	if err != nil {
-		// TODO: Error handling
-		panic(err)
+		return "", err
 	}
 
 	return

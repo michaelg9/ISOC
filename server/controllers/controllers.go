@@ -7,6 +7,7 @@ import (
 
 	"github.com/michaelg9/ISOC/server/core/mysql"
 	"github.com/michaelg9/ISOC/server/services/models"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,20 +20,22 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func Login(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	// TODO: Check if non-empty
+	// TODO: Check if right parameters entered
 
-	hashedPassword := mysql.GetHashedPassword(username)
-	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-
-	var success bool
+	hashedPassword, err := mysql.GetHashedPassword(username)
 	if err != nil {
-		// TODO: Error handling
-		success = false
-	} else {
-		success = true
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	fmt.Fprintf(w, "Username: %s Password: %s Success: %t", username, password, success)
+	// Check if given password fits with stored hash inside the server
+	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "Username: %s Password: %s Success: true", username, password)
 }
 
 // Logout handles /app/0.1/logout
@@ -47,7 +50,8 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	var d models.Data
 	err := decoder.Decode(&d)
 	if err != nil {
-		//TODO: Error handling
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprintln(w, d)
@@ -56,7 +60,6 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 // Download handles /data/0.1/q
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
-	// TODO: Check if non-empty
 
 	fmt.Fprintf(w, "API key: %v", key)
 }
