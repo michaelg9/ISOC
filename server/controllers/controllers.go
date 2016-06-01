@@ -54,7 +54,17 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, d)
+	// TODO: more careful parsing
+	deviceID := d.Meta.Device
+	for _, battery := range d.Battery {
+		err = mysql.InsertBatteryData(deviceID, battery.Value, battery.Time)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	fmt.Fprintln(w, "Success")
 }
 
 // Download handles /data/0.1/q

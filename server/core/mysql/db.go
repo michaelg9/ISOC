@@ -12,8 +12,9 @@ const (
 	user = "treigerm"
 	pwd  = "Hip$terSWAG"
 
-	// Gets the hash of the password given the username
-	passwordQuery = "SELECT passwordHash FROM User WHERE username = ?"
+	passwordQuery     = "SELECT passwordHash FROM User WHERE username = ?"
+	insertIntoData    = "INSERT INTO Data (device, timestamp) VALUES (?, ?);"
+	insertIntoBattery = "INSERT INTO BatteryStatus VALUES (?, ?);"
 )
 
 var db *sql.DB
@@ -41,4 +42,36 @@ func GetHashedPassword(username string) (hash string, err error) {
 	}
 
 	return
+}
+
+// InsertBatteryData inserts the given data for the battery status
+// TODO: Change timestamp type to time.Time
+func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error) {
+	stmt, err := db.Prepare(insertIntoData)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(deviceID, timestamp)
+	if err != nil {
+		return err
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return err
+	}
+
+	stmt, err = db.Prepare(insertIntoBattery)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(id, batteryStatus)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
