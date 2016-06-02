@@ -11,14 +11,14 @@ import (
 
 const (
 	user = "treigerm"
-	pwd  = "Hip$terSWAG"
+	pwd  = "123"
 )
 
 var db *sql.DB
 
 func init() {
 	var err error
-	db, err = sql.Open("mysql", fmt.Sprintf("%v:%v@/mobile_data?parseTime=true", user, pwd))
+	db, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(172.17.0.2:3306)/mobile_data?parseTime=true", user, pwd))
 	if err != nil {
 		// TODO: Error handling
 		panic(err)
