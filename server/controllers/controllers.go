@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -71,11 +72,21 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	_, err := mysql.GetBatteryData(key)
+	dataOut, err := mysql.GetBatteryData(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "Success")
+	response := &models.Data{
+		Battery: *dataOut,
+	}
+
+	jsonOut, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, string(jsonOut))
 }
