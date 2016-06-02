@@ -3,6 +3,7 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
 	// mysql database driver
 	_ "github.com/go-sql-driver/mysql"
@@ -18,7 +19,7 @@ var db *sql.DB
 
 func init() {
 	var err error
-	db, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(172.17.0.2:3306)/mobile_data?parseTime=true", user, pwd))
+	db, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/mobile_data?parseTime=true", user, pwd, os.Getenv("DB_HOST")))
 	if err != nil {
 		// TODO: Error handling
 		panic(err)

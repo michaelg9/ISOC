@@ -1,2 +1,15 @@
 # hide database testing
+test_db
 test_db/*
+
+# hide Go dockerfile
+server/Dockerfile
+
+# hide go compose
+*.yml
+
+# hide godep dependencies
+server/Godeps
+server/Godeps/*
+server/vendor
+server/vendor/*
