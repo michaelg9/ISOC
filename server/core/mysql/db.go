@@ -74,7 +74,6 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 }
 
 // GetBatteryData gets all battery data from a given API key
-// TODO: Testing
 func GetBatteryData(apiKey string) (*[]models.Battery, error) {
 	stmt, err := db.Prepare(getAllBattery)
 	if err != nil {
@@ -99,4 +98,32 @@ func GetBatteryData(apiKey string) (*[]models.Battery, error) {
 	}
 
 	return &batteries, nil
+}
+
+// GetDeviceData gets all the devices from a user with
+// given API key
+func GetDeviceData(apiKey string) (*[]models.Device, error) {
+	stmt, err := db.Prepare(getAllDevices)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	rows, err := stmt.Query(apiKey)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var devices []models.Device
+	for rows.Next() {
+		var d models.Device
+		err = rows.Scan(&d.ID, &d.Manufacturer, &d.Model, &d.OS)
+		if err != nil {
+			return nil, err
+		}
+		devices = append(devices, d)
+	}
+
+	return &devices, nil
 }
