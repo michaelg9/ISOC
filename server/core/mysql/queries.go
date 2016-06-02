@@ -6,6 +6,6 @@ const (
 	insertIntoBattery = "INSERT INTO BatteryStatus VALUES (?, ?);"
 	getAllBattery     = "SELECT d.timestamp, b.batteryPercentage " +
 		"FROM Data d, BatteryStatus b, Device dev, User u " +
-		"WHERE u.apiKey = ? AND u.id = dev.user AND dev.id = d.device " +
+		"WHERE u.apiKey = ? AND u.uid = dev.user AND dev.id = d.device " +
 		"AND d.id = b.id;"
 )
