@@ -8,4 +8,7 @@ const (
 		"FROM Data d, BatteryStatus b, Device dev, User u " +
 		"WHERE u.apiKey = ? AND u.uid = dev.user AND dev.id = d.device " +
 		"AND d.id = b.id;"
+	getAllDevices = "SELECT dev.id, dev.manufacturer, dev.modelName, dev.osVersion " +
+		"FROM Device dev, User u " +
+		"WHERE u.apiKey = ? AND u.uid = dev.user;"
 )

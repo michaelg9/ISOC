@@ -48,7 +48,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 func Upload(w http.ResponseWriter, r *http.Request) {
 	decoder := xml.NewDecoder(r.Body)
 
-	var d models.Data
+	var d models.DataIn
 	err := decoder.Decode(&d)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -72,14 +72,26 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	dataOut, err := mysql.GetBatteryData(key)
+	battery, err := mysql.GetBatteryData(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response := &models.Data{
-		Battery: *dataOut,
+	devices, err := mysql.GetDeviceData(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	for _, device := range *devices {
+		// TODO: get battery data for specific device
+		// Problem: Does not add battery data
+		device.Battery = *battery
+	}
+
+	response := &models.DataOut{
+		Device: *devices,
 	}
 
 	jsonOut, err := json.Marshal(response)
