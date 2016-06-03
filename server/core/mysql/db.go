@@ -74,49 +74,47 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 	return nil
 }
 
-// GetBatteryData gets all battery data from a given API key
-func GetBatteryData(apiKey string) (*[]models.Battery, error) {
+// GetBatteryData gets all battery data from a given device id
+func GetBatteryData(deviceID int) (batteryData []models.Battery, err error) {
 	stmt, err := db.Prepare(getAllBattery)
 	if err != nil {
-		return nil, err
+		return batteryData, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(apiKey)
+	rows, err := stmt.Query(deviceID)
 	if err != nil {
-		return nil, err
+		return batteryData, err
 	}
 	defer rows.Close()
 
-	var batteries []models.Battery
 	for rows.Next() {
 		var b models.Battery
 		err = rows.Scan(&b.Time, &b.Value)
 		if err != nil {
-			return nil, err
+			return batteryData, err
 		}
-		batteries = append(batteries, b)
+		batteryData = append(batteryData, b)
 	}
 
-	return &batteries, nil
+	return batteryData, nil
 }
 
 // GetDeviceData gets all the devices from a user with
 // given API key
-func GetDeviceData(apiKey string) (*[]models.Device, error) {
+func GetDeviceData(apiKey string) (devices []models.Device, err error) {
 	stmt, err := db.Prepare(getAllDevices)
 	if err != nil {
-		return nil, err
+		return devices, err
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(apiKey)
 	if err != nil {
-		return nil, err
+		return devices, err
 	}
 	defer rows.Close()
 
-	var devices []models.Device
 	for rows.Next() {
 		var d models.Device
 		err = rows.Scan(&d.ID, &d.Manufacturer, &d.Model, &d.OS)
@@ -126,5 +124,5 @@ func GetDeviceData(apiKey string) (*[]models.Device, error) {
 		devices = append(devices, d)
 	}
 
-	return &devices, nil
+	return devices, nil
 }

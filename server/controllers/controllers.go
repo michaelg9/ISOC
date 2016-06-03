@@ -72,26 +72,23 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	battery, err := mysql.GetBatteryData(key)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	devices, err := mysql.GetDeviceData(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	for _, device := range *devices {
-		// TODO: get battery data for specific device
-		// Problem: Does not add battery data
-		device.Battery = *battery
+	for i, d := range devices {
+		battery, err := mysql.GetBatteryData(d.ID)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		devices[i].Battery = battery
 	}
 
 	response := &models.DataOut{
-		Device: *devices,
+		Device: devices,
 	}
 
 	jsonOut, err := json.Marshal(response)
