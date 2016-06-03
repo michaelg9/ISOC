@@ -14,7 +14,7 @@ import (
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Welcome!")
+	fmt.Fprintln(w, "Welcome")
 }
 
 // Login handles /auth/0.1/login
