@@ -5,39 +5,22 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <link rel="stylesheet" href="static/style.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-  <style>
-      .navbar {
-        margin-bottom: 0;
-        border-radius: 0;
-      }
-
-      .row.content {
-          width: 50%;
-          margin: 0 auto;
-      }
-
-      @media screen and (max-width: 767px) {
-        .row.content {height:auto;}
-      }
-  </style>
 </head>
 <body>
 
 <nav class="navbar navbar-inverse">
   <div class="container-fluid">
-    <div class="navbar-header">
-      <a class="navbar-brand" href="#">Mobile Data Analyser</a>
-    </div>
     <div class="collapse navbar-collapse" id="myNavbar">
       <ul class="nav navbar-nav navbar-right">
         <li class="dropdown" id="menuLogin">
             <a class="dropdown-toggle" href="#" data-toggle="dropdown" id="navLogin">Login</a>
               <div class="dropdown-menu" style="padding:17px;">
                 <form class="form" id="formLogin">
-                  <input name="username" id="username" type="text" placeholder="Username">
-                  <input name="password" id="password" type="password" placeholder="Password"><br>
+                  <input name="username" class="form-control" type="text" placeholder="Username">
+                  <input name="password" class="form-control" type="password" placeholder="Password"><br>
                   <button type="button" id="btnLogin" class="btn">Login</button>
                 </form>
               </div>
@@ -48,9 +31,14 @@
 </nav>
 
 <div class="container-fluid text-center">
-  <div class="row content">
-    <div class="col-sm-12 text-left">
-      <h1 style="text-align: center">Welcome</h1>
+  <div class="row">
+    <div class="col-sm-3" id="uoe-logo">
+      <a href="http://www.ed.ac.uk/" target="_blank">
+        <img src="static/UoE_Logo.jpg" class="img-responsive" >
+      </a>
+    </div>
+    <div class="col-sm-9 text-left content">
+      <h1 style="text-align: center">Mobile Data Analyser</h1>
       <p>Lorem ipsum dolor sit amet, consectetur adiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
     </div>
   </div>

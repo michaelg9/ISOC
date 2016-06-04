@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/michaelg9/ISOC/server/core/mysql"
 	"github.com/michaelg9/ISOC/server/services/models"
 
@@ -15,8 +16,19 @@ import (
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/index.html")
+	t, err := template.ParseFiles("templates/index.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	t.Execute(w, "")
+}
+
+// ServeCSS serves the css files
+// TODO: Factorise into own file
+func ServeCSS(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	http.ServeFile(w, r, "static/"+vars["filename"])
 }
 
 // Login handles /auth/0.1/login
@@ -81,7 +93,8 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i, d := range devices {
-		battery, err := mysql.GetBatteryData(d.ID)
+		var battery []models.Battery
+		battery, err = mysql.GetBatteryData(d.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

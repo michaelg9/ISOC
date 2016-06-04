@@ -1,0 +1,28 @@
+.navbar {
+  margin-bottom: 0;
+  border-radius: 0;
+}
+.content {
+    width: 50%;
+}
+
+.form-control {
+    margin-bottom: 10px;
+}
+
+.dropdown-menu {
+    width: 300px;
+}
+
+#btnLogin {
+    margin-top: 0px;
+    width: 100%;
+}
+
+#uoe-logo {
+    margin-top: 20px;
+}
+
+@media screen and (max-width: 767px) {
+  .row.content {height:auto;}
+}
