@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"html/template"
 	"net/http"
 
 	"github.com/michaelg9/ISOC/server/core/mysql"
@@ -14,7 +15,8 @@ import (
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Welcome")
+	t, _ := template.ParseFiles("templates/index.html")
+	t.Execute(w, "")
 }
 
 // Login handles /auth/0.1/login
