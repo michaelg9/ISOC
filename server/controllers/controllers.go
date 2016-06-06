@@ -7,7 +7,6 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/gorilla/mux"
 	"github.com/michaelg9/ISOC/server/core/mysql"
 	"github.com/michaelg9/ISOC/server/services/models"
 
@@ -22,13 +21,6 @@ func Index(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	t.Execute(w, "")
-}
-
-// ServeCSS serves the css files
-// TODO: Factorise into own file
-func ServeCSS(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	http.ServeFile(w, r, "static/"+vars["filename"])
 }
 
 // Login handles /auth/0.1/login
@@ -63,8 +55,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	decoder := xml.NewDecoder(r.Body)
 
 	var d models.DataIn
-	err := decoder.Decode(&d)
-	if err != nil {
+	if err := decoder.Decode(&d); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -72,7 +63,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	// TODO: more careful parsing
 	deviceID := d.Meta.Device
 	for _, battery := range d.Battery {
-		err = mysql.InsertBatteryData(deviceID, battery.Value, battery.Time)
+		err := mysql.InsertBatteryData(deviceID, battery.Value, battery.Time)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -25,10 +25,16 @@ var routes = Routes{
 		controllers.Index,
 	},
 	Route{
-		"Server",
+		"ServeCSS",
 		"GET",
 		"/static/{filename}",
 		controllers.ServeCSS,
+	},
+	Route{
+		"ServeIMG",
+		"GET",
+		"/static/img/{name}",
+		controllers.ServeIMG,
 	},
 	Route{
 		"Login",

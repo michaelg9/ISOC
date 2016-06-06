@@ -21,7 +21,6 @@ func init() {
 	var err error
 	db, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/mobile_data?parseTime=true", user, pwd, os.Getenv("DB_HOST")))
 	if err != nil {
-		// TODO: Error handling
 		panic(err)
 	}
 }
