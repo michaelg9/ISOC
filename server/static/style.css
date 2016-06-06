@@ -2,19 +2,13 @@
   margin-bottom: 0;
   border-radius: 0;
 }
-.content {
-    width: 50%;
-}
 
-.form-control {
-    margin-bottom: 10px;
-}
-
-.btn.btn-default {
-    vertical-align: top;
+#my-navbar {
+    width: 100%;
 }
 
 #uoe-logo {
+    text-align: left;
     margin-top: 20px;
 }
 
