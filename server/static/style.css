@@ -10,13 +10,8 @@
     margin-bottom: 10px;
 }
 
-.dropdown-menu {
-    width: 300px;
-}
-
-#btnLogin {
-    margin-top: 0px;
-    width: 100%;
+.btn.btn-default {
+    vertical-align: top;
 }
 
 #uoe-logo {
