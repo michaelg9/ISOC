@@ -8,6 +8,25 @@
   <link rel="stylesheet" href="static/style.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script>
+  $(document).ready(function(){
+      $("#login").on('click', function(){
+          var username = $("#username").val();
+          var password = $("#password").val();
+          // TODO: Check if non-empty
+          var loginParams = {username: username, password: password};
+          var loginURL = "http://192.168.99.100:3000/auth/0.1/login?";
+          window.location = loginURL + jQuery.param(loginParams);
+          console.log(loginURL + jQuery.param(loginParams));
+          /*$.get({
+              url: loginURL,
+              data: loginParams
+          }).done(function() {
+
+          });*/
+      });
+  });
+  </script>
 </head>
 <body>
 
@@ -22,12 +41,12 @@
     <div class="collapse navbar-collapse" id="my-navbar">
       <form class="navbar-form navbar-right">
         <div class="form-group">
-            <input type="text" class="form-control" name="username" placeholder="Username">
+            <input type="text" class="form-control" name="username" placeholder="Username" id="username">
         </div>
         <div class="form-group">
-            <input type="text" class="form-control" name="password" placeholder="Password">
+            <input type="password" class="form-control" name="password" placeholder="Password" id="password">
         </div>
-        <button type="submit" class="btn btn-default form-group">Log In</button>
+        <button type="button" class="btn btn-default form-group" id="login">Log In</button>
       </form>
     </div>
 </nav>

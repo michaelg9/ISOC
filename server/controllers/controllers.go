@@ -38,6 +38,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	// Check if given password fits with stored hash inside the server
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	if err != nil {
+		// TODO: Return more meaningful error
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
