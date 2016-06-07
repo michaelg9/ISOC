@@ -15,7 +15,7 @@ import (
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("templates/index.html")
+	t, err := template.ParseFiles("views/index.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -49,7 +49,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // LoginWeb renders the template for the log in form of the website
 func LoginWeb(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("templates/login.html")
+	t, err := template.ParseFiles("views/login.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -64,7 +64,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard handles /dashboard
 func Dashboard(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("templates/dashboard.html")
+	t, err := template.ParseFiles("views/dashboard.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
