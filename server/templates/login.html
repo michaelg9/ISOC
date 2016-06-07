@@ -21,7 +21,7 @@
                 data: loginParams
             }).done(function(data, textStatus, jqXHR) {
                 if (data == "Success") {
-                    window.location = loginURL + jQuery.param(loginParams);
+                    window.location = "http://192.168.99.100:3000/dashboard";
                 }
             }).fail(function() {
                 console.log("Wrong password!")

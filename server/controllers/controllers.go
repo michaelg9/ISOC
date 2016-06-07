@@ -62,6 +62,16 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Logout")
 }
 
+// Dashboard handles /dashboard
+func Dashboard(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("templates/dashboard.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, "")
+}
+
 // Upload handles /app/0.1/upload
 func Upload(w http.ResponseWriter, r *http.Request) {
 	decoder := xml.NewDecoder(r.Body)
