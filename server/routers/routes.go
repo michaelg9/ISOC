@@ -25,6 +25,12 @@ var routes = Routes{
 		controllers.Index,
 	},
 	Route{
+		"LoginWeb",
+		"GET",
+		"/login",
+		controllers.LoginWeb,
+	},
+	Route{
 		"ServeCSS",
 		"GET",
 		"/static/{filename}",

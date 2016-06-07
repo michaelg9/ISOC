@@ -11,13 +11,11 @@
   <script>
   $(document).ready(function(){
       $("#login").on('click', function(){
-          var username = $("#username").val();
+          /*var username = $("#username").val();
           var password = $("#password").val();
           // TODO: Check if non-empty
-          var loginParams = {username: username, password: password};
-          var loginURL = "http://192.168.99.100:3000/auth/0.1/login?";
-          window.location = loginURL + jQuery.param(loginParams);
-          console.log(loginURL + jQuery.param(loginParams));
+          var loginParams = {username: username, password: password};*/
+          window.location = "http://192.168.99.100:3000/login";
           /*$.get({
               url: loginURL,
               data: loginParams
@@ -31,24 +29,11 @@
 <body>
 
 <nav class="navbar navbar-inverse">
-    <div class="navbar-header">
-        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-          <span class="icon-bar"></span>
-        </button>
-    </div>
-    <div class="collapse navbar-collapse" id="my-navbar">
-      <form class="navbar-form navbar-right">
-        <div class="form-group">
-            <input type="text" class="form-control" name="username" placeholder="Username" id="username">
-        </div>
-        <div class="form-group">
-            <input type="password" class="form-control" name="password" placeholder="Password" id="password">
-        </div>
-        <button type="button" class="btn btn-default form-group" id="login">Log In</button>
-      </form>
-    </div>
+  <ul class="nav navbar-nav navbar-right">
+    <li>
+      <button type="button" class="btn btn-default navbar-btn" id="login">Log In</button>
+    </li>
+  </ul>
 </nav>
 
 <div class="container-fluid text-center">

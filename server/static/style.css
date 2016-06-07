@@ -3,6 +3,44 @@
   border-radius: 0;
 }
 
+#body-login {
+    padding-top: 40px;
+    padding-bottom: 40px;
+    background-color: #eee;
+}
+
+.form-signin {
+    margin: 0 auto;
+    padding: 15px;
+    max-width: 330px;
+}
+
+#username {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    margin-bottom: -1px;
+}
+
+#password {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+#forgot-password {
+    margin-top: 10px;
+}
+
+/* Either find better names for login buttons or split up into two files */
+#login-btn {
+    width: 100%;
+    margin-top: 10px;
+}
+
+#login {
+    margin-right: 20px;
+    margin-left: 20px;
+}
+
 #my-navbar {
     width: 100%;
 }
@@ -10,8 +48,4 @@
 #uoe-logo {
     text-align: left;
     margin-top: 20px;
-}
-
-@media screen and (max-width: 767px) {
-  .row.content {height:auto;}
 }

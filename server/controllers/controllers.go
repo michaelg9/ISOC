@@ -43,7 +43,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, "Username: %s Password: %s Success: true", username, password)
+	// TODO: Return XML or JSON
+	fmt.Fprintf(w, "Success")
+}
+
+// LoginWeb renders the template for the log in form of the website
+func LoginWeb(w http.ResponseWriter, r *http.Request) {
+	t, err := template.ParseFiles("templates/login.html")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	t.Execute(w, "")
 }
 
 // Logout handles /app/0.1/logout
