@@ -2,12 +2,14 @@ package mysql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
 
 	// mysql database driver
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/michaelg9/ISOC/server/services/models"
 )
 
 const (
@@ -27,6 +29,7 @@ func init() {
 
 // GetHashedPassword gets the hash of the password from a given user
 func GetHashedPassword(username string) (hash string, err error) {
+	// TODO: Refactor into more general GetUser
 	stmt, err := db.Prepare(passwordQuery)
 	if err != nil {
 		return "", err
@@ -41,8 +44,43 @@ func GetHashedPassword(username string) (hash string, err error) {
 	return
 }
 
+// IDEA: Factor all Get functions into one scan like function
+
+// GetDevices gets all devices which are referenced to the given API key
+func GetDevices(key string) ([]models.DeviceStored, error) {
+	// Query the database
+	result, err := getData(getDevices, models.DeviceStored{}, key)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert result to array of device structs
+	devices, ok := result.([]models.DeviceStored)
+	if !ok {
+		return nil, errors.New("Failed to convert SQL result into type []models.DeviceStored.")
+	}
+
+	return devices, nil
+}
+
+// GetBattery gets all battery data associated with a device ID
+func GetBattery(deviceID int) ([]models.Battery, error) {
+	result, err := getData(getBattery, models.Battery{}, deviceID)
+	if err != nil {
+		return nil, err
+	}
+
+	battery, ok := result.([]models.Battery)
+	if !ok {
+		return nil, errors.New("Failed to convert SQL result into type []models.Battery.")
+	}
+
+	return battery, nil
+}
+
 // InsertBatteryData inserts the given data for the battery status
 // TODO: Change timestamp type to time.Time
+// TODO: Refactor into more general InsertData
 func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error) {
 	stmt, err := db.Prepare(insertIntoData)
 	if err != nil {
@@ -75,7 +113,7 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 
 // GetData queries the database with the given query and arguments. ResultStruct
 // is the struct which has the format of one row of the resulting table of the query.
-func GetData(query string, resultStruct interface{}, args ...interface{}) (interface{}, error) {
+func getData(query string, resultStruct interface{}, args ...interface{}) (interface{}, error) {
 	stmt, err := db.Prepare(query)
 	if err != nil {
 		return nil, err

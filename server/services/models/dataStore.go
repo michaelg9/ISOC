@@ -1,10 +1,11 @@
 package models
 
-// Battery is the struct for the battery
-// percentage element
-type Battery struct {
-	Time  string `xml:"time,attr" json:"time"`
-	Value int    `xml:",chardata" json:"value"`
+// User is the struct of the stored user data
+type User struct {
+	ID           int
+	username     string
+	passwordHash string
+	apiKey       string
 }
 
 // DeviceStored is the struct of the stored
@@ -14,4 +15,11 @@ type DeviceStored struct {
 	Manufacturer string `json:"manufacturer"`
 	Model        string `json:"model"`
 	OS           string `json:"os"`
+}
+
+// Battery is the struct for the battery
+// percentage element
+type Battery struct {
+	Time  string `xml:"time,attr" json:"time"`
+	Value int    `xml:",chardata" json:"value"`
 }

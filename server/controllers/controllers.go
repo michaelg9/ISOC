@@ -99,15 +99,11 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	// TODO: Move the code which retrieves a specific element into mysql package
-	// Get all devices which are referenced to the given API key
-	result, err := mysql.GetData(mysql.GetDevices, models.DeviceStored{}, key)
+	deviceData, err := mysql.GetDevices(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	deviceData := result.([]models.DeviceStored)
-	// TODO: Check if conversion was successfull
 
 	// Convert DeviceOut to Device
 	devices := make([]models.Device, len(deviceData))
@@ -121,12 +117,12 @@ func Download(w http.ResponseWriter, r *http.Request) {
 
 	// For each device get all its data and append it to the device
 	for i, d := range devices {
-		result, err = mysql.GetData(mysql.GetBattery, models.Battery{}, d.ID)
+		var battery []models.Battery
+		battery, err = mysql.GetBattery(d.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		battery := result.([]models.Battery)
 		devices[i].Battery = battery // TODO: find a way to automatically append all data to device
 	}
 
