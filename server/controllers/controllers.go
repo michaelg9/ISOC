@@ -99,26 +99,43 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	devices, err := mysql.GetDeviceData(key)
+	// TODO: Move the code which retrieves a specific element into mysql package
+	// Get all devices which are referenced to the given API key
+	result, err := mysql.GetData(mysql.GetDevices, models.DeviceStored{}, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	deviceData := result.([]models.DeviceStored)
+	// TODO: Check if conversion was successfull
 
+	// Convert DeviceOut to Device
+	devices := make([]models.Device, len(deviceData))
+	for i, d := range deviceData {
+		// TODO: Find a way to make this less ugly
+		devices[i].ID = d.ID
+		devices[i].Manufacturer = d.Manufacturer
+		devices[i].Model = d.Model
+		devices[i].OS = d.OS
+	}
+
+	// For each device get all its data and append it to the device
 	for i, d := range devices {
-		var battery []models.Battery
-		battery, err = mysql.GetBatteryData(d.ID)
+		result, err = mysql.GetData(mysql.GetBattery, models.Battery{}, d.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		devices[i].Battery = battery
+		battery := result.([]models.Battery)
+		devices[i].Battery = battery // TODO: find a way to automatically append all data to device
 	}
 
+	// Create the struct for the output data
 	response := &models.DataOut{
 		Device: devices,
 	}
 
+	// Format the output data to JSON
 	jsonOut, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

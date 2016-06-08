@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"reflect"
 
 	// mysql database driver
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/michaelg9/ISOC/server/services/models"
 )
 
 const (
@@ -73,55 +73,41 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 	return nil
 }
 
-// GetBatteryData gets all battery data from a given device id
-func GetBatteryData(deviceID int) (batteryData []models.Battery, err error) {
-	stmt, err := db.Prepare(getAllBattery)
+// GetData queries the database with the given query and arguments. ResultStruct
+// is the struct which has the format of one row of the resulting table of the query.
+func GetData(query string, resultStruct interface{}, args ...interface{}) (interface{}, error) {
+	stmt, err := db.Prepare(query)
 	if err != nil {
-		return batteryData, err
+		return nil, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.Query(deviceID)
+	rows, err := stmt.Query(args...)
 	if err != nil {
-		return batteryData, err
+		return nil, err
 	}
 	defer rows.Close()
 
+	// Get the type if the result struct and create a new slice of that type
+	typeOfResult := reflect.TypeOf(resultStruct)
+	result := reflect.Zero(reflect.SliceOf(typeOfResult))
 	for rows.Next() {
-		var b models.Battery
-		err = rows.Scan(&b.Time, &b.Value)
-		if err != nil {
-			return batteryData, err
+		// Create a struct of the result struct type
+		row := reflect.New(typeOfResult).Elem()
+		// Row is the slice which stores the pointers to the fields of r
+		rowPointers := make([]interface{}, row.NumField())
+		for i := range rowPointers {
+			rowPointers[i] = row.Field(i).Addr().Interface()
 		}
-		batteryData = append(batteryData, b)
-	}
 
-	return batteryData, nil
-}
-
-// GetDeviceData gets all the devices from a user with
-// given API key
-func GetDeviceData(apiKey string) (devices []models.Device, err error) {
-	stmt, err := db.Prepare(getAllDevices)
-	if err != nil {
-		return devices, err
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.Query(apiKey)
-	if err != nil {
-		return devices, err
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var d models.Device
-		err = rows.Scan(&d.ID, &d.Manufacturer, &d.Model, &d.OS)
+		// Save one result row to the the row struct
+		err = rows.Scan(rowPointers...)
 		if err != nil {
 			return nil, err
 		}
-		devices = append(devices, d)
+
+		result = reflect.Append(result, row)
 	}
 
-	return devices, nil
+	return result.Interface(), nil
 }
