@@ -13,3 +13,12 @@ type Device struct {
 	OS           string    `json:"os"`
 	Battery      []Battery `json:"battery"`
 }
+
+// SetDeviceInfo sets the fields which give information about the device
+// NOTE: Is this the right place for the function?
+func (device *Device) SetDeviceInfo(deviceInfo DeviceStored) {
+	device.ID = deviceInfo.ID
+	device.Manufacturer = deviceInfo.Manufacturer
+	device.Model = deviceInfo.Model
+	device.OS = deviceInfo.OS
+}

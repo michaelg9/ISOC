@@ -13,7 +13,6 @@
         $("#login-btn").on('click', function(){
             var username = $("#username").val();
             var password = $("#password").val();
-            // TODO: Check if non-empty
             var loginParams = {username: username, password: password};
             var loginURL = "http://192.168.99.100:3000/auth/0.1/login?";
             $.get({

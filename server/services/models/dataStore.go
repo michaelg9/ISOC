@@ -3,9 +3,9 @@ package models
 // User is the struct of the stored user data
 type User struct {
 	ID           int
-	username     string
-	passwordHash string
-	apiKey       string
+	Username     string
+	PasswordHash string
+	APIKey       string
 }
 
 // DeviceStored is the struct of the stored
@@ -19,6 +19,7 @@ type DeviceStored struct {
 
 // Battery is the struct for the battery
 // percentage element
+// TODO: Change timestamp type to time.Time
 type Battery struct {
 	Time  string `xml:"time,attr" json:"time"`
 	Value int    `xml:",chardata" json:"value"`

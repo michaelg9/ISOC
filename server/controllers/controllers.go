@@ -27,18 +27,20 @@ func Index(w http.ResponseWriter, r *http.Request) {
 func Login(w http.ResponseWriter, r *http.Request) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
-	// TODO: Check if right parameters entered
+	if username == "" || password == "" {
+		http.Error(w, "No username and/or password specified.", http.StatusInternalServerError)
+		return
+	}
 
-	hashedPassword, err := mysql.GetHashedPassword(username)
+	user, err := mysql.GetUser(username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Check if given password fits with stored hash inside the server
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		// TODO: Return more meaningful error
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -99,20 +101,16 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	deviceData, err := mysql.GetDevices(key)
+	deviceInfo, err := mysql.GetDevices(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Convert DeviceOut to Device
-	devices := make([]models.Device, len(deviceData))
-	for i, d := range deviceData {
-		// TODO: Find a way to make this less ugly
-		devices[i].ID = d.ID
-		devices[i].Manufacturer = d.Manufacturer
-		devices[i].Model = d.Model
-		devices[i].OS = d.OS
+	devices := make([]models.Device, len(deviceInfo))
+	for i, d := range deviceInfo {
+		devices[i].SetDeviceInfo(d)
 	}
 
 	// For each device get all its data and append it to the device

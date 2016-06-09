@@ -27,21 +27,24 @@ func init() {
 	}
 }
 
-// GetHashedPassword gets the hash of the password from a given user
-func GetHashedPassword(username string) (hash string, err error) {
-	// TODO: Refactor into more general GetUser
-	stmt, err := db.Prepare(passwordQuery)
+// GetUser gives back the user with a given username
+func GetUser(username string) (models.User, error) {
+	result, err := getData(getUser, models.User{}, username)
 	if err != nil {
-		return "", err
-	}
-	defer stmt.Close()
-
-	err = stmt.QueryRow(username).Scan(&hash)
-	if err != nil {
-		return "", err
+		// TODO: Check if error "sql: no rows in result set"
+		return models.User{}, err
 	}
 
-	return
+	users, ok := result.([]models.User)
+	if !ok {
+		return models.User{}, errors.New("Failed to convert SQL result into type []models.User.")
+	}
+
+	if len(users) != 1 {
+		return models.User{}, errors.New("Multiple users with same username.")
+	}
+
+	return users[0], nil
 }
 
 // IDEA: Factor all Get functions into one scan like function
@@ -79,7 +82,6 @@ func GetBattery(deviceID int) ([]models.Battery, error) {
 }
 
 // InsertBatteryData inserts the given data for the battery status
-// TODO: Change timestamp type to time.Time
 // TODO: Refactor into more general InsertData
 func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error) {
 	stmt, err := db.Prepare(insertIntoData)
