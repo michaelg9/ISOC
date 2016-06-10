@@ -7,7 +7,7 @@ If you have Docker then you should be able to run the server on your local machi
 docker-compose build  
 docker-compose up 
 ```
-to start the server (you only have to run the build command the first time you start the server). Then the server should run on localhost:3000. To shut it down you have to run 
+in the root of the project to start the server (you only have to run the build command the first time you start the server). Then the server should run on localhost:3000. To shut it down you have to run 
 ```
 docker-compose down
 ```
