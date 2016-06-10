@@ -2,14 +2,12 @@ package mysql
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"os"
 	"reflect"
 
 	// mysql database driver
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/michaelg9/ISOC/server/services/models"
 )
 
 const (
@@ -25,60 +23,6 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-}
-
-// GetUser gives back the user with a given username
-func GetUser(username string) (models.User, error) {
-	result, err := getData(getUser, models.User{}, username)
-	if err != nil {
-		// TODO: Check if error "sql: no rows in result set"
-		return models.User{}, err
-	}
-
-	users, ok := result.([]models.User)
-	if !ok {
-		return models.User{}, errors.New("Failed to convert SQL result into type []models.User.")
-	}
-
-	if len(users) != 1 {
-		return models.User{}, errors.New("Multiple users with same username.")
-	}
-
-	return users[0], nil
-}
-
-// IDEA: Factor all Get functions into one scan like function
-
-// GetDevices gets all devices which are referenced to the given API key
-func GetDevices(key string) ([]models.DeviceStored, error) {
-	// Query the database
-	result, err := getData(getDevices, models.DeviceStored{}, key)
-	if err != nil {
-		return nil, err
-	}
-
-	// Convert result to array of device structs
-	devices, ok := result.([]models.DeviceStored)
-	if !ok {
-		return nil, errors.New("Failed to convert SQL result into type []models.DeviceStored.")
-	}
-
-	return devices, nil
-}
-
-// GetBattery gets all battery data associated with a device ID
-func GetBattery(deviceID int) ([]models.Battery, error) {
-	result, err := getData(getBattery, models.Battery{}, deviceID)
-	if err != nil {
-		return nil, err
-	}
-
-	battery, ok := result.([]models.Battery)
-	if !ok {
-		return nil, errors.New("Failed to convert SQL result into type []models.Battery.")
-	}
-
-	return battery, nil
 }
 
 // InsertBatteryData inserts the given data for the battery status
@@ -113,24 +57,26 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 	return nil
 }
 
-// GetData queries the database with the given query and arguments. ResultStruct
-// is the struct which has the format of one row of the resulting table of the query.
-func getData(query string, resultStruct interface{}, args ...interface{}) (interface{}, error) {
-	stmt, err := db.Prepare(query)
+// Get takes a value and stores the result of the required query in the value
+func Get(ptrToValue interface{}, args ...interface{}) error {
+	// TODO: Check if value is a pointer
+	value := reflect.Indirect(reflect.ValueOf(ptrToValue))
+	queryStruct := queries[reflect.TypeOf(value.Interface())]
+
+	stmt, err := db.Prepare(queryStruct.Retrieve)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.Query(args...)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer rows.Close()
 
 	// Get the type if the result struct and create a new slice of that type
-	typeOfResult := reflect.TypeOf(resultStruct)
-	result := reflect.Zero(reflect.SliceOf(typeOfResult))
+	typeOfResult := reflect.TypeOf(queryStruct.StoredData)
 	for rows.Next() {
 		// Create a struct of the result struct type
 		row := reflect.New(typeOfResult).Elem()
@@ -143,11 +89,11 @@ func getData(query string, resultStruct interface{}, args ...interface{}) (inter
 		// Save one result row to the the row struct
 		err = rows.Scan(rowPointers...)
 		if err != nil {
-			return nil, err
+			return err
 		}
 
-		result = reflect.Append(result, row)
+		value.Set(reflect.Append(value, row))
 	}
 
-	return result.Interface(), nil
+	return nil
 }

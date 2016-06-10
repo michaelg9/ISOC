@@ -15,7 +15,7 @@ import (
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("templates/index.html")
+	t, err := template.ParseFiles("views/index.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -32,14 +32,18 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := mysql.GetUser(username)
+	var user []models.User
+	err := mysql.Get(&user, username)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Check if given password fits with stored hash inside the server
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	// We know that there is only one result because the username has to be unique
+	// if there would have been no match with the provided username we would have gotten
+	// an error earlier
+	err = bcrypt.CompareHashAndPassword([]byte(user[0].PasswordHash), []byte(password))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -51,7 +55,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // LoginWeb renders the template for the log in form of the website
 func LoginWeb(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("templates/login.html")
+	t, err := template.ParseFiles("views/login.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -66,7 +70,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard handles /dashboard
 func Dashboard(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("templates/dashboard.html")
+	t, err := template.ParseFiles("views/dashboard.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,22 +105,23 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 func Download(w http.ResponseWriter, r *http.Request) {
 	key := r.FormValue("appid")
 
-	deviceInfo, err := mysql.GetDevices(key)
+	var devicesInfo []models.DeviceStored
+	err := mysql.Get(&devicesInfo, key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Convert DeviceOut to Device
-	devices := make([]models.Device, len(deviceInfo))
-	for i, d := range deviceInfo {
+	devices := make([]models.Device, len(devicesInfo))
+	for i, d := range devicesInfo {
 		devices[i].SetDeviceInfo(d)
 	}
 
 	// For each device get all its data and append it to the device
 	for i, d := range devices {
 		var battery []models.Battery
-		battery, err = mysql.GetBattery(d.ID)
+		err = mysql.Get(&battery, d.ID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

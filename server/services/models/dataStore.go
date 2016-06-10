@@ -10,6 +10,7 @@ type User struct {
 
 // DeviceStored is the struct of the stored
 // device data
+// TODO: Make function which converts this to device struct
 type DeviceStored struct {
 	ID           int    `json:"id"`
 	Manufacturer string `json:"manufacturer"`

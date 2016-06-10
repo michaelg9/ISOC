@@ -1,7 +1,11 @@
 package mysql
 
-// IDEA: make an array of struct which have fields dataStuct, get and insert so you can loop over them if you want to
-//       insert new data
+import (
+	"reflect"
+
+	"github.com/michaelg9/ISOC/server/services/models"
+)
+
 const (
 	passwordQuery     = "SELECT passwordHash FROM User WHERE username = ?"
 	insertIntoData    = "INSERT INTO Data (device, timestamp) VALUES (?, ?);"
@@ -14,3 +18,16 @@ const (
 		"FROM Device dev, User u " +
 		"WHERE u.apiKey = ? AND u.uid = dev.user;"
 )
+
+// QueryStruct saves insert and retrieve queries for some data that is stored.
+// For example, the battery data.
+type QueryStruct struct {
+	StoredData       interface{}
+	Retrieve, Insert string
+}
+
+var queries = map[reflect.Type]QueryStruct{
+	reflect.TypeOf([]models.Battery{}):      QueryStruct{models.Battery{}, getBattery, insertIntoBattery},
+	reflect.TypeOf([]models.DeviceStored{}): QueryStruct{models.DeviceStored{}, getDevices, ""},
+	reflect.TypeOf([]models.User{}):         QueryStruct{models.User{}, getUser, ""},
+}
