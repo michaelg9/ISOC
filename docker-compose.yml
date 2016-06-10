@@ -1,0 +1,15 @@
+version: '2'  
+services:  
+  go-server:
+    build: ./server
+    command: gin -a 8080 -b .gin-bin run 
+    ports:
+     - "3000:3000"
+    volumes:
+     - ./server:/go/src/github.com/michaelg9/ISOC/server
+    depends_on:
+     - db
+    environment:
+     - DB_HOST=db
+  db:
+    build: ./test_db

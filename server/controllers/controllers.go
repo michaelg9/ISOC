@@ -37,12 +37,12 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	} else if len(user) == 0 {
+		http.Error(w, "Wrong username/password combination.", http.StatusInternalServerError)
+		return
 	}
 
 	// Check if given password fits with stored hash inside the server
-	// We know that there is only one result because the username has to be unique
-	// if there would have been no match with the provided username we would have gotten
-	// an error earlier
 	err = bcrypt.CompareHashAndPassword([]byte(user[0].PasswordHash), []byte(password))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -65,7 +65,8 @@ func LoginWeb(w http.ResponseWriter, r *http.Request) {
 
 // Logout handles /app/0.1/logout
 func Logout(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Logout")
+	pass, _ := bcrypt.GenerateFromPassword([]byte("123456"), 10)
+	fmt.Fprintln(w, string(pass))
 }
 
 // Dashboard handles /dashboard
