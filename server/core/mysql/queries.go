@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	passwordQuery     = "SELECT passwordHash FROM User WHERE username = ?"
-	insertIntoData    = "INSERT INTO Data (device, timestamp) VALUES (?, ?);"
-	insertIntoBattery = "INSERT INTO BatteryStatus VALUES (?, ?);"
-	getUser           = "SELECT uid, username, passwordHash, apiKey FROM User WHERE username = ?;"
-	getBattery        = "SELECT d.timestamp, b.batteryPercentage " +
+	passwordQuery = "SELECT passwordHash FROM User WHERE username = ?"
+	insertData    = "INSERT INTO Data (device, timestamp) VALUES (?, ?);"
+	insertBattery = "INSERT INTO BatteryStatus VALUES (?, ?);"
+	getUser       = "SELECT uid, username, passwordHash, apiKey FROM User WHERE username = ?;"
+	getBattery    = "SELECT d.timestamp, b.batteryPercentage " +
 		"FROM Data d, BatteryStatus b " +
 		"WHERE d.device = ? AND d.id = b.id;"
 	getDevices = "SELECT dev.id, dev.manufacturer, dev.modelName, dev.osVersion " +
@@ -27,7 +27,7 @@ type QueryStruct struct {
 }
 
 var queries = map[reflect.Type]QueryStruct{
-	reflect.TypeOf([]models.Battery{}):      QueryStruct{models.Battery{}, getBattery, insertIntoBattery},
+	reflect.TypeOf([]models.Battery{}):      QueryStruct{models.Battery{}, getBattery, insertBattery},
 	reflect.TypeOf([]models.DeviceStored{}): QueryStruct{models.DeviceStored{}, getDevices, ""},
 	reflect.TypeOf([]models.User{}):         QueryStruct{models.User{}, getUser, ""},
 }

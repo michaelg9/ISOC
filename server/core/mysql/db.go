@@ -29,7 +29,7 @@ func init() {
 // InsertBatteryData inserts the given data for the battery status
 // TODO: Refactor into more general InsertData
 func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error) {
-	stmt, err := db.Prepare(insertIntoData)
+	stmt, err := db.Prepare(insertData)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 		return err
 	}
 
-	stmt, err = db.Prepare(insertIntoBattery)
+	stmt, err = db.Prepare(insertBattery)
 	if err != nil {
 		return err
 	}

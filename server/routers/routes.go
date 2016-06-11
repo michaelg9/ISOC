@@ -37,18 +37,6 @@ var routes = Routes{
 		controllers.Dashboard,
 	},
 	Route{
-		"ServeCSS",
-		"GET",
-		"/static/{filename}",
-		controllers.ServeCSS,
-	},
-	Route{
-		"ServeIMG",
-		"GET",
-		"/static/img/{name}",
-		controllers.ServeIMG,
-	},
-	Route{
 		"Login",
 		"GET",
 		"/auth/0.1/login",

@@ -65,8 +65,7 @@ func LoginWeb(w http.ResponseWriter, r *http.Request) {
 
 // Logout handles /app/0.1/logout
 func Logout(w http.ResponseWriter, r *http.Request) {
-	pass, _ := bcrypt.GenerateFromPassword([]byte("123456"), 10)
-	fmt.Fprintln(w, string(pass))
+	fmt.Fprintln(w, "Logout")
 }
 
 // Dashboard handles /dashboard
