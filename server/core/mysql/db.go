@@ -2,6 +2,7 @@ package mysql
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -59,8 +60,14 @@ func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error
 
 // Get takes a value and stores the result of the required query in the value
 func Get(ptrToValue interface{}, args ...interface{}) error {
-	// TODO: Check if value is a pointer
+	// Check if ptrToValue is really a pointer
+	if reflect.ValueOf(ptrToValue).Kind() != reflect.Ptr {
+		return errors.New("Argument is not a pointer.")
+	}
+
+	// Get the value the ptrToValue points to
 	value := reflect.Indirect(reflect.ValueOf(ptrToValue))
+	// Use the type of the value to retrieve its matching struct
 	queryStruct := queries[reflect.TypeOf(value.Interface())]
 
 	stmt, err := db.Prepare(queryStruct.Retrieve)
