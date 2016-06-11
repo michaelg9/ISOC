@@ -121,13 +121,15 @@ func Download(w http.ResponseWriter, r *http.Request) {
 
 	// For each device get all its data and append it to the device
 	for i, d := range devices {
-		var battery []models.Battery
-		err = mysql.Get(&battery, d.ID)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
+		// Get pointers to the arrays which store the tracked data
+		// and fill them with the data from the DB
+		for _, data := range devices[i].Data.GetContents() {
+			err = mysql.Get(data, d.ID)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
 		}
-		devices[i].Battery = battery // TODO: find a way to automatically append all data to device
 	}
 
 	// Create the struct for the output data
