@@ -14,13 +14,13 @@
             var username = $("#username").val();
             var password = $("#password").val();
             var loginParams = {username: username, password: password};
-            var loginURL = "http://192.168.99.100:3000/auth/0.1/login?";
+            var loginURL = "../auth/0.1/login?";
             $.get({
                 url: loginURL,
                 data: loginParams
             }).done(function(data, textStatus, jqXHR) {
                 if (data == "Success") {
-                    window.location = "http://192.168.99.100:3000/dashboard";
+                    window.location = "../dashboard";
                 }
             }).fail(function() {
                 console.log("Wrong password!");
