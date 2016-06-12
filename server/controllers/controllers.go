@@ -49,7 +49,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Return XML or JSON
 	fmt.Fprintf(w, "Success")
 }
 
@@ -135,13 +134,6 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	response := &models.DataOut{
 		Device: devices,
 	}
-
-	// Format the output data to JSON
-	/*jsonOut, err := json.Marshal(response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}*/
 
 	// Format the output into either JSON or XML according to the
 	// value specified from the parameter "out". The default value
