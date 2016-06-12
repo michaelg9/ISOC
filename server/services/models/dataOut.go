@@ -4,16 +4,16 @@ import "reflect"
 
 // DataOut is the struct for the output data
 type DataOut struct {
-	Device []Device `json:"devices"`
+	Device []Device `xml:"devices" json:"devices"`
 }
 
 // Device contains all stored information about one device
 type Device struct {
-	ID           int        `json:"id"`
-	Manufacturer string     `json:"manufacturer"`
-	Model        string     `json:"model"`
-	OS           string     `json:"os"`
-	Data         DeviceData `json:"data"`
+	ID           int        `xml:"id,attr" json:"id"`
+	Manufacturer string     `xml:"manufacturer" json:"manufacturer"`
+	Model        string     `xml:"model" json:"model"`
+	OS           string     `xml:"os" json:"os"`
+	Data         DeviceData `xml:"data" json:"data"`
 }
 
 // SetDeviceInfo sets the fields which give information about the device
@@ -27,7 +27,7 @@ func (device *Device) SetDeviceInfo(deviceInfo DeviceStored) {
 
 // DeviceData contains all the tracked data of the device
 type DeviceData struct {
-	Battery []Battery `json:"battery"`
+	Battery []Battery `xml:"battery" json:"battery"`
 }
 
 // GetContents returns pointers to all the data of the device in the struct

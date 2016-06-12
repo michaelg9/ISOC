@@ -137,11 +137,26 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Format the output data to JSON
-	jsonOut, err := json.Marshal(response)
+	/*jsonOut, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}*/
+
+	// Format the output into either JSON or XML according to the
+	// value specified from the parameter "out". The default value
+	// is JSON.
+	var out []byte
+	switch r.FormValue("out") {
+	case "", "json":
+		out, err = json.Marshal(response)
+	case "xml":
+		out, err = xml.Marshal(response)
+	}
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, string(jsonOut))
+	fmt.Fprintf(w, string(out))
 }
