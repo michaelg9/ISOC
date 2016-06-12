@@ -89,12 +89,11 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: more careful parsing
 	deviceID := d.Meta.Device
-	for _, battery := range d.Battery {
-		err := mysql.InsertBatteryData(deviceID, battery.Value, battery.Time)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+
+	err := mysql.InsertData(deviceID, d.Battery)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprintln(w, "Success")

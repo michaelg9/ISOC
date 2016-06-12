@@ -26,33 +26,50 @@ func init() {
 	}
 }
 
-// InsertBatteryData inserts the given data for the battery status
-// TODO: Refactor into more general InsertData
-func InsertBatteryData(deviceID, batteryStatus int, timestamp string) (err error) {
-	stmt, err := db.Prepare(insertData)
+// InsertData inserts a given array of data structs (for example battery data) into
+// the database
+func InsertData(deviceID int, data interface{}) error {
+	// Get the matching query struct for the given data struct
+	queryStruct := queries[reflect.TypeOf(data)]
+
+	// Prepared statement to insert in the "parent" data table
+	stmtParent, err := db.Prepare(insertData)
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer stmtParent.Close()
 
-	result, err := stmt.Exec(deviceID, timestamp)
+	stmtChild, err := db.Prepare(queryStruct.Insert)
 	if err != nil {
 		return err
 	}
+	defer stmtChild.Close()
 
-	id, err := result.LastInsertId()
-	if err != nil {
-		return err
-	}
+	dataValue := reflect.ValueOf(data)
+	for i := 0; i < dataValue.Len(); i++ {
+		v := dataValue.Index(i)
 
-	stmt, err = db.Prepare(insertBattery)
-	if err != nil {
-		return err
-	}
+		args := make([]interface{}, v.NumField())
 
-	_, err = stmt.Exec(id, batteryStatus)
-	if err != nil {
-		return err
+		for j := 0; j < v.NumField(); j++ {
+			args[j] = v.Field(j).Interface()
+		}
+
+		result, err := stmtParent.Exec(deviceID, args[0])
+		if err != nil {
+			return err
+		}
+
+		id, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		args[0] = id
+		_, err = stmtChild.Exec(args...)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
