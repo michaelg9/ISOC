@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	// mysql database driver
 	_ "github.com/go-sql-driver/mysql"
@@ -39,23 +40,37 @@ func InsertData(deviceID int, data interface{}) error {
 	}
 	defer stmtParent.Close()
 
+	// Prepared statement to insert into specific data table
 	stmtChild, err := db.Prepare(queryStruct.Insert)
 	if err != nil {
 		return err
 	}
 	defer stmtChild.Close()
 
+	// Get a the value the given data
+	// TODO: Check if dataValue is slice
 	dataValue := reflect.ValueOf(data)
+	// Loop over the given array and insert its data into the database
 	for i := 0; i < dataValue.Len(); i++ {
 		v := dataValue.Index(i)
 
 		args := make([]interface{}, v.NumField())
 
+		// Transform the data struct into an array of interfaces so
+		// we can pass that array as an argument to our prepared statement
 		for j := 0; j < v.NumField(); j++ {
 			args[j] = v.Field(j).Interface()
 		}
 
-		result, err := stmtParent.Exec(deviceID, args[0])
+		// Check if the first contains a timestamp that
+		// is in the format specified in the models package
+		_, err = time.Parse(timeLayout, args[0].(string))
+		if err != nil {
+			return err
+		}
+
+		timestamp := args[0]
+		result, err := stmtParent.Exec(deviceID, timestamp)
 		if err != nil {
 			return err
 		}
@@ -65,6 +80,9 @@ func InsertData(deviceID int, data interface{}) error {
 			return err
 		}
 
+		// args[0] was a timestamp before but now we don't need it
+		// anymore. Instead we replace it with the inserted ID of the
+		// "parent" table so we can link both entries later on.
 		args[0] = id
 		_, err = stmtChild.Exec(args...)
 		if err != nil {
