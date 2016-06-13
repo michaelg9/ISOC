@@ -31,7 +31,10 @@ func init() {
 // the database
 func InsertData(deviceID int, data interface{}) error {
 	// Get the matching query struct for the given data struct
-	queryStruct := queries[reflect.TypeOf(data)]
+	queryStruct, ok := queries[reflect.TypeOf(data)]
+	if !ok {
+		return errors.New("This type of input data is not stored in the database.")
+	}
 
 	// Prepared statement to insert in the "parent" data table
 	stmtParent, err := db.Prepare(insertData)
@@ -48,11 +51,17 @@ func InsertData(deviceID int, data interface{}) error {
 	defer stmtChild.Close()
 
 	// Get a the value the given data
-	// TODO: Check if dataValue is slice
 	dataValue := reflect.ValueOf(data)
+	if dataValue.Kind() != reflect.Slice {
+		return errors.New("Input data is not a slice.")
+	}
+
 	// Loop over the given array and insert its data into the database
 	for i := 0; i < dataValue.Len(); i++ {
 		v := dataValue.Index(i)
+		if v.Kind() != reflect.Struct {
+			return errors.New("Input data is not a slice of structs.")
+		}
 
 		args := make([]interface{}, v.NumField())
 
@@ -103,7 +112,10 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 	// Get the value the ptrToValue points to
 	value := reflect.Indirect(reflect.ValueOf(ptrToValue))
 	// Use the type of the value to retrieve its matching struct
-	queryStruct := queries[reflect.TypeOf(value.Interface())]
+	queryStruct, ok := queries[reflect.TypeOf(value.Interface())]
+	if !ok {
+		return errors.New("The type of data you want to retrieve is not stored in the database.")
+	}
 
 	stmt, err := db.Prepare(queryStruct.Retrieve)
 	if err != nil {
@@ -117,12 +129,12 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 	}
 	defer rows.Close()
 
-	// Get the type if the result struct and create a new slice of that type
+	// Get the type if the result struct
 	typeOfResult := reflect.TypeOf(queryStruct.StoredData)
 	for rows.Next() {
 		// Create a struct of the result struct type
 		row := reflect.New(typeOfResult).Elem()
-		// Row is the slice which stores the pointers to the fields of r
+		// Row is the slice which stores the pointers to the fields of row
 		rowPointers := make([]interface{}, row.NumField())
 		for i := range rowPointers {
 			rowPointers[i] = row.Field(i).Addr().Interface()

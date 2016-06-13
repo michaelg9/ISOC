@@ -19,7 +19,6 @@ type DeviceStored struct {
 
 // Battery is the struct for the battery
 // percentage element
-// TODO: Change timestamp type to time.Time
 type Battery struct {
 	Time  string `xml:"time,attr" json:"time"`
 	Value int    `xml:",chardata" json:"value"`
