@@ -89,7 +89,7 @@ func InsertData(deviceID int, data interface{}) error {
 			return err
 		}
 
-		// args[0] was a timestamp before but now we don't need it
+		// args[0] was the timestamp before but now we don't need it
 		// anymore. Instead we replace it with the inserted ID of the
 		// "parent" table so we can link both entries later on.
 		args[0] = id

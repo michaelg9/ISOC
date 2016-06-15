@@ -87,8 +87,13 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: more careful parsing
 	deviceID := d.Meta.Device
+	// Check if the device ID was specified in the input.
+	// If no ID was specified it defaults to 0.
+	if deviceID == 0 {
+		http.Error(w, "No device ID specified.", http.StatusInternalServerError)
+		return
+	}
 
 	err := mysql.InsertData(deviceID, d.Battery)
 	if err != nil {
