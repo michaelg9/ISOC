@@ -10,4 +10,7 @@ RUN go get github.com/codegangsta/gin
 RUN go-wrapper download
 RUN go-wrapper install
 
+# Set the port on which the server will run
+ENV PORT 8080
+
 EXPOSE 3000

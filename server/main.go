@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"os"
 
 	"github.com/gorilla/context"
 	"github.com/michaelg9/ISOC/server/routers"
@@ -16,5 +17,6 @@ func main() {
 	n.Use(negroni.NewLogger())
 	n.UseHandler(context.ClearHandler(router))
 
-	http.ListenAndServe(":8080", n)
+	port := os.Getenv("PORT")
+	http.ListenAndServe(":"+port, n)
 }
