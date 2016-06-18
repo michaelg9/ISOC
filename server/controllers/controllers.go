@@ -10,8 +10,11 @@ import (
 	"github.com/michaelg9/ISOC/server/core/mysql"
 	"github.com/michaelg9/ISOC/server/services/models"
 
+	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var store = sessions.NewCookieStore([]byte("something-very-secret"))
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -49,10 +52,23 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Set session for given user
+	session, err := store.Get(r, "log-in")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session.Values["username"] = username
+	if err := session.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	fmt.Fprintf(w, "Success")
 }
 
-// LoginWeb renders the template for the log in form of the website
+// LoginWeb handles /login
 func LoginWeb(w http.ResponseWriter, r *http.Request) {
 	t, err := template.ParseFiles("views/login.html")
 	if err != nil {
@@ -62,13 +78,37 @@ func LoginWeb(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, "")
 }
 
-// Logout handles /app/0.1/logout
+// Logout handles /auth/0.1/logout
 func Logout(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Logout")
+	session, err := store.Get(r, "log-in")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session.Values["username"] = ""
+	if err := session.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 // Dashboard handles /dashboard
 func Dashboard(w http.ResponseWriter, r *http.Request) {
+	session, err := store.Get(r, "log-in")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	username, found := session.Values["username"]
+	if !found || username == "" {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
 	t, err := template.ParseFiles("views/dashboard.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

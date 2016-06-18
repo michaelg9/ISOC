@@ -17,6 +17,8 @@ type Route struct {
 // Routes is an array of routes
 type Routes []Route
 
+// TODO: change login and logout to POST
+
 var routes = Routes{
 	Route{
 		"Index",
