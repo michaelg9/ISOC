@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.min.js"></script>
   <style>
     /* Set gray background color and 100% height */
     .sidenav {
@@ -19,6 +20,58 @@
       .row.content {height: auto;}
     }
   </style>
+  <script>
+    var apiKey = "37e72ff927f511e688adb827ebf7e157";
+    var requestURL = "../data/0.1/q?"
+    var requestParams = {appid: apiKey}
+    var batteryData = $.get({
+        url: requestURL,
+        data: requestParams
+    }).done(function(data, textStatus, jqXHR) {
+        var ctx = $("#batteryChart");
+        var dataJSON = JSON.parse(data);
+        var batteryData = dataJSON.devices[0].data.battery;
+        var batteryLevel = batteryData.map(function(battery) {
+            return battery.value;
+        });
+        var batteryTimes = batteryData.map(function(battery) {
+            return battery.time;
+        });
+        console.log(batteryLevel);
+        console.log(batteryTimes);
+        var batteryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: batteryTimes,
+                datasets: [{
+                    label: "Moto X",
+                    borderColor: "rgba(75,192,192,1)",
+                    data: batteryLevel
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{
+                        gridLines: {
+                            display: false
+                        },
+                        display: true,
+                        ticks: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }],
+                    xAxes: [{
+                        gridLines: {
+                            display: false
+                        },
+                        display: false
+                    }]
+                }
+            }
+        })
+    });
+  </script>
 </head>
 <body>
 
@@ -54,67 +107,20 @@
 
     <div class="col-sm-9">
       <div class="well">
-        <h4>Dashboard</h4>
-        <p>Some text..</p>
+        <h4>Device</h4>
+        <p>Some device info...</p>
       </div>
       <div class="row">
-        <div class="col-sm-3">
+        <div class="col-sm-6">
           <div class="well">
-            <h4>Users</h4>
-            <p>1 Million</p>
+            <h4>Battery</h4>
+            <canvas id="batteryChart" width="400" height="400"></canvas>
           </div>
         </div>
-        <div class="col-sm-3">
+        <div class="col-sm-6">
           <div class="well">
-            <h4>Pages</h4>
-            <p>100 Million</p>
-          </div>
-        </div>
-        <div class="col-sm-3">
-          <div class="well">
-            <h4>Sessions</h4>
-            <p>10 Million</p>
-          </div>
-        </div>
-        <div class="col-sm-3">
-          <div class="well">
-            <h4>Bounce</h4>
-            <p>30%</p>
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-sm-4">
-          <div class="well">
-            <p>Text</p>
-            <p>Text</p>
-            <p>Text</p>
-          </div>
-        </div>
-        <div class="col-sm-4">
-          <div class="well">
-            <p>Text</p>
-            <p>Text</p>
-            <p>Text</p>
-          </div>
-        </div>
-        <div class="col-sm-4">
-          <div class="well">
-            <p>Text</p>
-            <p>Text</p>
-            <p>Text</p>
-          </div>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col-sm-8">
-          <div class="well">
-            <p>Text</p>
-          </div>
-        </div>
-        <div class="col-sm-4">
-          <div class="well">
-            <p>Text</p>
+            <h4>Some other stuff</h4>
+            <p>Some other graph...</p>
           </div>
         </div>
       </div>
