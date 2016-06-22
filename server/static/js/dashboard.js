@@ -1,6 +1,12 @@
+// TODO: Get User data dynamically
+// Hardcoded API key for the user
 var apiKey = "37e72ff927f511e688adb827ebf7e157";
+
+// Request variables for API call to get userdata
 var requestURL = "../data/0.1/q?"
 var requestParams = {appid: apiKey}
+
+// AJAX call to server
 var batteryData = $.get({
     url: requestURL,
     data: requestParams
@@ -49,6 +55,9 @@ var batteryData = $.get({
     })
 });
 
+// Listeners for datepickers
+// TODO: Make one for "From" and "To"
+// TODO: Find way to generalise to more datepickers
 $(document).ready(function(){
     $('.input-group.date').datepicker({
         format: "dd/mm/yyyy"

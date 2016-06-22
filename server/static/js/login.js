@@ -1,3 +1,4 @@
+// Listener for Login button
 $(document).ready(function(){
     $("#login-btn").on('click', function(){
         var username = $("#username").val();
@@ -18,7 +19,8 @@ $(document).ready(function(){
         });
     });
 });
-// Also log in when hit enter
+
+// On enter hit click Login button
 $(document).ready(function() {
     $(document).keypress(function(e) {
         var enter = 13;
