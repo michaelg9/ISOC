@@ -14,7 +14,16 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var store = sessions.NewCookieStore([]byte("something-very-secret"))
+var sessionStore *sessions.CookieStore
+
+func init() {
+	sessionStore = sessions.NewCookieStore([]byte("something-very-secret"))
+	sessionStore.Options = &sessions.Options{
+		Path:     "/dashboard",
+		Secure:   false, // NOTE: Change if to true if on actual server
+		HttpOnly: true,
+	}
+}
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -53,7 +62,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Set session for given user
-	session, err := store.Get(r, "log-in")
+	session, err := sessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -80,13 +89,13 @@ func LoginWeb(w http.ResponseWriter, r *http.Request) {
 
 // Logout handles /auth/0.1/logout
 func Logout(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "log-in")
+	session, err := sessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	session.Values["username"] = ""
+	session.Options.MaxAge = -1
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -97,7 +106,12 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard handles /dashboard
 func Dashboard(w http.ResponseWriter, r *http.Request) {
-	session, err := store.Get(r, "log-in")
+	// TODO: Check which flags are redundant
+	w.Header().Set("Cache-Control", "no-store, max-age=0, private, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "-1")
+
+	session, err := sessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
