@@ -4,10 +4,18 @@
   <title>Mobile Data Analyser</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Dependencies for Bootstrap -->
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <!-- Dependencies for JQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+  <!-- Dependencies for Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.min.js"></script>
+  <!-- Dependencies for Datepicker -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/js/bootstrap-datepicker.js"></script>
+  <!-- Own JavaScript-->
+  <script src="static/js/dashboard.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/css/bootstrap-datepicker.css">
   <style>
     /* Set gray background color and 100% height */
     .sidenav {
@@ -20,10 +28,10 @@
       .row.content {height: auto;}
     }
   </style>
-  <script src="static/js/dashboard.js"></script>
 </head>
 <body>
 
+<!-- Collapsed Navbar -->
 <nav class="navbar navbar-inverse visible-xs">
   <div class="container-fluid">
     <div class="navbar-header">
@@ -43,6 +51,7 @@
   </div>
 </nav>
 
+<!-- Main content -->
 <div class="container-fluid">
   <div class="row content">
     <div class="col-sm-3 sidenav hidden-xs">
@@ -63,6 +72,19 @@
         <div class="col-sm-6">
           <div class="well">
             <h4>Battery</h4>
+            <div class="input-group date">
+              <input type="text" class="form-control" placeholder="From">
+                <span class="input-group-addon">
+                  <i class="glyphicon glyphicon-th"></i>
+                </span>
+            </div>
+            <br>
+            <div class="input-group date">
+              <input type="text" class="form-control" placeholder="To">
+                <span class="input-group-addon">
+                  <i class="glyphicon glyphicon-th"></i>
+                </span>
+            </div>
             <canvas id="batteryChart" width="400" height="400"></canvas>
           </div>
         </div>
