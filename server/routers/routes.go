@@ -17,8 +17,6 @@ type Route struct {
 // Routes is an array of routes
 type Routes []Route
 
-// TODO: change login and logout to POST
-
 var routes = Routes{
 	Route{
 		"Index",
@@ -46,7 +44,7 @@ var routes = Routes{
 	},
 	Route{
 		"Logout",
-		"GET",
+		"POST",
 		"/auth/0.1/logout",
 		controllers.Logout,
 	},

@@ -20,8 +20,6 @@ var batteryData = $.get({
     var batteryTimes = batteryData.map(function(battery) {
         return battery.time;
     });
-    console.log(batteryLevel);
-    console.log(batteryTimes);
     var batteryChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -61,5 +59,23 @@ var batteryData = $.get({
 $(document).ready(function(){
     $('.input-group.date').datepicker({
         format: "dd/mm/yyyy"
+    });
+});
+
+// Logout the user on logout link
+$(document).ready(function(){
+    $('.logout').on('click', function() {
+        var logoutURL = "../auth/0.1/logout";
+        $.post({
+            url: logoutURL
+        }).done(function(data, textStatus, jqXHR) {
+            if (data == "Success") {
+                window.location = "../";
+            }
+        }).fail(function() {
+            // This should never happen
+            console.log("Failed logout!");
+            return false;
+        });
     });
 });

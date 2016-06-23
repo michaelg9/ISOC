@@ -103,9 +103,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If logout was succesfull redirect to the landing page
-	// TODO: When logout becomes POST print "Success"
-	http.Redirect(w, r, "/", http.StatusSeeOther)
+	fmt.Fprintf(w, "Success")
 }
 
 // Dashboard handles /dashboard
