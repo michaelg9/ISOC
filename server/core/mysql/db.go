@@ -97,9 +97,7 @@ func InsertData(deviceID int, data interface{}) error {
 		// anymore. Instead we replace it with the inserted ID of the
 		// "parent" table so we can link both entries later on.
 		args[0] = id
-		// TODO: Make one line
-		_, err = stmtChild.Exec(args...)
-		if err != nil {
+		if _, err = stmtChild.Exec(args...); err != nil {
 			return err
 		}
 	}

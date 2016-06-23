@@ -28,12 +28,10 @@ func init() {
 
 // Index handles /
 func Index(w http.ResponseWriter, r *http.Request) {
-	t, err := template.ParseFiles("views/index.html")
-	if err != nil {
+	if err := display(w, "views/index.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	t.Execute(w, "")
 }
 
 // Login handles /auth/0.1/login
@@ -83,13 +81,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // LoginWeb handles /login
 func LoginWeb(w http.ResponseWriter, r *http.Request) {
-	// IDEA: Put template parsing into own function
-	t, err := template.ParseFiles("views/login.html")
-	if err != nil {
+	if err := display(w, "views/login.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	t.Execute(w, "")
 }
 
 // Logout handles /auth/0.1/logout
@@ -135,12 +130,10 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If username is set go to dashboard
-	t, err := template.ParseFiles("views/dashboard.html")
-	if err != nil {
+	if err = display(w, "views/dashboard.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	t.Execute(w, "")
 }
 
 // Upload handles /app/0.1/upload
@@ -225,4 +218,15 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, string(out))
+}
+
+// display takes a filepath to an HTML or template, passes the given
+// data to it and displays it
+func display(w http.ResponseWriter, filePath string, data interface{}) error {
+	t, err := template.ParseFiles(filePath)
+	if err != nil {
+		return err
+	}
+	t.Execute(w, data)
+	return nil
 }
