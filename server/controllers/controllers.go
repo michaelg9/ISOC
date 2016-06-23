@@ -115,8 +115,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard handles /dashboard
 func Dashboard(w http.ResponseWriter, r *http.Request) {
-	// TODO: Check which flags are redundant
-	w.Header().Set("Cache-Control", "no-store, max-age=0, private, must-revalidate")
+	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "-1")
 
@@ -189,7 +188,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	// Convert DeviceOut to Device
 	devices := make([]models.Device, len(devicesInfo))
 	for i, d := range devicesInfo {
-		devices[i].SetDeviceInfo(d)
+		devices[i].DeviceInfo = d
 	}
 
 	// For each device get all its data and append it to the device
@@ -197,7 +196,7 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		// Get pointers to the arrays which store the tracked data
 		// and fill them with the data from the DB
 		for _, data := range devices[i].Data.GetContents() {
-			err = mysql.Get(data, d.ID)
+			err = mysql.Get(data, d.DeviceInfo.ID)
 			if err != nil {
 				http.Error(w, err.Error(), http.StatusInternalServerError)
 				return
