@@ -40,7 +40,7 @@ var routes = Routes{
 	},
 	Route{
 		"Login",
-		"GET",
+		"POST",
 		"/auth/0.1/login",
 		controllers.Login,
 	},

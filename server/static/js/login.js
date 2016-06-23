@@ -5,7 +5,7 @@ $(document).ready(function(){
         var password = $("#password").val();
         var loginParams = {username: username, password: password};
         var loginURL = "../auth/0.1/login?";
-        $.get({
+        $.post({
             url: loginURL,
             data: loginParams
         }).done(function(data, textStatus, jqXHR) {
