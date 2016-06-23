@@ -17,6 +17,7 @@ import (
 var sessionStore *sessions.CookieStore
 
 func init() {
+	// Initiate the a cookie store to save our sessions
 	sessionStore = sessions.NewCookieStore([]byte("something-very-secret"))
 	sessionStore.Options = &sessions.Options{
 		Path:     "/dashboard",
@@ -37,13 +38,16 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 // Login handles /auth/0.1/login
 func Login(w http.ResponseWriter, r *http.Request) {
+	// Get the parameter values for username and password from the URI
 	username := r.FormValue("username")
 	password := r.FormValue("password")
+	// Check if parameters are non-empty
 	if username == "" || password == "" {
 		http.Error(w, "No username and/or password specified.", http.StatusInternalServerError)
 		return
 	}
 
+	// Get the userdata from the specified username
 	var user []models.User
 	err := mysql.Get(&user, username)
 	if err != nil {
@@ -79,6 +83,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 // LoginWeb handles /login
 func LoginWeb(w http.ResponseWriter, r *http.Request) {
+	// IDEA: Put template parsing into own function
 	t, err := template.ParseFiles("views/login.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -89,18 +94,22 @@ func LoginWeb(w http.ResponseWriter, r *http.Request) {
 
 // Logout handles /auth/0.1/logout
 func Logout(w http.ResponseWriter, r *http.Request) {
+	// Get the current log-in session of the user
 	session, err := sessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Set MaxAge to -1 to delete the session
 	session.Options.MaxAge = -1
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// If logout was succesfull redirect to the landing page
+	// TODO: When logout becomes POST print "Success"
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -111,18 +120,22 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "-1")
 
+	// Get the current user session
 	session, err := sessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Check if the username is set
 	username, found := session.Values["username"]
+	// If username not set redirect to login page
 	if !found || username == "" {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
+	// If username is set go to dashboard
 	t, err := template.ParseFiles("views/dashboard.html")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -135,6 +148,7 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 func Upload(w http.ResponseWriter, r *http.Request) {
 	decoder := xml.NewDecoder(r.Body)
 
+	// Decode the given XML from the request body into the struct defined in models
 	var d models.DataIn
 	if err := decoder.Decode(&d); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -149,6 +163,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If decoding was successfull input the data into the database
 	err := mysql.InsertData(deviceID, d.Battery)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -160,8 +175,10 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 // Download handles /data/0.1/q
 func Download(w http.ResponseWriter, r *http.Request) {
+	// Get the value of the parameter appid in the URI
 	key := r.FormValue("appid")
 
+	// Query the database for the data which belongs to the API key
 	var devicesInfo []models.DeviceStored
 	err := mysql.Get(&devicesInfo, key)
 	if err != nil {

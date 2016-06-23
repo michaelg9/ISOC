@@ -1,5 +1,7 @@
 package models
 
+// TODO: Rename file into dataStored
+
 // User is the struct of the stored user data
 type User struct {
 	ID           int

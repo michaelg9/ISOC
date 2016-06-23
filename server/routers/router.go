@@ -13,13 +13,14 @@ func NewRouter() *mux.Router {
 	for _, route := range routes {
 		var handler http.Handler
 
+		// Get the stored handler function for the route
 		handler = route.HandlerFunc
 
 		router.
-			Methods(route.Method).
-			Path(route.Pattern).
-			Name(route.Name).
-			Handler(handler)
+			Methods(route.Method). // Define HTTP Method
+			Path(route.Pattern).   // Define URI which the function has to handle
+			Name(route.Name).      // Define name for this route
+			Handler(handler)       // Define handler function
 	}
 
 	// Serve the static contents

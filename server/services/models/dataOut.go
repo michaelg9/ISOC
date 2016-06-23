@@ -8,6 +8,7 @@ type DataOut struct {
 }
 
 // Device contains all stored information about one device
+// TODO: Refactor the first fields into DeviceInfo DeviceStored
 type Device struct {
 	ID           int        `xml:"id,attr" json:"id"`
 	Manufacturer string     `xml:"manufacturer" json:"manufacturer"`

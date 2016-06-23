@@ -12,6 +12,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
+// TODO: Make this environment variables
 const (
 	user = "treigerm"
 	pwd  = "123"
@@ -21,6 +22,7 @@ var db *sql.DB
 
 func init() {
 	var err error
+	// Establish the database connection
 	db, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/mobile_data?parseTime=true", user, pwd, os.Getenv("DB_HOST")))
 	if err != nil {
 		panic(err)
@@ -58,11 +60,13 @@ func InsertData(deviceID int, data interface{}) error {
 
 	// Loop over the given array and insert its data into the database
 	for i := 0; i < dataValue.Len(); i++ {
+		// Get the value at index i and throw an error if it is not a struct
 		v := dataValue.Index(i)
 		if v.Kind() != reflect.Struct {
 			return errors.New("Input data is not a slice of structs.")
 		}
 
+		// Create slice for the arguments to the database query
 		args := make([]interface{}, v.NumField())
 
 		// Transform the data struct into an array of interfaces so
@@ -93,6 +97,7 @@ func InsertData(deviceID int, data interface{}) error {
 		// anymore. Instead we replace it with the inserted ID of the
 		// "parent" table so we can link both entries later on.
 		args[0] = id
+		// TODO: Make one line
 		_, err = stmtChild.Exec(args...)
 		if err != nil {
 			return err

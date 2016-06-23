@@ -27,6 +27,10 @@ type QueryStruct struct {
 	Retrieve, Insert string
 }
 
+// queries stores the type of a given slice of structs as a key
+// The value is the QueryStruct for the type of struct that is stored
+// in the slice of the key.
+// TODO: Explain use case
 var queries = map[reflect.Type]QueryStruct{
 	reflect.TypeOf([]models.Battery{}):      QueryStruct{models.Battery{}, getBattery, insertBattery},
 	reflect.TypeOf([]models.DeviceStored{}): QueryStruct{models.DeviceStored{}, getDevices, ""},

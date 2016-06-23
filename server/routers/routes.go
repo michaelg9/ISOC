@@ -9,9 +9,9 @@ import (
 // Route struct for creating routes
 type Route struct {
 	Name        string
-	Method      string
-	Pattern     string
-	HandlerFunc http.HandlerFunc
+	Method      string           // HTTP method
+	Pattern     string           // URI for this route
+	HandlerFunc http.HandlerFunc // Handler function specified in controllers
 }
 
 // Routes is an array of routes
