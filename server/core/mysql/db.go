@@ -12,18 +12,15 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// TODO: Make this environment variables
-const (
-	user = "treigerm"
-	pwd  = "123"
-)
-
 var db *sql.DB
 
 func init() {
 	var err error
-	// Establish the database connection
-	db, err = sql.Open("mysql", fmt.Sprintf("%v:%v@tcp(%v:3306)/mobile_data?parseTime=true", user, pwd, os.Getenv("DB_HOST")))
+	host := os.Getenv("DB_HOST")
+	user := os.Getenv("DB_USER")
+	pwd := os.Getenv("DB_PWD")
+	connectionInfo := fmt.Sprintf("%v:%v@tcp(%v:3306)/mobile_data?parseTime=true", user, pwd, host)
+	db, err = sql.Open("mysql", connectionInfo)
 	if err != nil {
 		panic(err)
 	}

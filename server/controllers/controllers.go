@@ -21,7 +21,7 @@ func init() {
 	sessionStore = sessions.NewCookieStore([]byte("something-very-secret"))
 	sessionStore.Options = &sessions.Options{
 		Path:     "/dashboard",
-		Secure:   false, // NOTE: Change if to true if on actual server
+		Secure:   false, // NOTE: Change to true if on actual server
 		HttpOnly: true,
 	}
 }
