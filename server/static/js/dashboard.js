@@ -7,6 +7,7 @@ var requestURL = "../data/0.1/q?"
 var requestParams = {appid: apiKey}
 
 // AJAX call to server
+var batteryChart;
 var batteryData = $.get({
     url: requestURL,
     data: requestParams
@@ -14,13 +15,18 @@ var batteryData = $.get({
     var ctx = $("#batteryChart");
     var dataJSON = JSON.parse(data);
     var batteryData = dataJSON.devices[0].data.battery;
+    batteryData.sort(function(a,b){
+        var dateA = new Date(a.time);
+        var dateB = new Date(b.time);
+        return dateB - dateA;
+    });
     var batteryLevel = batteryData.map(function(battery) {
         return battery.value;
     });
     var batteryTimes = batteryData.map(function(battery) {
         return battery.time;
     });
-    var batteryChart = new Chart(ctx, {
+    batteryChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: batteryTimes,
@@ -43,10 +49,15 @@ var batteryData = $.get({
                     }
                 }],
                 xAxes: [{
+                    type: 'time',
+                    time: {
+                        max: null,
+                        min: null
+                    },
                     gridLines: {
                         display: false
                     },
-                    display: false
+                    display: true
                 }]
             }
         }
@@ -57,8 +68,23 @@ var batteryData = $.get({
 // TODO: Make one for "From" and "To"
 // TODO: Find way to generalise to more datepickers
 $(document).ready(function(){
-    $('.input-group.date').datepicker({
+    $('.input-group.date.startdate').datepicker({
         format: "dd/mm/yyyy"
+    }).on('changeDate', function(e) {
+        $('.input-group.date.enddate').datepicker('setStartDate', e.date);
+        batteryChart.options.scales.xAxes[0].time.min = e.date;
+        batteryChart.update();
+    });
+});
+
+$(document).ready(function(){
+    $('.input-group.date.enddate').datepicker({
+        format: "dd/mm/yyyy",
+        endDate: "0d"
+    }).on('changeDate', function(e) {
+        $('.input-group.date.startdate').datepicker('setEndDate', e.date);
+        batteryChart.options.scales.xAxes[0].time.max = e.date;
+        batteryChart.update();
     });
 });
 
