@@ -15,4 +15,4 @@ in a new terminal window.
 
 Monitoring app:
 Currently can show and send battery level and call log. 
-If you don't get any <call> tag in the xml showing then you may need to manually enable the app's permissions by going to Setting > Applications > Monitor > Permissions (for Android 6) and enable everything there. I'll soon find out why!
+If you don't get any call logs in the xml, then you may need to manually enable the app's permissions by going to Setting > Applications > Monitor > Permissions (for Android 6) and enable everything there. I'll soon find out why!
