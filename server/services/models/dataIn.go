@@ -10,10 +10,8 @@ type DataIn struct {
 /* IDEA: Refactor this as follows
  * type DataIn struct {
  *   Meta
- *   Device
+ *   DeviceData
  * }
- * Pro's: Intercompability with output data
- * Problem: Meta tag redundant?
  */
 
 // Meta is the struct for the Metadata

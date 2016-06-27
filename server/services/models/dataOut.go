@@ -4,12 +4,12 @@ import "reflect"
 
 // DataOut is the struct for the output data
 type DataOut struct {
-	Device []Device `xml:"devices" json:"devices"`
+	Device []Device `xml:"device" json:"devices"`
 }
 
 // Device contains all stored information about one device
 type Device struct {
-	DeviceInfo DeviceStored `xml:"deviceInfo" json:"deviceInfo"`
+	DeviceInfo DeviceStored `xml:"device-info" json:"deviceInfo"`
 	Data       DeviceData   `xml:"data" json:"data"`
 }
 
