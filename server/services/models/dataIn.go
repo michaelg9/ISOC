@@ -3,16 +3,9 @@ package models
 // DataIn is the XML struct for the data transfer
 // from client to server
 type DataIn struct {
-	Meta    Meta      `xml:"metadata"`
-	Battery []Battery `xml:"battery"`
+	Meta       Meta       `xml:"metadata"`
+	DeviceData DeviceData `xml:"device-data"`
 }
-
-/* IDEA: Refactor this as follows
- * type DataIn struct {
- *   Meta
- *   DeviceData
- * }
- */
 
 // Meta is the struct for the Metadata
 type Meta struct {
