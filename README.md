@@ -11,3 +11,8 @@ in the root of the project to start the server. Then the server should run on lo
 docker-compose down
 ```
 in a new terminal window. 
+
+
+Monitoring app:
+Currently can show and send battery level and call log. 
+If you don't get any <call> tag in the xml showing then you may need to manually enable the app's permissions by going to Setting > Applications > Monitor > Permissions (for Android 6) and enable everything there. I'll soon find out why!
