@@ -28,23 +28,15 @@ func init() {
 
 // Insert is used to insert a new user or a new device
 func Insert(value interface{}, args ...interface{}) error {
+	// Retrieve the query struct for the given value
 	queryStruct, ok := queries[reflect.TypeOf(value)]
 	if !ok {
 		return errors.New("This type of input data is not stored in the database.")
 	}
 
-	stmt, err := db.Prepare(queryStruct.Insert)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	_, err = stmt.Exec(args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	// Execute the insert statement that is stored for the given data type
+	_, err := executeInsert(queryStruct.Insert, args...)
+	return err
 }
 
 // InsertData inserts a given array of data structs (for example battery data) into
@@ -55,20 +47,6 @@ func InsertData(deviceID int, data interface{}) error {
 	if !ok {
 		return errors.New("This type of input data is not stored in the database.")
 	}
-
-	// Prepared statement to insert in the "parent" data table
-	stmtParent, err := db.Prepare(insertData)
-	if err != nil {
-		return err
-	}
-	defer stmtParent.Close()
-
-	// Prepared statement to insert into specific data table
-	stmtChild, err := db.Prepare(queryStruct.Insert)
-	if err != nil {
-		return err
-	}
-	defer stmtChild.Close()
 
 	// Get a the value the given data
 	dataValue := reflect.ValueOf(data)
@@ -95,13 +73,13 @@ func InsertData(deviceID int, data interface{}) error {
 
 		// Check if the first contains a timestamp that
 		// is in the format specified in the models package
-		_, err = time.Parse(timeLayout, args[0].(string))
+		_, err := time.Parse(timeLayout, args[0].(string))
 		if err != nil {
 			return err
 		}
 
 		timestamp := args[0]
-		result, err := stmtParent.Exec(deviceID, timestamp)
+		result, err := executeInsert(insertData, deviceID, timestamp)
 		if err != nil {
 			return err
 		}
@@ -115,7 +93,7 @@ func InsertData(deviceID int, data interface{}) error {
 		// anymore. Instead we replace it with the inserted ID of the
 		// "parent" table so we can link both entries later on.
 		args[0] = id
-		if _, err = stmtChild.Exec(args...); err != nil {
+		if _, err = executeInsert(queryStruct.Insert, args...); err != nil {
 			return err
 		}
 	}
@@ -138,12 +116,14 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 		return errors.New("The type of data you want to retrieve is not stored in the database.")
 	}
 
+	// Create a prepared statement
 	stmt, err := db.Prepare(queryStruct.Retrieve)
 	if err != nil {
 		return err
 	}
 	defer stmt.Close()
 
+	// Query the database with statement
 	rows, err := stmt.Query(args...)
 	if err != nil {
 		return err
@@ -167,8 +147,24 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 			return err
 		}
 
+		// Append the scaned row to the result
 		value.Set(reflect.Append(value, row))
 	}
 
 	return nil
+}
+
+func executeInsert(query string, args ...interface{}) (sql.Result, error) {
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	result, err := stmt.Exec(args...)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
