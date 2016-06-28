@@ -74,7 +74,6 @@ var batteryData = $.get({
 });
 
 // Listeners for datepickers
-// TODO: Make one for "From" and "To"
 // TODO: Find way to generalise to more datepickers
 $(document).ready(function(){
     $('.input-group.date.startdate').datepicker({

@@ -1,12 +1,9 @@
 package controllers
 
-// TODO: Refactor into several files
-
 import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"html/template"
 	"net/http"
 	"reflect"
 
@@ -26,14 +23,6 @@ func init() {
 		Path:     "/dashboard",
 		Secure:   false, // NOTE: Change to true if on actual server
 		HttpOnly: true,
-	}
-}
-
-// Index handles /
-func Index(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/index.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }
 
@@ -82,14 +71,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Success")
 }
 
-// LoginWeb handles /login
-func LoginWeb(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/login.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-}
-
 // Logout handles /auth/0.1/logout
 func Logout(w http.ResponseWriter, r *http.Request) {
 	// Get the current log-in session of the user
@@ -118,15 +99,19 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if the user is already in the database
 	var user []models.User
 	err := mysql.Get(&user, email)
 	switch {
 	case len(user) == 0:
+		// Create new user with hashed password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		// Insert the credentials of the new user into the database
 		err = mysql.Insert(user, email, hashedPassword)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -139,34 +124,6 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	default:
 		fmt.Fprintf(w, "User already exists")
-	}
-}
-
-// Dashboard handles /dashboard
-func Dashboard(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "-1")
-
-	// Get the current user session
-	session, err := sessionStore.Get(r, "log-in")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Check if the email is set
-	email, found := session.Values["email"]
-	// If email not set redirect to login page
-	if !found || email == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	// If email is set go to dashboard
-	if err = display(w, "views/dashboard.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
 }
 
@@ -257,15 +214,4 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, string(out))
-}
-
-// display takes a filepath to an HTML or template, passes the given
-// data to it and displays it
-func display(w http.ResponseWriter, filePath string, data interface{}) error {
-	t, err := template.ParseFiles(filePath)
-	if err != nil {
-		return err
-	}
-	t.Execute(w, data)
-	return nil
 }
