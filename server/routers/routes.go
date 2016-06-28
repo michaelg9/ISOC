@@ -49,6 +49,12 @@ var routes = Routes{
 		controllers.Logout,
 	},
 	Route{
+		"SignUp",
+		"POST",
+		"/signup",
+		controllers.SignUp,
+	},
+	Route{
 		"Upload",
 		"POST",
 		"/app/0.1/upload",

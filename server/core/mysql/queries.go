@@ -8,10 +8,10 @@ import (
 
 const (
 	timeLayout    = "2006-01-02 15:04:05"
-	passwordQuery = "SELECT passwordHash FROM User WHERE username = ?"
 	insertData    = "INSERT INTO Data (device, timestamp) VALUES (?, ?);"
 	insertBattery = "INSERT INTO BatteryStatus VALUES (?, ?);"
-	getUser       = "SELECT uid, username, passwordHash, apiKey FROM User WHERE username = ?;"
+	insertUser    = "INSERT INTO User (email, passwordHash) VALUES (?, ?)"
+	getUser       = "SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey FROM User WHERE email = ?;"
 	getBattery    = "SELECT d.timestamp, b.batteryPercentage " +
 		"FROM Data d, BatteryStatus b " +
 		"WHERE d.device = ? AND d.id = b.id;"
@@ -34,5 +34,5 @@ type QueryStruct struct {
 var queries = map[reflect.Type]QueryStruct{
 	reflect.TypeOf([]models.Battery{}):      QueryStruct{models.Battery{}, getBattery, insertBattery},
 	reflect.TypeOf([]models.DeviceStored{}): QueryStruct{models.DeviceStored{}, getDevices, ""},
-	reflect.TypeOf([]models.User{}):         QueryStruct{models.User{}, getUser, ""},
+	reflect.TypeOf([]models.User{}):         QueryStruct{models.User{}, getUser, insertUser},
 }

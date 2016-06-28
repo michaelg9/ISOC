@@ -105,11 +105,11 @@ DROP TABLE IF EXISTS `User`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `User` (
   `uid` int(11) NOT NULL AUTO_INCREMENT,
-  `username` varchar(20) NOT NULL,
+  `email` varchar(40) NOT NULL,
   `passwordHash` char(64) NOT NULL,
   `apiKey` varchar(32) DEFAULT NULL,
   PRIMARY KEY (`uid`),
-  UNIQUE KEY `username` (`username`),
+  UNIQUE KEY `email` (`email`),
   UNIQUE KEY `apiKey` (`apiKey`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -120,7 +120,7 @@ CREATE TABLE `User` (
 
 LOCK TABLES `User` WRITE;
 /*!40000 ALTER TABLE `User` DISABLE KEYS */;
-INSERT INTO `User` VALUES (1,'user1','$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK','37e72ff927f511e688adb827ebf7e157');
+INSERT INTO `User` VALUES (1,'user@usermail.com','$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK','37e72ff927f511e688adb827ebf7e157');
 /*!40000 ALTER TABLE `User` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

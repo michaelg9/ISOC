@@ -26,6 +26,27 @@ func init() {
 	}
 }
 
+// Insert is used to insert a new user or a new device
+func Insert(value interface{}, args ...interface{}) error {
+	queryStruct, ok := queries[reflect.TypeOf(value)]
+	if !ok {
+		return errors.New("This type of input data is not stored in the database.")
+	}
+
+	stmt, err := db.Prepare(queryStruct.Insert)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // InsertData inserts a given array of data structs (for example battery data) into
 // the database
 func InsertData(deviceID int, data interface{}) error {

@@ -1,9 +1,9 @@
 // Listener for Login button
 $(document).ready(function(){
     $("#login-btn").on('click', function(){
-        var username = $("#username").val();
+        var email = $("#email").val();
         var password = $("#password").val();
-        var loginParams = {username: username, password: password};
+        var loginParams = {email: email, password: password};
         var loginURL = "../auth/0.1/login?";
         $.post({
             url: loginURL,
@@ -12,9 +12,8 @@ $(document).ready(function(){
             if (data == "Success") {
                 window.location = "../dashboard";
             }
-        }).fail(function() {
-            console.log("Wrong password!");
-            $("#alert-wrong-password").html('<div class="alert alert-danger">Wrong password or username.</div>');
+        }).fail(function(data, textStatus, jqXHR) {
+            $("#alert-wrong-password").html('<div class="alert alert-danger">Wrong password or email.</div>');
             return false;
         });
     });

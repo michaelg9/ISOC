@@ -1,5 +1,7 @@
 package controllers
 
+// TODO: Refactor into several files
+
 import (
 	"encoding/json"
 	"encoding/xml"
@@ -37,23 +39,23 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 // Login handles /auth/0.1/login
 func Login(w http.ResponseWriter, r *http.Request) {
-	// Get the parameter values for username and password from the URI
-	username := r.FormValue("username")
+	// Get the parameter values for email and password from the URI
+	email := r.FormValue("email")
 	password := r.FormValue("password")
 	// Check if parameters are non-empty
-	if username == "" || password == "" {
-		http.Error(w, "No username and/or password specified.", http.StatusInternalServerError)
+	if email == "" || password == "" {
+		http.Error(w, "No email and/or password specified.", http.StatusInternalServerError)
 		return
 	}
 
-	// Get the userdata from the specified username
+	// Get the userdata from the specified email
 	var user []models.User
-	err := mysql.Get(&user, username)
+	err := mysql.Get(&user, email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	} else if len(user) == 0 {
-		http.Error(w, "Wrong username/password combination.", http.StatusInternalServerError)
+		http.Error(w, "Wrong email/password combination.", http.StatusInternalServerError)
 		return
 	}
 
@@ -71,7 +73,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	session.Values["username"] = username
+	session.Values["email"] = email
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -107,6 +109,39 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Success")
 }
 
+// SignUp handles /signup
+func SignUp(w http.ResponseWriter, r *http.Request) {
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	if email == "" || password == "" {
+		http.Error(w, "You have to specify a password and an email.", http.StatusInternalServerError)
+		return
+	}
+
+	var user []models.User
+	err := mysql.Get(&user, email)
+	switch {
+	case len(user) == 0:
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		err = mysql.Insert(user, email, hashedPassword)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		fmt.Fprintf(w, "Success")
+	case err != nil:
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	default:
+		fmt.Fprintf(w, "User already exists")
+	}
+}
+
 // Dashboard handles /dashboard
 func Dashboard(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
@@ -120,15 +155,15 @@ func Dashboard(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the username is set
-	username, found := session.Values["username"]
-	// If username not set redirect to login page
-	if !found || username == "" {
+	// Check if the email is set
+	email, found := session.Values["email"]
+	// If email not set redirect to login page
+	if !found || email == "" {
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
-	// If username is set go to dashboard
+	// If email is set go to dashboard
 	if err = display(w, "views/dashboard.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
