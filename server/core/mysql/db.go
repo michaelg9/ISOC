@@ -78,6 +78,7 @@ func InsertData(deviceID int, data interface{}) error {
 			return err
 		}
 
+		// TODO: Commenting
 		timestamp := args[0]
 		result, err := executeInsert(insertData, deviceID, timestamp)
 		if err != nil {
@@ -116,15 +117,8 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 		return errors.New("The type of data you want to retrieve is not stored in the database.")
 	}
 
-	// Create a prepared statement
-	stmt, err := db.Prepare(queryStruct.Retrieve)
-	if err != nil {
-		return err
-	}
-	defer stmt.Close()
-
-	// Query the database with statement
-	rows, err := stmt.Query(args...)
+	// Query the database with the retrieve query for the given datatype
+	rows, err := executeQuery(queryStruct.Retrieve, args...)
 	if err != nil {
 		return err
 	}
@@ -154,17 +148,32 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 	return nil
 }
 
-func executeInsert(query string, args ...interface{}) (sql.Result, error) {
-	stmt, err := db.Prepare(query)
+func executeInsert(insertStmt string, args ...interface{}) (sql.Result, error) {
+	// Create prepared statement
+	stmt, err := db.Prepare(insertStmt)
 	if err != nil {
 		return nil, err
 	}
 	defer stmt.Close()
 
+	// Execute statement with arguments
 	result, err := stmt.Exec(args...)
 	if err != nil {
 		return nil, err
 	}
 
 	return result, nil
+}
+
+func executeQuery(query string, args ...interface{}) (rows *sql.Rows, err error) {
+	// Create prepared statement
+	stmt, err := db.Prepare(query)
+	if err != nil {
+		return rows, err
+	}
+	defer stmt.Close()
+
+	// Query the database with statement
+	rows, err = stmt.Query(args...)
+	return rows, err
 }
