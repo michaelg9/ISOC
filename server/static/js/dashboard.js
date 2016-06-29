@@ -1,16 +1,16 @@
-// TODO: Get User data dynamically
+/*// TODO: Get User data dynamically
 // Hardcoded API key for the user
 var apiKey = "37e72ff927f511e688adb827ebf7e157";
 
 // Request variables for API call to get userdata
 var requestURL = "../data/0.1/q?"
 var requestParams = {appid: apiKey}
-
+*/
+var requestURL = "../data/0.1/user"
 // AJAX call to server
 var batteryChart;
 var batteryData = $.get({
-    url: requestURL,
-    data: requestParams
+    url: requestURL
 }).done(function(data, textStatus, jqXHR) {
     var ctx = $("#batteryChart");
     var dataJSON = JSON.parse(data);

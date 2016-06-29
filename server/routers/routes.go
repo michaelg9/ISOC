@@ -66,4 +66,10 @@ var routes = Routes{
 		"/data/0.1/q",
 		controllers.Download,
 	},
+	Route{
+		"InternalDownload",
+		"GET",
+		"/data/0.1/user",
+		controllers.InternalDownload,
+	},
 }

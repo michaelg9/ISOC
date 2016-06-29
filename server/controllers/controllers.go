@@ -20,7 +20,7 @@ func init() {
 	// Initiate the a cookie store to save our sessions
 	sessionStore = sessions.NewCookieStore([]byte("something-very-secret"))
 	sessionStore.Options = &sessions.Options{
-		Path:     "/dashboard",
+		Path:     "/",
 		Secure:   false, // NOTE: Change to true if on actual server
 		HttpOnly: true,
 	}
@@ -161,42 +161,58 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Success")
 }
 
-// Download handles /data/0.1/q
-func Download(w http.ResponseWriter, r *http.Request) {
-	// Get the value of the parameter appid in the URI
-	key := r.FormValue("appid")
+// InternalDownload handles /data/0.1/user and is only accessible when a user is logged in
+func InternalDownload(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "-1")
 
-	// Query the database for the data which belongs to the API key
-	var devicesInfo []models.DeviceStored
-	err := mysql.Get(&devicesInfo, key)
+	// Get the current user session
+	session, err := sessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Convert DeviceOut to Device
-	devices := make([]models.Device, len(devicesInfo))
-	for i, d := range devicesInfo {
-		devices[i].DeviceInfo = d
+	// Check if the email is set
+	email, found := session.Values["email"]
+	if !found || email == "" {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// For each device get all its data and append it to the device
-	for i, d := range devices {
-		// Get pointers to the arrays which store the tracked data
-		// and fill them with the data from the DB
-		for _, data := range devices[i].Data.GetContents() {
-			err = mysql.Get(data, d.DeviceInfo.ID)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		}
+	devices, err := getUserDevices(email.(string))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// Create the struct for the output data
-	response := &models.DataOut{
-		Device: devices,
+	out, err := json.Marshal(devices)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
+	fmt.Fprint(w, string(out))
+}
+
+// Download handles /data/0.1/q
+func Download(w http.ResponseWriter, r *http.Request) {
+	// Get the value of the parameter appid in the URI
+	key := r.FormValue("appid")
+	if key == "" {
+		http.Error(w, "No API Key given.", http.StatusInternalServerError)
+	}
+
+	// TODO: Find way to get user from apikey
+	var user []models.User
+	err := mysql.Get(&user, "apiKey", key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response, err := getUserDevices(user[0].Email)
 
 	// Format the output into either JSON or XML according to the
 	// value specified from the parameter "out". The default value
@@ -213,5 +229,38 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintf(w, string(out))
+	fmt.Fprint(w, string(out))
+}
+
+func getUserDevices(email string) (models.DataOut, error) {
+	// Query the database for the data which belongs to the API key
+	var devicesInfo []models.DeviceStored
+	err := mysql.Get(&devicesInfo, email)
+	if err != nil {
+		return models.DataOut{}, err
+	}
+
+	// Convert DeviceOut to Device
+	devices := make([]models.Device, len(devicesInfo))
+	for i, d := range devicesInfo {
+		devices[i].DeviceInfo = d
+	}
+
+	// For each device get all its data and append it to the device
+	for i, d := range devices {
+		// Get pointers to the arrays which store the tracked data
+		// and fill them with the data from the DB
+		for _, data := range devices[i].Data.GetContents() {
+			err = mysql.Get(data, d.DeviceInfo.ID)
+			if err != nil {
+				return models.DataOut{}, err
+			}
+		}
+	}
+
+	result := models.DataOut{
+		Device: devices,
+	}
+
+	return result, nil
 }
