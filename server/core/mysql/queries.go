@@ -11,7 +11,7 @@ const (
 	insertData    = "INSERT INTO Data (device, timestamp) VALUES (?, ?);"
 	insertBattery = "INSERT INTO BatteryStatus VALUES (?, ?);"
 	insertUser    = "INSERT INTO User (email, passwordHash) VALUES (?, ?)"
-	getUser       = "SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey FROM User WHERE email = ?;"
+	getUser       = "SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey FROM User WHERE email = ? OR apiKey = ?;"
 	getBattery    = "SELECT d.timestamp, b.batteryPercentage " +
 		"FROM Data d, BatteryStatus b " +
 		"WHERE d.device = ? AND d.id = b.id;"

@@ -39,7 +39,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 	// Get the userdata from the specified email
 	var user []models.User
-	err := mysql.Get(&user, email)
+	err := mysql.Get(&user, email, "")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -101,7 +101,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 
 	// Check if the user is already in the database
 	var user []models.User
-	err := mysql.Get(&user, email)
+	err := mysql.Get(&user, email, "")
 	switch {
 	case len(user) == 0:
 		// Create new user with hashed password
@@ -204,9 +204,8 @@ func Download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "No API Key given.", http.StatusInternalServerError)
 	}
 
-	// TODO: Find way to get user from apikey
 	var user []models.User
-	err := mysql.Get(&user, "apiKey", key)
+	err := mysql.Get(&user, "", key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
