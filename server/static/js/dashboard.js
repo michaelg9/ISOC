@@ -1,20 +1,28 @@
-// TODO: Get User data dynamically
-// Hardcoded API key for the user
-var apiKey = "37e72ff927f511e688adb827ebf7e157";
+var requestURL = "../data/0.1/user";
 
-// Request variables for API call to get userdata
-var requestURL = "../data/0.1/q?"
-var requestParams = {appid: apiKey}
+// Angular app
+var app = angular.module("deviceApp", []);
+app.controller("deviceController", function($scope) {
+    $scope.deviceInfo = {};
+});
+
+function changeDeviceInfo(deviceInfo) {
+    var appElement = document.querySelector("[ng-app=deviceApp]");
+    var $scope = angular.element(appElement).scope();
+    $scope.$apply(function() {
+        $scope.deviceInfo = deviceInfo;
+    });
+}
 
 // AJAX call to server
 var batteryChart;
 var batteryData = $.get({
-    url: requestURL,
-    data: requestParams
+    url: requestURL
 }).done(function(data, textStatus, jqXHR) {
     var ctx = $("#batteryChart");
-    var dataJSON = JSON.parse(data);
-    var batteryData = dataJSON.devices[0].data.battery;
+    var userData = JSON.parse(data);
+    changeDeviceInfo(userData.devices[0].deviceInfo);
+    var batteryData = userData.devices[0].data.battery;
     batteryData.sort(function(a,b){
         var dateA = new Date(a.time);
         var dateB = new Date(b.time);
@@ -72,6 +80,8 @@ var batteryData = $.get({
         }
     })
 });
+
+
 
 // Listeners for datepickers
 // TODO: Find way to generalise to more datepickers

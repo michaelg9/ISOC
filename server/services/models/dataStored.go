@@ -3,7 +3,7 @@ package models
 // User is the struct of the stored user data
 type User struct {
 	ID           int
-	Username     string
+	Email        string
 	PasswordHash string
 	APIKey       string
 }
