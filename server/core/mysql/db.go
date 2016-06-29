@@ -1,5 +1,7 @@
 package mysql
 
+// TODO: Consistent variable naming
+
 import (
 	"database/sql"
 	"errors"
@@ -41,15 +43,19 @@ func Insert(value interface{}, args ...interface{}) error {
 
 // InsertData inserts a given array of data structs (for example battery data) into
 // the database
-func InsertData(deviceID int, data interface{}) error {
-	// Get the matching query struct for the given data struct
-	queryStruct, ok := queries[reflect.TypeOf(data)]
-	if !ok {
-		return errors.New("This type of input data is not stored in the database.")
+func InsertData(deviceID int, ptrToData interface{}) error {
+	// Get the value the ptrToData points to
+	dataValue, err := getValueOfPtr(ptrToData)
+	if err != nil {
+		return err
 	}
 
-	// Get a the value the given data
-	dataValue := reflect.ValueOf(data)
+	// Get the matching query struct for the given data struct
+	queryStruct, ok := queries[reflect.TypeOf(dataValue.Interface())]
+	if !ok {
+		return errors.New("The type data you want to insert is not stored in the database.")
+	}
+
 	if dataValue.Kind() != reflect.Slice {
 		return errors.New("Input data is not a slice.")
 	}
@@ -77,14 +83,15 @@ func InsertData(deviceID int, data interface{}) error {
 		if err != nil {
 			return err
 		}
-
-		// TODO: Commenting
 		timestamp := args[0]
+
+		// Insert data into the general Data table
 		result, err := executeInsert(insertData, deviceID, timestamp)
 		if err != nil {
 			return err
 		}
 
+		// Get the ID that was used to insert the last datapoint
 		id, err := result.LastInsertId()
 		if err != nil {
 			return err
@@ -94,6 +101,7 @@ func InsertData(deviceID int, data interface{}) error {
 		// anymore. Instead we replace it with the inserted ID of the
 		// "parent" table so we can link both entries later on.
 		args[0] = id
+		// Insert data into the table specific to the given data type
 		if _, err = executeInsert(queryStruct.Insert, args...); err != nil {
 			return err
 		}
@@ -104,13 +112,12 @@ func InsertData(deviceID int, data interface{}) error {
 
 // Get takes a value and stores the result of the required query in the value
 func Get(ptrToValue interface{}, args ...interface{}) error {
-	// Check if ptrToValue is really a pointer
-	if reflect.ValueOf(ptrToValue).Kind() != reflect.Ptr {
-		return errors.New("Argument is not a pointer.")
+	// Get the value the ptrToValue points to
+	value, err := getValueOfPtr(ptrToValue)
+	if err != nil {
+		return err
 	}
 
-	// Get the value the ptrToValue points to
-	value := reflect.Indirect(reflect.ValueOf(ptrToValue))
 	// Use the type of the value to retrieve its matching struct
 	queryStruct, ok := queries[reflect.TypeOf(value.Interface())]
 	if !ok {
@@ -124,7 +131,7 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 	}
 	defer rows.Close()
 
-	// Get the type if the result struct
+	// Get the type of the result struct
 	typeOfResult := reflect.TypeOf(queryStruct.StoredData)
 	for rows.Next() {
 		// Create a struct of the result struct type
@@ -148,6 +155,7 @@ func Get(ptrToValue interface{}, args ...interface{}) error {
 	return nil
 }
 
+// executeInsert executes an SQL insert statement
 func executeInsert(insertStmt string, args ...interface{}) (sql.Result, error) {
 	// Create prepared statement
 	stmt, err := db.Prepare(insertStmt)
@@ -165,6 +173,7 @@ func executeInsert(insertStmt string, args ...interface{}) (sql.Result, error) {
 	return result, nil
 }
 
+// executeQuery executes an SQL query
 func executeQuery(query string, args ...interface{}) (rows *sql.Rows, err error) {
 	// Create prepared statement
 	stmt, err := db.Prepare(query)
@@ -176,4 +185,17 @@ func executeQuery(query string, args ...interface{}) (rows *sql.Rows, err error)
 	// Query the database with statement
 	rows, err = stmt.Query(args...)
 	return rows, err
+}
+
+// getValueOfPtr gets the reflect value of a pointer
+func getValueOfPtr(ptrToValue interface{}) (reflect.Value, error) {
+	// Check if ptrToValue is really a pointer
+	if reflect.ValueOf(ptrToValue).Kind() != reflect.Ptr {
+		return reflect.Value{}, errors.New("Argument is not a pointer.")
+	}
+
+	// Get the value the ptrToValue points to
+	value := reflect.Indirect(reflect.ValueOf(ptrToValue))
+
+	return value, nil
 }

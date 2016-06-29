@@ -5,7 +5,6 @@ import (
 	"encoding/xml"
 	"fmt"
 	"net/http"
-	"reflect"
 
 	"github.com/michaelg9/ISOC/server/core/mysql"
 	"github.com/michaelg9/ISOC/server/services/models"
@@ -148,10 +147,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	// If decoding was successfull input the data into the database
 	for _, data := range d.DeviceData.GetContents() {
-		// TODO: Check if this is the right place or if you should change
-		//       the InsertData function
-		dataValue := reflect.Indirect(reflect.ValueOf(data)).Interface()
-		err := mysql.InsertData(deviceID, dataValue)
+		err := mysql.InsertData(deviceID, data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

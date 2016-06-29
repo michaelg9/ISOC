@@ -19,7 +19,6 @@ type DeviceData struct {
 }
 
 // GetContents returns a slice of pointers to all the data of the device in the struct
-// TODO: Check if better to return value and not pointers
 func (deviceData *DeviceData) GetContents() []interface{} {
 	v := reflect.Indirect(reflect.ValueOf(deviceData))
 	contents := make([]interface{}, v.NumField())
