@@ -132,6 +132,7 @@ public class MainActivity extends AppCompatActivity {
         String ip = tIP.getText().toString();
         String port = tPort.getText().toString();
         new Post().execute("http://"+ip+":"+port+"/",getResults());
+
     }
 
 
@@ -140,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... args) {
             String result=new String();
-            URL url=null;
+            URL url;
             HttpURLConnection client = null;
             String xml= args[1];
             try {
