@@ -81,6 +81,7 @@ var batteryData = $.get({
     })
 });
 
+// Listener for daterangepicker
 $(document).ready(function() {
     $('#daterangepicker').daterangepicker({
         startDate: moment().subtract(7, "days"),
@@ -95,29 +96,6 @@ $(document).ready(function() {
         batteryChart.update();
     });
 });
-
-// Listeners for datepickers
-/*
-$(document).ready(function(){
-    $('.input-group.date.startdate').datepicker({
-        format: "dd/mm/yyyy"
-    }).on('changeDate', function(e) {
-        $('.input-group.date.enddate').datepicker('setStartDate', e.date);
-        batteryChart.options.scales.xAxes[0].time.min = e.date;
-        batteryChart.update();
-    });
-});
-
-$(document).ready(function(){
-    $('.input-group.date.enddate').datepicker({
-        format: "dd/mm/yyyy",
-        endDate: "0d"
-    }).on('changeDate', function(e) {
-        $('.input-group.date.startdate').datepicker('setEndDate', e.date);
-        batteryChart.options.scales.xAxes[0].time.max = e.date;
-        batteryChart.update();
-    });
-});*/
 
 // Logout the user on logout link
 $(document).ready(function(){
