@@ -81,10 +81,23 @@ var batteryData = $.get({
     })
 });
 
-
+$(document).ready(function() {
+    $('#daterangepicker').daterangepicker({
+        startDate: moment().subtract(7, "days"),
+        endDate: moment(),
+        maxDate: moment(),
+        locale: {
+            format: "MMMM D, YYYY"
+        }
+    }, function(startDate, endDate, label) {
+        batteryChart.options.scales.xAxes[0].time.min = startDate;
+        batteryChart.options.scales.xAxes[0].time.max = endDate;
+        batteryChart.update();
+    });
+});
 
 // Listeners for datepickers
-// TODO: Find way to generalise to more datepickers
+/*
 $(document).ready(function(){
     $('.input-group.date.startdate').datepicker({
         format: "dd/mm/yyyy"
@@ -104,7 +117,7 @@ $(document).ready(function(){
         batteryChart.options.scales.xAxes[0].time.max = e.date;
         batteryChart.update();
     });
-});
+});*/
 
 // Logout the user on logout link
 $(document).ready(function(){
