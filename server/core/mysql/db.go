@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"os"
 	"reflect"
-	"time"
 
 	// mysql database driver
 	_ "github.com/go-sql-driver/mysql"
@@ -43,7 +42,7 @@ func Insert(value interface{}, args ...interface{}) error {
 
 // InsertData inserts a given array of data structs (for example battery data) into
 // the database
-func InsertData(deviceID int, ptrToData interface{}) error {
+func InsertData(ptrToData interface{}, args ...interface{}) error {
 	// Get the value the ptrToData points to
 	dataValue, err := getValueOfPtr(ptrToData)
 	if err != nil {
@@ -53,7 +52,7 @@ func InsertData(deviceID int, ptrToData interface{}) error {
 	// Get the matching query struct for the given data struct
 	queryStruct, ok := queries[reflect.TypeOf(dataValue.Interface())]
 	if !ok {
-		return errors.New("The type data you want to insert is not stored in the database.")
+		return errors.New("The type of data you want to insert is not stored in the database.")
 	}
 
 	if dataValue.Kind() != reflect.Slice {
@@ -69,25 +68,20 @@ func InsertData(deviceID int, ptrToData interface{}) error {
 		}
 
 		// Create slice for the arguments to the database query
-		args := make([]interface{}, v.NumField())
+		data := make([]interface{}, v.NumField())
 
 		// Transform the data struct into an array of interfaces so
 		// we can pass that array as an argument to our prepared statement
 		for j := 0; j < v.NumField(); j++ {
-			args[j] = v.Field(j).Interface()
+			data[j] = v.Field(j).Interface()
 		}
 
-		// Check if the first contains a timestamp that
-		// is in the format specified in the models package
-		_, err := time.Parse(timeLayout, args[0].(string))
-		if err != nil {
-			return err
-		}
-
-		args = append(args, deviceID)
+		// Remove all potential zero values from the data slice and append the arguments
+		// that were passed as arguments of the function
+		data = append(removeZeroValues(data), args...)
 
 		// Insert data into the table specific to the given data type
-		if _, err = executeInsert(queryStruct.Insert, args...); err != nil {
+		if _, err = executeInsert(queryStruct.Insert, data...); err != nil {
 			return err
 		}
 	}
@@ -183,4 +177,17 @@ func getValueOfPtr(ptrToValue interface{}) (reflect.Value, error) {
 	value := reflect.Indirect(reflect.ValueOf(ptrToValue))
 
 	return value, nil
+}
+
+// removeZeroValues removes all the values from the slice which are the default zero value of that type
+func removeZeroValues(slice []interface{}) []interface{} {
+	filteredSlice := slice[:0]
+	for _, elem := range slice {
+		zeroValue := reflect.Zero(reflect.TypeOf(elem)).Interface()
+		if elem != zeroValue {
+			filteredSlice = append(filteredSlice, elem)
+		}
+	}
+
+	return filteredSlice
 }

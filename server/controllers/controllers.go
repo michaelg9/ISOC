@@ -111,7 +111,8 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Insert the credentials of the new user into the database
-		err = mysql.Insert(user, email, hashedPassword)
+		user = append(user, models.User{Email: email, PasswordHash: string(hashedPassword)})
+		err = mysql.InsertData(&user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -147,7 +148,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	// If decoding was successfull input the data into the database
 	for _, data := range d.DeviceData.GetContents() {
-		err := mysql.InsertData(deviceID, data)
+		err := mysql.InsertData(data, deviceID)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
