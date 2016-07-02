@@ -83,24 +83,9 @@ func InsertData(deviceID int, ptrToData interface{}) error {
 		if err != nil {
 			return err
 		}
-		timestamp := args[0]
 
-		// Insert data into the general Data table
-		result, err := executeInsert(insertData, deviceID, timestamp)
-		if err != nil {
-			return err
-		}
+		args = append(args, deviceID)
 
-		// Get the ID that was used to insert the last datapoint
-		id, err := result.LastInsertId()
-		if err != nil {
-			return err
-		}
-
-		// args[0] was the timestamp before but now we don't need it
-		// anymore. Instead we replace it with the inserted ID of the
-		// "parent" table so we can link both entries later on.
-		args[0] = id
 		// Insert data into the table specific to the given data type
 		if _, err = executeInsert(queryStruct.Insert, args...); err != nil {
 			return err

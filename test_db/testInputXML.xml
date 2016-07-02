@@ -6,10 +6,12 @@
     </metadata>
 
     <device-data>
-        <battery time="2016-06-12 19:20:34" charging="false">51</battery>    
+        <battery time="2016-06-12 19:20:34">51</battery>    
         <battery time="2016-06-12 19:21:55">50</battery>
+        <!--
         <mobile-data time="2016-06-12 19:21:00" since="2016-06-12 00:00:00" unit="mb">200</mobile-data>
         <call time="18-05-16 20:00:00" type="Outgoing" duration="50" name="John">0123456789</call>
+        -->
     </device-data>
 </data>
 
