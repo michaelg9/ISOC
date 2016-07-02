@@ -27,22 +27,9 @@ func init() {
 	}
 }
 
-// Insert is used to insert a new user or a new device
-func Insert(value interface{}, args ...interface{}) error {
-	// Retrieve the query struct for the given value
-	queryStruct, ok := queries[reflect.TypeOf(value)]
-	if !ok {
-		return errors.New("This type of input data is not stored in the database.")
-	}
-
-	// Execute the insert statement that is stored for the given data type
-	_, err := executeInsert(queryStruct.Insert, args...)
-	return err
-}
-
-// InsertData inserts a given array of data structs (for example battery data) into
+// Insert inserts a given array of data structs (for example battery data) into
 // the database
-func InsertData(ptrToData interface{}, args ...interface{}) error {
+func Insert(ptrToData interface{}, args ...interface{}) error {
 	// Get the value the ptrToData points to
 	dataValue, err := getValueOfPtr(ptrToData)
 	if err != nil {
