@@ -12,7 +12,7 @@ services:
     environment:
      - DB_HOST=db
      - DB_USER=treigerm
-     - DB_PWD=123 
+     - DB_PWD=123
      - PORT=8080
   db:
     build: ./test_db
