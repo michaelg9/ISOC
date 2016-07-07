@@ -1,20 +1,66 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <data>
-    <metadata>
-        <device>1</device>
-    </metadata>
+    	<metadata>
+        	<imei>123</imei>
+		<datanettype>LTE</datanettype>
+		<datastate>disconnected</datastate>
+		<country>gb</country>
+		<network>O2 - UK</network>
+		<carrier>giffgaff</carrier>
+		<manufacturer>LGE</manufacturer>
+		<model>LG-D855</model>
+		<androidver>6.0</androidver>
+		<uptime>3546</uptime>
+    	</metadata>
 
-    <device-data>
-        <battery time="2016-06-12 19:20:34" charging="false">51</battery>    
-        <battery time="2016-06-12 19:21:55">50</battery>
-        <mobile-data time="2016-06-12 19:21:00" since="2016-06-12 00:00:00" unit="mb">200</mobile-data>
-        <call time="18-05-16 20:00:00" type="Outgoing" duration="50" name="John">0123456789</call>
-    </device-data>
+    	<device-data>
+        	<battery time="2016-06-12 19:20:34" charging="false">51</battery>
+        	<call time="18-05-16 20:00:00" type="Outgoing" duration="50" name="John">0123456789</call>
+		<runservice uid="123" uptime="234" rx="23" tx="23">com.isoc.monitor</runservice>
+		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3" uid="2323">Monitor</installedapp>
+                <data active="true" time="2016-06-12 19:21:55" since="2016-06-02 19:21:55" rx="2" tx="3">wifi</activeintf>
+
+                                
+	</device-data>
 </data>
 
 <!-- 
 Changes:
+06/07:
+Metadata:
+	IMEI: unique, could be used as they device id: 15 or 17 digits(google says)
+	datanettype: the mobile data network available: "unknown" "gprs","edge","umts","cdma","evdo0","evdoA","1xrtt","hsdpa","hsupa","hspa","iden","evdoB","lte","ehrpd","hspap"
+	datastate: mobile data state: disconnected/connecting/connected/suspended
+	network: the network operator's name that the phone is connected to 
+        carrier:  the sim operator's name. Can be different from <network> when the carrier is actually using another operator's network (e.g. giffgaff) or when roaming I guess
+	uptime: seconds since device booted 
+
+runservice:
+	uid: user-id: id given by os to each installed application. However, a few apps may share the same the same uid though, only if they are signed with the same key though (e.g. LG apps).
+	uptime: seconds since the service started running
+	rx: received bytes (from any intf) by this uid since device boot. -1 if this feature is unsupported
+	tx: transmitted bytes (from any intf) by this uid since device boot. -1 if this feature is unsupported
+	the name of the package that the service belongs to is unique
+
+
+data: Network data statistics
+    
+	active: true if the respective interface is currently active
+        time: time when the statistic was collected
+        since: last time that we can capture info about this device. **For now it's until last reboot. I plan to make them survive reboot soon 
+        rx: bytes received with this intf since the <since> date
+	tx: bytes transmitted with this intf since the <since> date
+	the text is either wifi or mobile.
+
+installedapp: Installed applications.
+	name: the official name of the package, unique.
+        installed: date of first install  **some apps report a really old date, I'll find out why soon....
+        uid as before.
+        the text is the label of the package, not unique but more user-friendly (the name shown under the app's icon). if it doesn't have one it will be the same as the name
+
+
+
 29/06:
 Added charging attribute to battery tag: true/false
 Added name attribute to call tag. Retrieved from the contacts list or "Unknown" if it's an unsaved number

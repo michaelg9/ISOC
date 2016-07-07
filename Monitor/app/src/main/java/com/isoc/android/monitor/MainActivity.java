@@ -128,10 +128,8 @@ public class MainActivity extends AppCompatActivity {
     public void sendXML(View view){
         if (!checkNet()) return;
         EditText tIP = (EditText) findViewById(R.id.textIP);
-        EditText tPort = (EditText) findViewById(R.id.textPort);
         String ip = tIP.getText().toString();
-        String port = tPort.getText().toString();
-        new Post().execute("http://"+ip+":"+port+"/",getResults());
+        new Post().execute(ip,getResults());
 
     }
 
