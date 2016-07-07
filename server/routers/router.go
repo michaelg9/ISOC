@@ -4,6 +4,9 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/urfave/negroni"
+
+	"github.com/michaelg9/ISOC/server/core/authentication"
 )
 
 // NewRouter creates router for server
@@ -14,7 +17,15 @@ func NewRouter() *mux.Router {
 		var handler http.Handler
 
 		// Get the stored handler function for the route
-		handler = route.HandlerFunc
+		switch route.Authentication {
+		case "Basic":
+			handler = negroni.New(
+				negroni.HandlerFunc(authentication.RequireBasicAuth),
+				negroni.Wrap(route.HandlerFunc),
+			)
+		default:
+			handler = route.HandlerFunc
+		}
 
 		router.
 			Methods(route.Method). // Define HTTP Method

@@ -37,6 +37,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the userdata from the specified email
+	// TODO: Make getUser func etc. in the service directory
 	var user []models.User
 	err := mysql.Get(&user, email, "")
 	if err != nil {
