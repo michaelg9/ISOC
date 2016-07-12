@@ -1,6 +1,7 @@
 package models_test
 
 import (
+	"database/sql"
 	"reflect"
 	"testing"
 
@@ -26,8 +27,18 @@ CREATE TABLE Device (
   osVersion varchar(50) DEFAULT NULL,
   user int(11) NOT NULL,
   PRIMARY KEY (id),
-  KEY user (user),
-  CONSTRAINT Device_ibfk_1 FOREIGN KEY (user) REFERENCES User (uid)
+  FOREIGN KEY (user) REFERENCES User (uid) ON DELETE CASCADE
+);`
+
+var schemaBattery = `
+CREATE TABLE BatteryStatus (
+  id int(11) NOT NULL AUTO_INCREMENT,
+  batteryPercentage int(11) NOT NULL,
+  timestamp timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  device int(11) NOT NULL,
+  PRIMARY KEY (id),
+  KEY device (device),
+  CONSTRAINT BatteryStatus_ibfk_2 FOREIGN KEY (device) REFERENCES Device (id) ON DELETE CASCADE
 );`
 
 var insertionUser = `
@@ -38,6 +49,10 @@ var insertionDevice = `
 INSERT INTO Device VALUES (1,'Motorola','Moto X (2nd Generation)','Android 5.0',1);
 `
 
+var insertionBattery = `
+INSERT INTO BatteryStatus VALUES (1,70,'2016-05-31 11:48:48',1);
+`
+
 var destroyUser = `
 DROP TABLE User;
 `
@@ -46,29 +61,58 @@ var destroyDevice = `
 DROP TABLE Device;
 `
 
-func setupDeviceDB() (*models.DB, error) {
+var destroyBattery = `
+DROP TABLE BatteryStatus;
+`
+
+func setup() (*models.DB, error) {
 	db, err := models.NewDB("treigerm:Hip$terSWAG@/test_db")
 	if err != nil {
 		return &models.DB{}, err
 	}
 	db.MustExec(schemaUser)
 	db.MustExec(schemaDevice)
+	db.MustExec(schemaBattery)
 	db.MustExec(insertionUser)
 	db.MustExec(insertionDevice)
+	db.MustExec(insertionBattery)
 	return db, nil
 }
 
-func cleanUpDeviceDB(db *models.DB) {
+func cleanUp(db *models.DB) {
+	db.MustExec(destroyBattery)
 	db.MustExec(destroyDevice)
 	db.MustExec(destroyUser)
 }
 
-func TestGetDevicesFromUser(t *testing.T) {
-	db, err := setupDeviceDB()
+func TestGetUser(t *testing.T) {
+	db, err := setup()
 	if err != nil {
 		t.Errorf("\n...error on db setup = %v", err.Error())
 	}
-	defer cleanUpDeviceDB(db)
+	defer cleanUp(db)
+
+	user := models.User{Email: "user@usermail.com"}
+	expected := models.User{
+		ID:           1,
+		Email:        "user@usermail.com",
+		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
+		APIKey:       "37e72ff927f511e688adb827ebf7e157",
+	}
+	result, err := db.GetUser(user)
+	if err != nil {
+		t.Errorf("\n...error = %v", err.Error())
+	} else if expected != result {
+		t.Errorf("\n...exptected = %v\n...obtained = %v", expected, result)
+	}
+}
+
+func TestGetDevicesFromUser(t *testing.T) {
+	db, err := setup()
+	if err != nil {
+		t.Errorf("\n...error on db setup = %v", err.Error())
+	}
+	defer cleanUp(db)
 
 	user := models.User{Email: "user@usermail.com"}
 	device := models.DeviceStored{
@@ -87,12 +131,20 @@ func TestGetDevicesFromUser(t *testing.T) {
 	}
 }
 
+func TestGetBattery(t *testing.T) {
+	// TODO: Implement
+}
+
+func TestCreateUser(t *testing.T) {
+	// TODO: Implement
+}
+
 func TestCreateDeviceForUser(t *testing.T) {
-	db, err := setupDeviceDB()
+	db, err := setup()
 	if err != nil {
 		t.Errorf("\n...error on db setup = %v", err.Error())
 	}
-	defer cleanUpDeviceDB(db)
+	defer cleanUp(db)
 
 	user := models.User{
 		ID:           1,
@@ -124,12 +176,40 @@ func TestCreateDeviceForUser(t *testing.T) {
 	}
 }
 
-func TestDeleteDevice(t *testing.T) {
-	db, err := setupDeviceDB()
+func TestCreateBattery(t *testing.T) {
+	// TODO: Implement
+}
+
+func TestDeleteUser(t *testing.T) {
+	db, err := setup()
 	if err != nil {
 		t.Errorf("\n...error on db setup = %v", err.Error())
 	}
-	defer cleanUpDeviceDB(db)
+	defer cleanUp(db)
+
+	user := models.User{
+		ID:           1,
+		Email:        "user@usermail.com",
+		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
+		APIKey:       "37e72ff927f511e688adb827ebf7e157"}
+	err = db.DeleteUser(user)
+	if err != nil {
+		t.Errorf("\n...error = %v", err.Error())
+	}
+
+	expectedErr := sql.ErrNoRows
+	_, err = db.GetUser(user)
+	if err != expectedErr {
+		t.Errorf("\n...error = %v", err.Error())
+	}
+}
+
+func TestDeleteDevice(t *testing.T) {
+	db, err := setup()
+	if err != nil {
+		t.Errorf("\n...error on db setup = %v", err.Error())
+	}
+	defer cleanUp(db)
 
 	device := models.DeviceStored{
 		ID:           1,

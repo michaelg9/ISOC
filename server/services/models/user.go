@@ -36,7 +36,8 @@ func (db *DB) UpdateUser(email, field string, value interface{}) error {
 	return errors.New("Not implemented")
 }
 
-// DeleteUser deletes the user with the information in the user struct
+// DeleteUser deletes the user with the information in the user struct.
+// Right now also deletes all the devices and its data from the user.
 func (db *DB) DeleteUser(user User) error {
 	deleteUserQuery := `DELETE FROM User WHERE email = :email OR apiKey = :apiKey;`
 	_, err := db.NamedExec(deleteUserQuery, user)

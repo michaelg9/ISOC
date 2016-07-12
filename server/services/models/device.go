@@ -44,7 +44,8 @@ func (db *DB) UpdateDevice(id int, field string, value interface{}) error {
 	return errors.New("Not implemented")
 }
 
-// DeleteDevice deletes the device with that specified in the struct
+// DeleteDevice deletes the device with that specified in the struct.
+// Also deletes all the collected data from device.
 // IDEA: pass optional value to see if data should be deleted as well
 func (db *DB) DeleteDevice(device DeviceStored) error {
 	deleteDeviceQuery := `DELETE FROM Device WHERE id = :id`
