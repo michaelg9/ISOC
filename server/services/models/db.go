@@ -8,7 +8,7 @@ import (
 
 // Datastore is the interface for the database actions
 type Datastore interface {
-	GetUser(email string) (User, error)
+	GetUser(user User) (fullUser User, err error)
 	CreateUser(user User) error
 	UpdateUser(email, field string, value interface{}) error
 	DeleteUser(user User) error
@@ -16,8 +16,8 @@ type Datastore interface {
 	CreateDeviceForUser(user User, device DeviceStored) error
 	UpdateDevice(id int, field string, value interface{}) error
 	DeleteDevice(device DeviceStored) error
-	GetData(device DeviceStored, data interface{}) error
-	CreateData(data DeviceData) error
+	GetBattery(device DeviceStored, batteries *[]Battery) error
+	CreateBattery(data DeviceStored, batteries *[]Battery) error
 }
 
 // DB is the database struct

@@ -6,12 +6,13 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/urfave/negroni"
 
+	"github.com/michaelg9/ISOC/server/controllers"
 	"github.com/michaelg9/ISOC/server/core/authentication"
 )
 
 // NewRouter creates router for server
 // TODO: Parameter Env
-func NewRouter() *mux.Router {
+func NewRouter(env controllers.Env) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	for _, route := range routes {
@@ -22,10 +23,10 @@ func NewRouter() *mux.Router {
 		case "Basic":
 			handler = negroni.New(
 				negroni.HandlerFunc(authentication.RequireBasicAuth),
-				negroni.Wrap(route.HandlerFunc),
+				negroni.Wrap(route.HandlerFunc(env)),
 			)
 		default:
-			handler = route.HandlerFunc
+			handler = route.HandlerFunc(env)
 		}
 
 		router.
