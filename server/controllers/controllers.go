@@ -163,17 +163,17 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 	// Check if the email is set
 	email, found := session.Values["email"]
 	if !found || email == "" {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 
-	devices, err := getUserDevices(env, email.(string))
+	devices, err := env.DB.GetDevicesFromUser(models.User{Email: email.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	out, err := json.Marshal(devices)
+	out, err := json.Marshal(models.DataOut{Device: devices})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -190,13 +190,10 @@ func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "No API Key given.", http.StatusInternalServerError)
 	}
 
-	user, err := env.DB.GetUser(models.User{APIKey: key})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+	devices, err := env.DB.GetDevicesFromUser(models.User{APIKey: key})
+	response := models.DataOut{
+		Device: devices,
 	}
-
-	response, err := getUserDevices(env, user.Email)
 
 	// Format the output into either JSON or XML according to the
 	// value specified from the parameter "out". The default value
@@ -214,38 +211,4 @@ func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(out))
-}
-
-// TODO: Move this into device.go
-func getUserDevices(env *Env, email string) (models.DataOut, error) {
-	// Query the database for the data which belongs to the API key
-	devicesInfo, err := env.DB.GetDevicesFromUser(models.User{Email: email})
-	if err != nil {
-		return models.DataOut{}, err
-	}
-
-	// Convert DeviceOut to Device
-	devices := make([]models.Device, len(devicesInfo))
-	for i, d := range devicesInfo {
-		devices[i].DeviceInfo = d
-	}
-
-	// For each device get all its data and append it to the device
-	for i, d := range devices {
-		// Get pointers to the arrays which store the tracked data
-		// and fill them with the data from the DB
-		/*for _, data := range devices[i].Data.GetContents() {
-			err = mysql.Get(data, d.DeviceInfo.ID)
-			if err != nil {
-				return models.DataOut{}, err
-			}
-		}*/
-		env.DB.GetBattery(d.DeviceInfo, &devices[i].Data.Battery)
-	}
-
-	result := models.DataOut{
-		Device: devices,
-	}
-
-	return result, nil
 }

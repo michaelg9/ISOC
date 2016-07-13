@@ -81,7 +81,7 @@ var users = []models.User{
 	},
 }
 
-var devices = []models.DeviceStored{
+var deviceInfos = []models.DeviceStored{
 	models.DeviceStored{
 		ID:           1,
 		Manufacturer: "Motorola",
@@ -93,6 +93,15 @@ var devices = []models.DeviceStored{
 		Manufacturer: "One Plus",
 		Model:        "Three",
 		OS:           "Android 6.0",
+	},
+}
+
+var devices = []models.Device{
+	models.Device{
+		DeviceInfo: deviceInfos[0],
+		Data: models.DeviceData{
+			Battery: batteryData[:1],
+		},
 	},
 }
 
@@ -139,7 +148,7 @@ func checkErr(t *testing.T, err error) {
 	}
 }
 
-func checkNotEqual(t *testing.T, expected, obtained interface{}) {
+func checkEqual(t *testing.T, expected, obtained interface{}) {
 	if !reflect.DeepEqual(expected, obtained) {
 		t.Errorf("\n...expected = %v\n...obtained = %v", expected, obtained)
 	}
@@ -154,7 +163,7 @@ func TestGetUser(t *testing.T) {
 	expected := users[0]
 	result, err := db.GetUser(user)
 	checkErr(t, err)
-	checkNotEqual(t, expected, result)
+	checkEqual(t, expected, result)
 }
 
 func TestGetDevicesFromUser(t *testing.T) {
@@ -163,12 +172,25 @@ func TestGetDevicesFromUser(t *testing.T) {
 	defer cleanUp(db)
 
 	user := models.User{Email: "user@usermail.com"}
-	device := devices[0]
-	expected := []models.DeviceStored{device}
+	expected := devices
 
 	result, err := db.GetDevicesFromUser(user)
 	checkErr(t, err)
-	checkNotEqual(t, expected, result)
+	checkEqual(t, expected, result)
+}
+
+func TestGetDeviceInfos(t *testing.T) {
+	db, err := setup()
+	checkDBErr(t, err)
+	defer cleanUp(db)
+
+	user := models.User{Email: "user@usermail.com"}
+	device := deviceInfos[0]
+	expected := []models.DeviceStored{device}
+
+	result, err := db.GetDeviceInfos(user)
+	checkErr(t, err)
+	checkEqual(t, expected, result)
 }
 
 func TestGetBattery(t *testing.T) {
@@ -176,12 +198,12 @@ func TestGetBattery(t *testing.T) {
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
-	device := devices[0]
+	device := deviceInfos[0]
 	var batteries []models.Battery
 	expected := batteryData[:1]
 	err = db.GetBattery(device, &batteries)
 	checkErr(t, err)
-	checkNotEqual(t, expected, batteries)
+	checkEqual(t, expected, batteries)
 }
 
 func TestCreateUser(t *testing.T) {
@@ -197,7 +219,7 @@ func TestCreateUser(t *testing.T) {
 
 	result, err := db.GetUser(newUser)
 	checkErr(t, err)
-	checkNotEqual(t, newUser, result)
+	checkEqual(t, newUser, result)
 }
 
 func TestCreateDeviceForUser(t *testing.T) {
@@ -206,16 +228,16 @@ func TestCreateDeviceForUser(t *testing.T) {
 	defer cleanUp(db)
 
 	user := users[0]
-	newDevice := devices[1]
+	newDevice := deviceInfos[1]
 
 	err = db.CreateDeviceForUser(user, newDevice)
 	checkErr(t, err)
 
-	oldDevice := devices[0]
+	oldDevice := deviceInfos[0]
 	expected := []models.DeviceStored{oldDevice, newDevice}
-	result, err := db.GetDevicesFromUser(user)
+	result, err := db.GetDeviceInfos(user)
 	checkErr(t, err)
-	checkNotEqual(t, expected, result)
+	checkEqual(t, expected, result)
 }
 
 func TestCreateBattery(t *testing.T) {
@@ -223,7 +245,7 @@ func TestCreateBattery(t *testing.T) {
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
-	device := devices[0]
+	device := deviceInfos[0]
 	batteriesToInsert := batteryData[1:]
 	err = db.CreateBattery(device, &batteriesToInsert)
 	checkErr(t, err)
@@ -232,7 +254,7 @@ func TestCreateBattery(t *testing.T) {
 	err = db.GetBattery(device, &batteries)
 	expected := batteryData
 	checkErr(t, err)
-	checkNotEqual(t, expected, batteries)
+	checkEqual(t, expected, batteries)
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -246,7 +268,7 @@ func TestDeleteUser(t *testing.T) {
 
 	expectedErr := sql.ErrNoRows
 	_, err = db.GetUser(user)
-	checkNotEqual(t, expectedErr, err)
+	checkEqual(t, expectedErr, err)
 }
 
 func TestDeleteDevice(t *testing.T) {
@@ -254,11 +276,11 @@ func TestDeleteDevice(t *testing.T) {
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
-	device := devices[0]
+	device := deviceInfos[0]
 	err = db.DeleteDevice(device)
 	checkErr(t, err)
 
-	result, err := db.GetDevicesFromUser(models.User{Email: "user@usermail.com"})
+	result, err := db.GetDeviceInfos(models.User{Email: "user@usermail.com"})
 	if err == nil && len(result) != 0 {
 		t.Errorf("\n...expected error but got = %v", result)
 	} else if err != nil {

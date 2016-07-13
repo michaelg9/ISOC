@@ -17,11 +17,41 @@ type DeviceStored struct {
 	OS           string `json:"os" db:"osVersion"`
 }
 
-// GetDevicesFromUser gets all the registered devices from the given user
-func (db *DB) GetDevicesFromUser(user User) (devices []DeviceStored, err error) {
+// GetDevicesFromUser gets all the devices and the tracked data from the given user.
+func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
+	// Query the database for the data which belongs to the API key
+	devicesInfo, err := db.GetDeviceInfos(user)
+	if err != nil {
+		return
+	}
+
+	// Convert DeviceOut to Device
+	devices = make([]Device, len(devicesInfo))
+	for i, d := range devicesInfo {
+		devices[i].DeviceInfo = d
+	}
+
+	// For each device get all its data and append it to the device
+	for i, d := range devices {
+		// Get pointers to the arrays which store the tracked data
+		// and fill them with the data from the DB
+		/*for _, data := range devices[i].Data.GetContents() {
+			err = mysql.Get(data, d.DeviceInfo.ID)
+			if err != nil {
+				return models.DataOut{}, err
+			}
+		}*/
+		db.GetBattery(d.DeviceInfo, &devices[i].Data.Battery)
+	}
+
+	return
+}
+
+// GetDeviceInfos gets all the registered devices without the stored data from the given user.
+func (db *DB) GetDeviceInfos(user User) (devices []DeviceStored, err error) {
 	getDevicesQuery := `SELECT dev.id, dev.manufacturer, dev.modelName, dev.osVersion
                 	   FROM Device dev, User u
-                	   WHERE u.email = :email AND u.uid = dev.user;`
+                	   WHERE (u.email = :email OR u.apiKey = :apiKey)AND u.uid = dev.user;`
 	stmt, err := db.PrepareNamed(getDevicesQuery)
 	if err != nil {
 		return

@@ -11,7 +11,6 @@ import (
 )
 
 // NewRouter creates router for server
-// TODO: Parameter Env
 func NewRouter(env controllers.Env) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 

@@ -7,8 +7,6 @@ type Battery struct {
 	Value int    `xml:",chardata" json:"value" db:"batteryPercentage"`
 }
 
-// FIXME: Both don't seem to work; write test.
-
 // GetBattery gets all the battery data from the given device and scans it into the given slice
 func (db *DB) GetBattery(device DeviceStored, batteries *[]Battery) error {
 	getBatteryQuery := `SELECT timestamp, batteryPercentage FROM BatteryStatus WHERE device = :id;`

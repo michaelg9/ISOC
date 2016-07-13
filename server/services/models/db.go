@@ -12,7 +12,8 @@ type Datastore interface {
 	CreateUser(user User) error
 	UpdateUser(email, field string, value interface{}) error
 	DeleteUser(user User) error
-	GetDevicesFromUser(user User) ([]DeviceStored, error)
+	GetDevicesFromUser(user User) ([]Device, error)
+	GetDeviceInfos(user User) ([]DeviceStored, error)
 	CreateDeviceForUser(user User, device DeviceStored) error
 	UpdateDevice(id int, field string, value interface{}) error
 	DeleteDevice(device DeviceStored) error
