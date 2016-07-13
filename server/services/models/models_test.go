@@ -114,34 +114,45 @@ func setup() (*models.DB, error) {
 	return db, nil
 }
 
+func checkDBErr(t *testing.T, err error) {
+	if err != nil {
+		t.Errorf("\n...error on db setup = %v", err.Error())
+	}
+}
+
 func cleanUp(db *models.DB) {
 	db.MustExec(destroyBattery)
 	db.MustExec(destroyDevice)
 	db.MustExec(destroyUser)
 }
 
+func checkErr(t *testing.T, err error) {
+	if err != nil {
+		t.Errorf("\n...error = %v", err.Error())
+	}
+}
+
+func checkNotEqual(t *testing.T, expected, obtained interface{}) {
+	if !reflect.DeepEqual(expected, obtained) {
+		t.Errorf("\n...expected = %v\n...obtained = %v", expected, obtained)
+	}
+}
+
 func TestGetUser(t *testing.T) {
 	db, err := setup()
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	checkDBErr(t, err)
 	defer cleanUp(db)
 
 	user := models.User{Email: "user@usermail.com"}
 	expected := users[0]
 	result, err := db.GetUser(user)
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	} else if expected != result {
-		t.Errorf("\n...exptected = %v\n...obtained = %v", expected, result)
-	}
+	checkErr(t, err)
+	checkNotEqual(t, expected, result)
 }
 
 func TestGetDevicesFromUser(t *testing.T) {
 	db, err := setup()
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	checkDBErr(t, err)
 	defer cleanUp(db)
 
 	user := models.User{Email: "user@usermail.com"}
@@ -149,29 +160,21 @@ func TestGetDevicesFromUser(t *testing.T) {
 	expected := []models.DeviceStored{device}
 
 	result, err := db.GetDevicesFromUser(user)
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	} else if !reflect.DeepEqual(result, expected) {
-		t.Errorf("\n...expected = %v\n...obtained = %v", expected, result)
-	}
+	checkErr(t, err)
+	checkNotEqual(t, expected, result)
 }
 
 func TestGetBattery(t *testing.T) {
 	db, err := setup()
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	checkDBErr(t, err)
 	defer cleanUp(db)
 
 	device := devices[0]
 	var batteries []models.Battery
 	expected := batteryData[:1]
 	err = db.GetBattery(device, &batteries)
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	} else if !reflect.DeepEqual(batteries, expected) {
-		t.Errorf("\n...expected = %v\n...obtained = %v", expected, batteries)
-	}
+	checkErr(t, err)
+	checkNotEqual(t, expected, batteries)
 }
 
 func TestCreateUser(t *testing.T) {
@@ -180,83 +183,61 @@ func TestCreateUser(t *testing.T) {
 
 func TestCreateDeviceForUser(t *testing.T) {
 	db, err := setup()
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	checkDBErr(t, err)
 	defer cleanUp(db)
 
 	user := users[0]
 	newDevice := devices[1]
 
 	err = db.CreateDeviceForUser(user, newDevice)
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	}
+	checkErr(t, err)
 
 	oldDevice := devices[0]
 	expected := []models.DeviceStored{oldDevice, newDevice}
-	result, _ := db.GetDevicesFromUser(user)
-	if !reflect.DeepEqual(result, expected) {
-		t.Errorf("\n...expected = %v\n...obtained = %v", expected, result)
-	}
+	result, err := db.GetDevicesFromUser(user)
+	checkErr(t, err)
+	checkNotEqual(t, expected, result)
 }
 
 func TestCreateBattery(t *testing.T) {
 	db, err := setup()
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	checkDBErr(t, err)
 	defer cleanUp(db)
 
 	device := devices[0]
 	batteriesToInsert := batteryData[1:]
 	err = db.CreateBattery(device, &batteriesToInsert)
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	}
+	checkErr(t, err)
 
 	var batteries []models.Battery
 	err = db.GetBattery(device, &batteries)
 	expected := batteryData
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	} else if !reflect.DeepEqual(batteries, expected) {
-		t.Errorf("\n...expected = %v\n...obtained = %v", expected, batteries)
-	}
+	checkErr(t, err)
+	checkNotEqual(t, expected, batteries)
 }
 
 func TestDeleteUser(t *testing.T) {
 	db, err := setup()
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	checkDBErr(t, err)
 	defer cleanUp(db)
 
 	user := users[0]
 	err = db.DeleteUser(user)
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	}
+	checkErr(t, err)
 
 	expectedErr := sql.ErrNoRows
 	_, err = db.GetUser(user)
-	if err != expectedErr {
-		t.Errorf("\n...error = %v", err.Error())
-	}
+	checkNotEqual(t, expectedErr, err)
 }
 
 func TestDeleteDevice(t *testing.T) {
 	db, err := setup()
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	checkDBErr(t, err)
 	defer cleanUp(db)
 
 	device := devices[0]
 	err = db.DeleteDevice(device)
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	}
+	checkErr(t, err)
 
 	result, err := db.GetDevicesFromUser(models.User{Email: "user@usermail.com"})
 	if err == nil && len(result) != 0 {
