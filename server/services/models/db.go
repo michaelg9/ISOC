@@ -10,15 +10,15 @@ import (
 type Datastore interface {
 	GetUser(user User) (fullUser User, err error)
 	CreateUser(user User) error
-	UpdateUser(email, field string, value interface{}) error
+	UpdateUser(user User, field string) error
 	DeleteUser(user User) error
 	GetDevicesFromUser(user User) ([]Device, error)
 	GetDeviceInfos(user User) ([]DeviceStored, error)
 	CreateDeviceForUser(user User, device DeviceStored) error
-	UpdateDevice(id int, field string, value interface{}) error
+	UpdateDevice(device DeviceStored, field string) error
 	DeleteDevice(device DeviceStored) error
-	GetBattery(device DeviceStored, batteries *[]Battery) error
-	CreateBattery(data DeviceStored, batteries *[]Battery) error
+	GetData(device DeviceStored, ptrToData interface{}) error
+	CreateData(device DeviceStored, ptrToData interface{}) error
 }
 
 // DB is the database struct

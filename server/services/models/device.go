@@ -33,13 +33,12 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 	for i, d := range devices {
 		// Get pointers to the arrays which store the tracked data
 		// and fill them with the data from the DB
-		/*for _, data := range devices[i].Data.GetContents() {
-			err = mysql.Get(data, d.DeviceInfo.ID)
+		for _, data := range devices[i].Data.GetContents() {
+			err = db.GetData(d.DeviceInfo, data)
 			if err != nil {
-				return models.DataOut{}, err
+				return
 			}
-		}*/
-		db.GetBattery(d.DeviceInfo, &devices[i].Data.Battery)
+		}
 	}
 
 	return

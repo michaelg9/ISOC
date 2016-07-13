@@ -193,19 +193,6 @@ func TestGetDeviceInfos(t *testing.T) {
 	checkEqual(t, expected, result)
 }
 
-func TestGetBattery(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
-	defer cleanUp(db)
-
-	device := deviceInfos[0]
-	var batteries []models.Battery
-	expected := batteryData[:1]
-	err = db.GetBattery(device, &batteries)
-	checkErr(t, err)
-	checkEqual(t, expected, batteries)
-}
-
 func TestGetData(t *testing.T) {
 	db, err := setup()
 	checkDBErr(t, err)
@@ -253,23 +240,6 @@ func TestCreateDeviceForUser(t *testing.T) {
 	checkEqual(t, expected, result)
 }
 
-func TestCreateBattery(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
-	defer cleanUp(db)
-
-	device := deviceInfos[0]
-	batteriesToInsert := batteryData[1:]
-	err = db.CreateBattery(device, &batteriesToInsert)
-	checkErr(t, err)
-
-	var batteries []models.Battery
-	err = db.GetBattery(device, &batteries)
-	expected := batteryData
-	checkErr(t, err)
-	checkEqual(t, expected, batteries)
-}
-
 func TestCreateData(t *testing.T) {
 	db, err := setup()
 	checkDBErr(t, err)
@@ -281,7 +251,7 @@ func TestCreateData(t *testing.T) {
 	checkErr(t, err)
 
 	var batteries []models.Battery
-	err = db.GetBattery(device, &batteries)
+	err = db.GetData(device, &batteries)
 	expected := batteryData
 	checkErr(t, err)
 	checkEqual(t, expected, batteries)

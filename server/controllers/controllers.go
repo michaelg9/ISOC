@@ -135,14 +135,13 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If decoding was successfull input the data into the database
-	/*for _, data := range d.DeviceData.GetContents() {
-		err := mysql.Insert(data, deviceID)
+	for _, data := range d.DeviceData.GetContents() {
+		err := env.DB.CreateData(models.DeviceStored{ID: deviceID}, data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-	}*/
-	env.DB.CreateBattery(models.DeviceStored{ID: deviceID}, &d.DeviceData.Battery)
+	}
 
 	fmt.Fprintln(w, "Success")
 }
