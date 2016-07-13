@@ -65,6 +65,41 @@ var destroyBattery = `
 DROP TABLE BatteryStatus;
 `
 
+var users = []models.User{
+	models.User{
+		ID:           1,
+		Email:        "user@usermail.com",
+		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
+		APIKey:       "37e72ff927f511e688adb827ebf7e157",
+	},
+}
+
+var devices = []models.DeviceStored{
+	models.DeviceStored{
+		ID:           1,
+		Manufacturer: "Motorola",
+		Model:        "Moto X (2nd Generation)",
+		OS:           "Android 5.0",
+	},
+	models.DeviceStored{
+		ID:           2,
+		Manufacturer: "One Plus",
+		Model:        "Three",
+		OS:           "Android 6.0",
+	},
+}
+
+var batteryData = []models.Battery{
+	models.Battery{
+		Value: 70,
+		Time:  "2016-05-31 11:48:48",
+	},
+	models.Battery{
+		Value: 71,
+		Time:  "2016-05-31 11:50:31",
+	},
+}
+
 func setup() (*models.DB, error) {
 	db, err := models.NewDB("treigerm:Hip$terSWAG@/test_db")
 	if err != nil {
@@ -93,12 +128,7 @@ func TestGetUser(t *testing.T) {
 	defer cleanUp(db)
 
 	user := models.User{Email: "user@usermail.com"}
-	expected := models.User{
-		ID:           1,
-		Email:        "user@usermail.com",
-		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
-		APIKey:       "37e72ff927f511e688adb827ebf7e157",
-	}
+	expected := users[0]
 	result, err := db.GetUser(user)
 	if err != nil {
 		t.Errorf("\n...error = %v", err.Error())
@@ -115,12 +145,7 @@ func TestGetDevicesFromUser(t *testing.T) {
 	defer cleanUp(db)
 
 	user := models.User{Email: "user@usermail.com"}
-	device := models.DeviceStored{
-		ID:           1,
-		Manufacturer: "Motorola",
-		Model:        "Moto X (2nd Generation)",
-		OS:           "Android 5.0",
-	}
+	device := devices[0]
 	expected := []models.DeviceStored{device}
 
 	result, err := db.GetDevicesFromUser(user)
@@ -132,7 +157,21 @@ func TestGetDevicesFromUser(t *testing.T) {
 }
 
 func TestGetBattery(t *testing.T) {
-	// TODO: Implement
+	db, err := setup()
+	if err != nil {
+		t.Errorf("\n...error on db setup = %v", err.Error())
+	}
+	defer cleanUp(db)
+
+	device := devices[0]
+	var batteries []models.Battery
+	expected := batteryData[:1]
+	err = db.GetBattery(device, &batteries)
+	if err != nil {
+		t.Errorf("\n...error = %v", err.Error())
+	} else if !reflect.DeepEqual(batteries, expected) {
+		t.Errorf("\n...expected = %v\n...obtained = %v", expected, batteries)
+	}
 }
 
 func TestCreateUser(t *testing.T) {
@@ -146,38 +185,44 @@ func TestCreateDeviceForUser(t *testing.T) {
 	}
 	defer cleanUp(db)
 
-	user := models.User{
-		ID:           1,
-		Email:        "user@usermail.com",
-		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
-		APIKey:       "37e72ff927f511e688adb827ebf7e157",
-	}
-	newDevice := models.DeviceStored{
-		Manufacturer: "One Plus",
-		Model:        "Three",
-		OS:           "Android 6.0",
-	}
+	user := users[0]
+	newDevice := devices[1]
 
 	err = db.CreateDeviceForUser(user, newDevice)
 	if err != nil {
 		t.Errorf("\n...error = %v", err.Error())
 	}
 
-	oldDevice := models.DeviceStored{
-		ID:           1,
-		Manufacturer: "Motorola",
-		Model:        "Moto X (2nd Generation)",
-		OS:           "Android 5.0",
-	}
+	oldDevice := devices[0]
 	expected := []models.DeviceStored{oldDevice, newDevice}
 	result, _ := db.GetDevicesFromUser(user)
-	if reflect.DeepEqual(result, expected) {
+	if !reflect.DeepEqual(result, expected) {
 		t.Errorf("\n...expected = %v\n...obtained = %v", expected, result)
 	}
 }
 
 func TestCreateBattery(t *testing.T) {
-	// TODO: Implement
+	db, err := setup()
+	if err != nil {
+		t.Errorf("\n...error on db setup = %v", err.Error())
+	}
+	defer cleanUp(db)
+
+	device := devices[0]
+	batteriesToInsert := batteryData[1:]
+	err = db.CreateBattery(device, &batteriesToInsert)
+	if err != nil {
+		t.Errorf("\n...error = %v", err.Error())
+	}
+
+	var batteries []models.Battery
+	err = db.GetBattery(device, &batteries)
+	expected := batteryData
+	if err != nil {
+		t.Errorf("\n...error = %v", err.Error())
+	} else if !reflect.DeepEqual(batteries, expected) {
+		t.Errorf("\n...expected = %v\n...obtained = %v", expected, batteries)
+	}
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -187,11 +232,7 @@ func TestDeleteUser(t *testing.T) {
 	}
 	defer cleanUp(db)
 
-	user := models.User{
-		ID:           1,
-		Email:        "user@usermail.com",
-		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
-		APIKey:       "37e72ff927f511e688adb827ebf7e157"}
+	user := users[0]
 	err = db.DeleteUser(user)
 	if err != nil {
 		t.Errorf("\n...error = %v", err.Error())
@@ -211,12 +252,7 @@ func TestDeleteDevice(t *testing.T) {
 	}
 	defer cleanUp(db)
 
-	device := models.DeviceStored{
-		ID:           1,
-		Manufacturer: "Motorola",
-		Model:        "Moto X (2nd Generation)",
-		OS:           "Android 5.0",
-	}
+	device := devices[0]
 	err = db.DeleteDevice(device)
 	if err != nil {
 		t.Errorf("\n...error = %v", err.Error())
