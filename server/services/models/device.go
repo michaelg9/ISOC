@@ -1,7 +1,5 @@
 package models
 
-import "errors"
-
 // Device contains all stored information about one device
 type Device struct {
 	DeviceInfo DeviceStored `xml:"device-info" json:"deviceInfo"`
@@ -51,7 +49,7 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 func (db *DB) GetDeviceInfos(user User) (devices []DeviceStored, err error) {
 	getDevicesQuery := `SELECT dev.id, dev.manufacturer, dev.modelName, dev.osVersion
                 	   FROM Device dev, User u
-                	   WHERE (u.email = :email OR u.apiKey = :apiKey)AND u.uid = dev.user;`
+                	   WHERE (u.email = :email OR u.apiKey = :apiKey) AND u.uid = dev.user;`
 	stmt, err := db.PrepareNamed(getDevicesQuery)
 	if err != nil {
 		return
@@ -69,9 +67,15 @@ func (db *DB) CreateDeviceForUser(user User, device DeviceStored) error {
 }
 
 // UpdateDevice updates the given field of the device with the given id
-func (db *DB) UpdateDevice(id int, field string, value interface{}) error {
-	// TODO: Implement
-	return errors.New("Not implemented")
+func (db *DB) UpdateDevice(device DeviceStored, field string) error {
+	queries := map[string]string{
+		"Manufacturer": `UPDATE Device SET manufacturer = :manufacturer WHERE id = :id;`,
+		"Model":        `UPDATE Device SET modelName = :modelName WHERE id = :id;`,
+		"OS":           `UPDATE Device SET osVersion = :osVersion WHERE id = :id;`,
+	}
+
+	_, err := db.NamedExec(queries[field], device)
+	return err
 }
 
 // DeleteDevice deletes the device with that specified in the struct.

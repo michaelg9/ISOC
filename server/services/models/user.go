@@ -1,7 +1,5 @@
 package models
 
-import "errors"
-
 // User is the struct of the stored user data
 type User struct {
 	ID           int    `db:"uid"`
@@ -31,9 +29,15 @@ func (db *DB) CreateUser(user User) error {
 }
 
 // UpdateUser update the specified user
-func (db *DB) UpdateUser(email, field string, value interface{}) error {
-	// TODO: Implement
-	return errors.New("Not implemented")
+func (db *DB) UpdateUser(user User, field string) error {
+	queries := map[string]string{
+		"Email":        `UPDATE User SET email = :email WHERE uid = :uid;`,
+		"PasswordHash": `UPDATE User SET passwordHash = :passwordHash WHERE uid = :uid;`,
+		"APIKey":       `UPDATE User SET apiKey = :apiKey WHERE uid = :uid;`,
+	}
+
+	_, err := db.NamedExec(queries[field], user)
+	return err
 }
 
 // DeleteUser deletes the user with the information in the user struct.

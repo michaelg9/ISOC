@@ -257,6 +257,51 @@ func TestCreateBattery(t *testing.T) {
 	checkEqual(t, expected, batteries)
 }
 
+func TestUpdateUser(t *testing.T) {
+	db, err := setup()
+	checkDBErr(t, err)
+	defer cleanUp(db)
+
+	user := users[0]
+	user.Email = "user2@mail.com"
+	pwd, err := bcrypt.GenerateFromPassword([]byte("12345"), bcrypt.DefaultCost)
+	checkErr(t, err)
+	user.PasswordHash = string(pwd)
+	user.APIKey = "12345678abcdefg"
+	err = db.UpdateUser(user, "Email")
+	checkErr(t, err)
+	err = db.UpdateUser(user, "PasswordHash")
+	checkErr(t, err)
+	err = db.UpdateUser(user, "APIKey")
+	checkErr(t, err)
+
+	result, err := db.GetUser(user)
+	checkErr(t, err)
+	checkEqual(t, user, result)
+}
+
+func TestUpdateDevice(t *testing.T) {
+	db, err := setup()
+	checkDBErr(t, err)
+	defer cleanUp(db)
+
+	device := deviceInfos[0]
+	device.Manufacturer = "Apple"
+	device.Model = "iPhone 6"
+	device.OS = "iOS 10"
+	err = db.UpdateDevice(device, "Manufacturer")
+	checkErr(t, err)
+	err = db.UpdateDevice(device, "Model")
+	checkErr(t, err)
+	err = db.UpdateDevice(device, "OS")
+	checkErr(t, err)
+
+	expected := []models.DeviceStored{device}
+	result, err := db.GetDeviceInfos(users[0])
+	checkErr(t, err)
+	checkEqual(t, expected, result)
+}
+
 func TestDeleteUser(t *testing.T) {
 	db, err := setup()
 	checkDBErr(t, err)
