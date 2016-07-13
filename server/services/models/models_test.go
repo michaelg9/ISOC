@@ -206,6 +206,19 @@ func TestGetBattery(t *testing.T) {
 	checkEqual(t, expected, batteries)
 }
 
+func TestGetData(t *testing.T) {
+	db, err := setup()
+	checkDBErr(t, err)
+	defer cleanUp(db)
+
+	device := deviceInfos[0]
+	var batteries []models.Battery
+	expected := batteryData[:1]
+	err = db.GetData(device, &batteries)
+	checkErr(t, err)
+	checkEqual(t, expected, batteries)
+}
+
 func TestCreateUser(t *testing.T) {
 	db, err := setup()
 	checkDBErr(t, err)
@@ -248,6 +261,23 @@ func TestCreateBattery(t *testing.T) {
 	device := deviceInfos[0]
 	batteriesToInsert := batteryData[1:]
 	err = db.CreateBattery(device, &batteriesToInsert)
+	checkErr(t, err)
+
+	var batteries []models.Battery
+	err = db.GetBattery(device, &batteries)
+	expected := batteryData
+	checkErr(t, err)
+	checkEqual(t, expected, batteries)
+}
+
+func TestCreateData(t *testing.T) {
+	db, err := setup()
+	checkDBErr(t, err)
+	defer cleanUp(db)
+
+	device := deviceInfos[0]
+	batteriesToInsert := batteryData[1:]
+	err = db.CreateData(device, &batteriesToInsert)
 	checkErr(t, err)
 
 	var batteries []models.Battery
