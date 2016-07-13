@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"testing"
 
+	"golang.org/x/crypto/bcrypt"
+
 	"github.com/michaelg9/ISOC/server/services/models"
 )
 
@@ -71,6 +73,11 @@ var users = []models.User{
 		Email:        "user@usermail.com",
 		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
 		APIKey:       "37e72ff927f511e688adb827ebf7e157",
+	},
+	models.User{
+		ID:     2,
+		Email:  "user@mail.com",
+		APIKey: "",
 	},
 }
 
@@ -178,7 +185,19 @@ func TestGetBattery(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	// TODO: Implement
+	db, err := setup()
+	checkDBErr(t, err)
+	defer cleanUp(db)
+
+	newUser := users[1]
+	pwd, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+	newUser.PasswordHash = string(pwd)
+	err = db.CreateUser(newUser)
+	checkErr(t, err)
+
+	result, err := db.GetUser(newUser)
+	checkErr(t, err)
+	checkNotEqual(t, newUser, result)
 }
 
 func TestCreateDeviceForUser(t *testing.T) {
