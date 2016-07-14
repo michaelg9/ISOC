@@ -178,3 +178,8 @@ func TestDownload(t *testing.T) {
 		}
 	}
 }
+
+// TODO: Upload test
+// TODO: InternalDownload test
+// TODO: Login test
+// TODO: Logout test

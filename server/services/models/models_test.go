@@ -118,7 +118,7 @@ var batteryData = []models.Battery{
 
 func setup() (*models.DB, error) {
 	// Panics if there is a connection error
-	db := models.NewDB("treigerm:Hip$terSWAG@/test_db")
+	db := models.NewDB("test_user:test_pwd@/test_db")
 
 	// Create tables
 	db.MustExec(schemaUser)
