@@ -30,15 +30,14 @@ func main() {
 }
 
 func startDB() *models.DB {
+	// Get database access variables
 	host := os.Getenv("DB_HOST")
 	user := os.Getenv("DB_USER")
 	pwd := os.Getenv("DB_PWD")
+	// Create DSN
 	dsn := fmt.Sprintf("%v:%v@tcp(%v:3306)/mobile_data?parseTime=true", user, pwd, host)
-	db, err := models.NewDB(dsn)
-	if err != nil {
-		panic(err)
-	}
-
+	// Panics if there is an error with the connection
+	db := models.NewDB(dsn)
 	return db
 }
 

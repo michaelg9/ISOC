@@ -27,18 +27,8 @@ type DB struct {
 }
 
 // NewDB returns a new database connection
-func NewDB(dsn string) (*DB, error) {
-	// NOTE: Might change to MustConnect
+func NewDB(dsn string) *DB {
 	// Connect to database
-	db, err := sqlx.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check connection
-	if err = db.Ping(); err != nil {
-		return nil, err
-	}
-
-	return &DB{db}, nil
+	db := sqlx.MustConnect("mysql", dsn)
+	return &DB{db}
 }

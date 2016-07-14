@@ -6,6 +6,11 @@ import (
 	"github.com/michaelg9/ISOC/server/controllers"
 )
 
+const (
+	basicAuth   = "Basic"
+	sessionAuth = "Session"
+)
+
 // Route struct for creating routes
 type Route struct {
 	Name           string
@@ -37,7 +42,7 @@ var routes = Routes{
 		"Dashboard",
 		"GET",
 		"/dashboard",
-		"",
+		sessionAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.Dashboard },
 	},
 	Route{
@@ -65,7 +70,7 @@ var routes = Routes{
 		"Upload",
 		"POST",
 		"/app/0.1/upload",
-		"Basic",
+		basicAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.Upload },
 	},
 	Route{
@@ -79,7 +84,7 @@ var routes = Routes{
 		"InternalDownload",
 		"GET",
 		"/data/0.1/user",
-		"",
+		sessionAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.InternalDownload },
 	},
 }

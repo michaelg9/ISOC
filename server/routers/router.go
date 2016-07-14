@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/negroni"
 
 	"github.com/michaelg9/ISOC/server/controllers"
-	"github.com/michaelg9/ISOC/server/core/authentication"
+	"github.com/michaelg9/ISOC/server/middleware/authentication"
 )
 
 // NewRouter creates router for server
@@ -19,9 +19,16 @@ func NewRouter(env controllers.Env) *mux.Router {
 
 		// Get the stored handler function for the route
 		switch route.Authentication {
-		case "Basic":
+		case basicAuth:
+			middlewareEnv := &authentication.MiddlewareEnv{&env}
 			handler = negroni.New(
-				negroni.HandlerFunc(authentication.RequireBasicAuth),
+				negroni.HandlerFunc(middlewareEnv.RequireBasicAuth),
+				negroni.Wrap(route.HandlerFunc(env)),
+			)
+		case sessionAuth:
+			middlewareEnv := &authentication.MiddlewareEnv{&env}
+			handler = negroni.New(
+				negroni.HandlerFunc(middlewareEnv.RequireSessionAuth),
 				negroni.Wrap(route.HandlerFunc(env)),
 			)
 		default:

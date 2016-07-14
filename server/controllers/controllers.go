@@ -148,24 +148,9 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 
 // InternalDownload handles /data/0.1/user and is only accessible when a user is logged in
 func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "-1")
-
-	// Get the current user session
-	session, err := env.SessionStore.Get(r, "log-in")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Check if the email is set
-	email, found := session.Values["email"]
-	if !found || email == "" {
-		http.Error(w, err.Error(), http.StatusForbidden)
-		return
-	}
-
+	// Because of the middleware we know that these values exist
+	session, _ := env.SessionStore.Get(r, "log-in")
+	email := session.Values["email"]
 	devices, err := env.DB.GetDevicesFromUser(models.User{Email: email.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

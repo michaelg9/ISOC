@@ -56,7 +56,6 @@ func (db *DB) CreateData(device DeviceStored, ptrToData interface{}) error {
 		return errors.New("Type of data is not stored.")
 	}
 
-	// TODO: check if value is slice
 	for i := 0; i < value.Len(); i++ {
 		data := value.Index(i).Interface()
 		m := structs.Map(data)
