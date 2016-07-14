@@ -1,7 +1,7 @@
 package controllers
 
 // TODO: Use the right error codes
-// TODO: But error messages as constants
+// TODO: Put error messages as constants
 
 import (
 	"encoding/json"
