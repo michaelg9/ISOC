@@ -1,32 +1,28 @@
 package controllers
 
+// TODO: Use the right error codes
+// TODO: But error messages as constants
+
 import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
 
-	"github.com/michaelg9/ISOC/server/core/mysql"
 	"github.com/michaelg9/ISOC/server/services/models"
 
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var sessionStore *sessions.CookieStore
-
-func init() {
-	// Initiate the a cookie store to save our sessions
-	sessionStore = sessions.NewCookieStore([]byte("something-very-secret"))
-	sessionStore.Options = &sessions.Options{
-		Path:     "/",
-		Secure:   false, // NOTE: Change to true if on actual server
-		HttpOnly: true,
-	}
+// Env contains the environment information
+type Env struct {
+	DB           models.Datastore
+	SessionStore *sessions.CookieStore
 }
 
 // Login handles /auth/0.1/login
-func Login(w http.ResponseWriter, r *http.Request) {
+func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
 	password := r.FormValue("password")
@@ -37,25 +33,21 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get the userdata from the specified email
-	var user []models.User
-	err := mysql.Get(&user, email, "")
+	user, err := env.DB.GetUser(models.User{Email: email})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	} else if len(user) == 0 {
-		http.Error(w, "Wrong email/password combination.", http.StatusInternalServerError)
 		return
 	}
 
 	// Check if given password fits with stored hash inside the server
-	err = bcrypt.CompareHashAndPassword([]byte(user[0].PasswordHash), []byte(password))
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Set session for given user
-	session, err := sessionStore.Get(r, "log-in")
+	session, err := env.SessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -71,9 +63,10 @@ func Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout handles /auth/0.1/logout
-func Logout(w http.ResponseWriter, r *http.Request) {
+// TODO: Maybe change to /logout and move to web controllers
+func (env *Env) Logout(w http.ResponseWriter, r *http.Request) {
 	// Get the current log-in session of the user
-	session, err := sessionStore.Get(r, "log-in")
+	session, err := env.SessionStore.Get(r, "log-in")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -90,7 +83,7 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 // SignUp handles /signup
-func SignUp(w http.ResponseWriter, r *http.Request) {
+func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	if email == "" || password == "" {
@@ -99,10 +92,10 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user is already in the database
-	var user []models.User
-	err := mysql.Get(&user, email, "")
+	user, err := env.DB.GetUser(models.User{Email: email})
 	switch {
-	case len(user) == 0:
+	// User does not exist
+	case user == models.User{}:
 		// Create new user with hashed password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
@@ -111,8 +104,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Insert the credentials of the new user into the database
-		user = append(user, models.User{Email: email, PasswordHash: string(hashedPassword)})
-		err = mysql.Insert(&user)
+		err = env.DB.CreateUser(models.User{Email: email, PasswordHash: string(hashedPassword)})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -128,7 +120,7 @@ func SignUp(w http.ResponseWriter, r *http.Request) {
 }
 
 // Upload handles /app/0.1/upload
-func Upload(w http.ResponseWriter, r *http.Request) {
+func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	decoder := xml.NewDecoder(r.Body)
 
 	// Decode the given XML from the request body into the struct defined in models
@@ -148,7 +140,7 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 
 	// If decoding was successfull input the data into the database
 	for _, data := range d.DeviceData.GetContents() {
-		err := mysql.Insert(data, deviceID)
+		err := env.DB.CreateData(models.DeviceStored{ID: deviceID}, data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -159,32 +151,19 @@ func Upload(w http.ResponseWriter, r *http.Request) {
 }
 
 // InternalDownload handles /data/0.1/user and is only accessible when a user is logged in
-func InternalDownload(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "-1")
-
-	// Get the current user session
-	session, err := sessionStore.Get(r, "log-in")
+func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
+	// Because of the middleware we know that these values exist
+	// TODO: Find cleaner solution for this
+	// IDEA: Make email a form parameter
+	session, _ := env.SessionStore.Get(r, "log-in")
+	email := session.Values["email"]
+	devices, err := env.DB.GetDevicesFromUser(models.User{Email: email.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Check if the email is set
-	email, found := session.Values["email"]
-	if !found || email == "" {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	devices, err := getUserDevices(email.(string))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	out, err := json.Marshal(devices)
+	out, err := json.Marshal(models.DataOut{Device: devices})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -194,21 +173,18 @@ func InternalDownload(w http.ResponseWriter, r *http.Request) {
 }
 
 // Download handles /data/0.1/q
-func Download(w http.ResponseWriter, r *http.Request) {
+func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 	// Get the value of the parameter appid in the URI
 	key := r.FormValue("appid")
 	if key == "" {
 		http.Error(w, "No API Key given.", http.StatusInternalServerError)
-	}
-
-	var user []models.User
-	err := mysql.Get(&user, "", key)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	response, err := getUserDevices(user[0].Email)
+	devices, err := env.DB.GetDevicesFromUser(models.User{APIKey: key})
+	response := models.DataOut{
+		Device: devices,
+	}
 
 	// Format the output into either JSON or XML according to the
 	// value specified from the parameter "out". The default value
@@ -226,37 +202,4 @@ func Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(out))
-}
-
-func getUserDevices(email string) (models.DataOut, error) {
-	// Query the database for the data which belongs to the API key
-	var devicesInfo []models.DeviceStored
-	err := mysql.Get(&devicesInfo, email)
-	if err != nil {
-		return models.DataOut{}, err
-	}
-
-	// Convert DeviceOut to Device
-	devices := make([]models.Device, len(devicesInfo))
-	for i, d := range devicesInfo {
-		devices[i].DeviceInfo = d
-	}
-
-	// For each device get all its data and append it to the device
-	for i, d := range devices {
-		// Get pointers to the arrays which store the tracked data
-		// and fill them with the data from the DB
-		for _, data := range devices[i].Data.GetContents() {
-			err = mysql.Get(data, d.DeviceInfo.ID)
-			if err != nil {
-				return models.DataOut{}, err
-			}
-		}
-	}
-
-	result := models.DataOut{
-		Device: devices,
-	}
-
-	return result, nil
 }

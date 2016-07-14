@@ -4,17 +4,36 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/urfave/negroni"
+
+	"github.com/michaelg9/ISOC/server/controllers"
+	"github.com/michaelg9/ISOC/server/middleware/authentication"
 )
 
 // NewRouter creates router for server
-func NewRouter() *mux.Router {
+func NewRouter(env controllers.Env) *mux.Router {
 	router := mux.NewRouter().StrictSlash(true)
 
 	for _, route := range routes {
 		var handler http.Handler
 
 		// Get the stored handler function for the route
-		handler = route.HandlerFunc
+		switch route.Authentication {
+		case basicAuth:
+			middlewareEnv := &authentication.MiddlewareEnv{&env}
+			handler = negroni.New(
+				negroni.HandlerFunc(middlewareEnv.RequireBasicAuth),
+				negroni.Wrap(route.HandlerFunc(env)),
+			)
+		case sessionAuth:
+			middlewareEnv := &authentication.MiddlewareEnv{&env}
+			handler = negroni.New(
+				negroni.HandlerFunc(middlewareEnv.RequireSessionAuth),
+				negroni.Wrap(route.HandlerFunc(env)),
+			)
+		default:
+			handler = route.HandlerFunc(env)
+		}
 
 		router.
 			Methods(route.Method). // Define HTTP Method

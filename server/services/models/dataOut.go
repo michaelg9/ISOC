@@ -7,12 +7,6 @@ type DataOut struct {
 	Device []Device `xml:"device" json:"devices"`
 }
 
-// Device contains all stored information about one device
-type Device struct {
-	DeviceInfo DeviceStored `xml:"device-info" json:"deviceInfo"`
-	Data       DeviceData   `xml:"device-data" json:"data"`
-}
-
 // DeviceData contains all the tracked data of the device
 type DeviceData struct {
 	Battery []Battery `xml:"battery" json:"battery"`

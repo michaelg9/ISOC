@@ -6,7 +6,7 @@ import (
 )
 
 // Index handles /
-func Index(w http.ResponseWriter, r *http.Request) {
+func (env *Env) Index(w http.ResponseWriter, r *http.Request) {
 	if err := display(w, "views/index.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -14,7 +14,8 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 // LoginWeb handles /login
-func LoginWeb(w http.ResponseWriter, r *http.Request) {
+// TODO: Make function behave differently when it's a POST request
+func (env *Env) LoginWeb(w http.ResponseWriter, r *http.Request) {
 	if err := display(w, "views/login.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -22,28 +23,8 @@ func LoginWeb(w http.ResponseWriter, r *http.Request) {
 }
 
 // Dashboard handles /dashboard
-func Dashboard(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "-1")
-
-	// Get the current user session
-	session, err := sessionStore.Get(r, "log-in")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Check if the email is set
-	email, found := session.Values["email"]
-	// If email not set redirect to login page
-	if !found || email == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
-		return
-	}
-
-	// If email is set go to dashboard
-	if err = display(w, "views/dashboard.html", ""); err != nil {
+func (env *Env) Dashboard(w http.ResponseWriter, r *http.Request) {
+	if err := display(w, "views/dashboard.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

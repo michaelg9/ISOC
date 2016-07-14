@@ -29,7 +29,7 @@ CREATE TABLE `BatteryStatus` (
   `device` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `device` (`device`),
-  CONSTRAINT `BatteryStatus_ibfk_2` FOREIGN KEY (`device`) REFERENCES `Device` (`id`)
+  CONSTRAINT `BatteryStatus_ibfk_2` FOREIGN KEY (`device`) REFERENCES `Device` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1008 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -58,7 +58,7 @@ CREATE TABLE `Device` (
   `user` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `user` (`user`),
-  CONSTRAINT `Device_ibfk_1` FOREIGN KEY (`user`) REFERENCES `User` (`uid`)
+  CONSTRAINT `Device_ibfk_1` FOREIGN KEY (`user`) REFERENCES `User` (`uid`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 

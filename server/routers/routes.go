@@ -6,12 +6,18 @@ import (
 	"github.com/michaelg9/ISOC/server/controllers"
 )
 
+const (
+	basicAuth   = "Basic"
+	sessionAuth = "Session"
+)
+
 // Route struct for creating routes
 type Route struct {
-	Name        string
-	Method      string           // HTTP method
-	Pattern     string           // URI for this route
-	HandlerFunc http.HandlerFunc // Handler function specified in controllers
+	Name           string
+	Method         string                                 // HTTP method
+	Pattern        string                                 // URI for this route
+	Authentication string                                 // Authentication method to be used
+	HandlerFunc    func(controllers.Env) http.HandlerFunc // Handler function specified in controllers
 }
 
 // Routes is an array of routes
@@ -22,54 +28,63 @@ var routes = Routes{
 		"Index",
 		"GET",
 		"/",
-		controllers.Index,
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Index },
 	},
 	Route{
 		"LoginWeb",
 		"GET",
 		"/login",
-		controllers.LoginWeb,
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.LoginWeb },
 	},
 	Route{
 		"Dashboard",
 		"GET",
 		"/dashboard",
-		controllers.Dashboard,
+		sessionAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.Dashboard },
 	},
 	Route{
 		"Login",
 		"POST",
 		"/auth/0.1/login",
-		controllers.Login,
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Login },
 	},
 	Route{
 		"Logout",
 		"POST",
 		"/auth/0.1/logout",
-		controllers.Logout,
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Logout },
 	},
 	Route{
 		"SignUp",
 		"POST",
 		"/signup",
-		controllers.SignUp,
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.SignUp },
 	},
 	Route{
 		"Upload",
 		"POST",
 		"/app/0.1/upload",
-		controllers.Upload,
+		basicAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.Upload },
 	},
 	Route{
 		"Download",
 		"GET",
 		"/data/0.1/q",
-		controllers.Download,
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Download },
 	},
 	Route{
 		"InternalDownload",
 		"GET",
 		"/data/0.1/user",
-		controllers.InternalDownload,
+		sessionAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.InternalDownload },
 	},
 }
