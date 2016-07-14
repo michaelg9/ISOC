@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"encoding/json"
+	"encoding/xml"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -150,11 +152,17 @@ func TestSignUp(t *testing.T) {
 }
 
 func TestDownload(t *testing.T) {
+	response := models.DataOut{Device: devices}
+	jsonResponse, _ := json.Marshal(response)
+	xmlResponse, _ := xml.Marshal(response)
 	var tests = []struct {
 		url      string
 		expected string
 	}{
 		{"/data/0.1/q", "No API Key given.\n"},
+		{"/data/0.1/q?appid=12345", string(jsonResponse)},
+		{"/data/0.1/q?appid=12345&out=json", string(jsonResponse)},
+		{"/data/0.1/q?appid=12345&out=xml", string(xmlResponse)},
 	}
 
 	for _, test := range tests {
@@ -170,3 +178,8 @@ func TestDownload(t *testing.T) {
 		}
 	}
 }
+
+// TODO: Upload test
+// TODO: InternalDownload test
+// TODO: Login test
+// TODO: Logout test

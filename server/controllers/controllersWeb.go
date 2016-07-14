@@ -1,5 +1,7 @@
 package controllers
 
+// TODO: Move login and logout here
+
 import (
 	"html/template"
 	"net/http"
@@ -14,7 +16,6 @@ func (env *Env) Index(w http.ResponseWriter, r *http.Request) {
 }
 
 // LoginWeb handles /login
-// TODO: Make function behave differently when it's a POST request
 func (env *Env) LoginWeb(w http.ResponseWriter, r *http.Request) {
 	if err := display(w, "views/login.html", ""); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

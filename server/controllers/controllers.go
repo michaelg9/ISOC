@@ -1,7 +1,6 @@
 package controllers
 
-// TODO: Use the right error codes
-// TODO: But error messages as constants
+// TODO: User proper errors
 
 import (
 	"encoding/json"
@@ -63,7 +62,6 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout handles /auth/0.1/logout
-// TODO: Maybe change to /logout and move to web controllers
 func (env *Env) Logout(w http.ResponseWriter, r *http.Request) {
 	// Get the current log-in session of the user
 	session, err := env.SessionStore.Get(r, "log-in")
@@ -153,7 +151,6 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 // InternalDownload handles /data/0.1/user and is only accessible when a user is logged in
 func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 	// Because of the middleware we know that these values exist
-	// TODO: Find cleaner solution for this
 	// IDEA: Make email a form parameter
 	session, _ := env.SessionStore.Get(r, "log-in")
 	email := session.Values["email"]
