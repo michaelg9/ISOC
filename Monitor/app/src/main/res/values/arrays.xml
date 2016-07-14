@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="entries_package_types">
+        <item>All</item>
+        <item>System</item>
+        <item>User</item>
+        <item>None</item>
+    </string-array>
+
+    <string-array name="entryvalues_package_types">
+        <item>all</item>
+        <item>sys</item>
+        <item>usr</item>
+        <item>none</item>
+    </string-array>
+
+</resources>

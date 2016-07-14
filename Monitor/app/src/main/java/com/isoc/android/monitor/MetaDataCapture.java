@@ -13,14 +13,13 @@ public class MetaDataCapture {
     private static String[][] getTelephonyDetails(Context context){
         String[] datatype=new String[]{"unknown","gprs","edge","umts","cdma","evdo0","evdoA","1xrtt","hsdpa","hsupa","hspa","iden","evdoB","lte","ehrpd","hspap"};
         String[] datastate=new String[]{"disconnected","connecting","connected","suspended"};
-        TelephonyManager tm=(TelephonyManager) context.getSystemService(context.TELEPHONY_SERVICE);
-        String result[][]=new String[6][2];
+        TelephonyManager tm=(TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        String result[][]=new String[5][2];
         result[0]=new String[]{"imei",tm.getDeviceId()};
         result[1]=new String[]{"datanettype",datatype[tm.getNetworkType()]};
-        result[2]=new String[]{"datastate",datastate[tm.getDataState()]};
-        result[3]=new String[]{"country",tm.getNetworkCountryIso()};
-        result[4]=new String[]{"network",tm.getNetworkOperatorName()};
-        result[5]=new String[]{"carrier",tm.getSimOperatorName()};
+        result[2]=new String[]{"country",tm.getNetworkCountryIso()};
+        result[3]=new String[]{"network",tm.getNetworkOperatorName()};
+        result[4]=new String[]{"carrier",tm.getSimOperatorName()};
         return result;
     }
 

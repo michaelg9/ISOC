@@ -1,32 +1,19 @@
 package com.isoc.android.monitor;
 
-import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkInfo;
 import android.net.TrafficStats;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
-import android.os.Build;
-import android.os.SystemClock;
-import android.text.format.Formatter;
-import android.util.Log;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 
 /**
@@ -34,8 +21,6 @@ import java.util.Enumeration;
  * !!!!!!!!!!!!!!!!!!!!!!!!!!!when mobile off, counters =0
  */
 public class NetworkCapture {
-    public static String wifiIntfName=new String();
-    private static String mobileIntf=new String();
 
     private static String getWifiIntfName(Context context){
         WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
@@ -59,7 +44,9 @@ public class NetworkCapture {
         } catch (SocketException e) {
             Toast.makeText(context,e.toString(),Toast.LENGTH_LONG).show();
         }
-        wifiIntfName=result;
+        SharedPreferences.Editor wifiEdit = context.getSharedPreferences(Database.WifiNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE).edit();
+        wifiEdit.putString(Database.WifiNetworkInterface.KEY_INTF_NAME,result);
+        wifiEdit.apply();
         return result;
     }
 
@@ -90,8 +77,7 @@ public class NetworkCapture {
         return result;
     }
 
-    private static String[] getTrafficStats(Context context) {
-        String wifiIntf=getWifiIntfName(context);
+    protected static void getTrafficStats(Context context) {
         ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         boolean wifiOn=false;
         boolean mobileOn=false;
@@ -107,16 +93,30 @@ public class NetworkCapture {
                     break;
             }
         }
-        String[] result = new String[7];
-        result[0]=Boolean.toString(mobileOn);
-        result[1] = Long.toString(TrafficStats.getMobileRxBytes());
-        result[2] = Long.toString(TrafficStats.getMobileTxBytes());
-        result[3]=Boolean.toString(wifiOn);
-        result[4] = readStatsFromFile(context, "/sys/class/net/" + wifiIntf + "/statistics/rx_bytes");
-        result[5] = readStatsFromFile(context, "/sys/class/net/" + wifiIntf + "/statistics/tx_bytes");
-        result[6] = Long.toString(System.currentTimeMillis() - SystemClock.elapsedRealtime());
-        return result;
 
+        SharedPreferences mobilePref = context.getSharedPreferences(Database.MobileNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
+        SharedPreferences.Editor mobileEdit = mobilePref.edit();
+        long mobileRxSaved = mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_RX,0);
+        long mobileTxSaved = mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_TX,0);
+        long mobileRx = (mobileRxSaved > TrafficStats.getMobileRxBytes()) ? mobileRxSaved : TrafficStats.getMobileRxBytes();
+        long mobileTx = (mobileTxSaved > TrafficStats.getMobileTxBytes()) ? mobileTxSaved : TrafficStats.getMobileTxBytes();
+        mobileEdit.putString(Database.MobileNetworkInterface.KEY_ACTIVE,Boolean.toString(mobileOn));
+        mobileEdit.putLong(Database.MobileNetworkInterface.KEY_CURRENT_RX,mobileRx);
+        mobileEdit.putLong(Database.MobileNetworkInterface.KEY_CURRENT_TX,mobileTx);
+        mobileEdit.apply();
+
+        SharedPreferences wifiPref = context.getSharedPreferences(Database.WifiNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
+        SharedPreferences.Editor wifiEdit = wifiPref.edit();
+        long wifiRxSaved = wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_RX,0);
+        long wifiTxSaved = wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_TX,0);
+        long wifiRxCurrent = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiPref.getString(Database.WifiNetworkInterface.KEY_INTF_NAME,getWifiIntfName(context)) + "/statistics/rx_bytes"));
+        long wifiTxCurrent = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiPref.getString(Database.WifiNetworkInterface.KEY_INTF_NAME,getWifiIntfName(context)) + "/statistics/tx_bytes"));
+        long wifiRx = (wifiRxSaved > wifiRxCurrent) ? wifiRxSaved :wifiRxCurrent;
+        long wifiTx = (wifiTxSaved > wifiTxCurrent) ? wifiTxSaved : wifiTxCurrent;
+        wifiEdit.putString(Database.WifiNetworkInterface.KEY_ACTIVE,Boolean.toString(wifiOn));
+        wifiEdit.putLong(Database.WifiNetworkInterface.KEY_CURRENT_RX,wifiRx);
+        wifiEdit.putLong(Database.WifiNetworkInterface.KEY_CURRENT_TX,wifiTx);
+        wifiEdit.apply();
     }
 
     /*
@@ -182,10 +182,23 @@ public class NetworkCapture {
         return result.toString();
     }*/
 
-    protected static String getTrafficXML(Context context, String timeFormat) {
-        String[] traffic = getTrafficStats(context);
-        return ("<data active=\""+traffic[0]+"\" time=\"" + TimeCapture.getTime(timeFormat) + "\" since=\"" + TimeCapture.getTime(timeFormat, Long.parseLong(traffic[6])) + "\" rx=\""+traffic[1]+"\" tx=\""+traffic[2]+"\">mobile</data>\n") +
-                ("<data active=\""+traffic[3]+"\" time=\"" + TimeCapture.getTime(timeFormat) + "\" since=\"" + TimeCapture.getTime(timeFormat, Long.parseLong(traffic[6])) + "\" rx=\""+traffic[4]+"\" tx=\""+traffic[5]+"\">wifi</data>\n");
-    }
+    protected static String getTrafficXML(Context context) {
+        SharedPreferences mobilePref = context.getSharedPreferences(Database.MobileNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
+        SharedPreferences wifiPref = context.getSharedPreferences(Database.WifiNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
 
+        return ("<data active=\""+mobilePref.getString(Database.MobileNetworkInterface.KEY_ACTIVE,"false")+"\" time=\"" +
+                TimeCapture.getTime() + "\" since=\"" +
+                TimeCapture.getTime(mobilePref.getLong(Database.MobileNetworkInterface.KEY_SINCE,0)) +"\" rx=\""+
+                mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_RX,0)+
+                mobilePref.getLong(Database.MobileNetworkInterface.KEY_TOTAL_RX,0)+"\" tx=\""+
+                mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_TX,0)+
+                mobilePref.getLong(Database.MobileNetworkInterface.KEY_TOTAL_TX,0) +"\">mobile</data>\n" +
+                "<data active=\""+wifiPref.getString(Database.WifiNetworkInterface.KEY_ACTIVE,"false")+"\" time=\"" +
+                TimeCapture.getTime() + "\" since=\"" +
+                TimeCapture.getTime(wifiPref.getLong(Database.WifiNetworkInterface.KEY_SINCE,0)) + "\" rx=\"" +
+                wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_RX,0)+
+                wifiPref.getLong(Database.WifiNetworkInterface.KEY_TOTAL_RX,0)+"\" tx=\""+
+                wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_TX,0)+
+                wifiPref.getLong(Database.WifiNetworkInterface.KEY_TOTAL_TX,0)+"\">wifi</data>\n");
+    }
 }

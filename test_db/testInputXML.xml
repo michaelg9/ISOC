@@ -4,7 +4,6 @@
     	<metadata>
         	<imei>123</imei>
 		<datanettype>LTE</datanettype>
-		<datastate>disconnected</datastate>
 		<country>gb</country>
 		<network>O2 - UK</network>
 		<carrier>giffgaff</carrier>
@@ -27,6 +26,13 @@
 
 <!-- 
 Changes:
+17/07
+Removed the datastate tag from metadata. I realised that this is already covered with <data> and
+    it's also variable so I shouldn't put it in metadata in the first place
+
+Battery: Logged each time you plug it into a power source, when the battery reaches LOW and 
+    after it recovers from LOW
+
 06/07:
 Metadata:
 	IMEI: unique, could be used as they device id: 15 or 17 digits(google says)

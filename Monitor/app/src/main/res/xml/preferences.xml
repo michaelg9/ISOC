@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <SwitchPreference
+        android:key="service_state"
+        android:defaultValue="true"
+        android:title="Service State"
+        android:summaryOn="Enabled"
+        android:summaryOff="Disabled"/>
+
+    <EditTextPreference
+        android:key="server_url"
+        android:defaultValue="http://104.155.40.104:3000/app/0.1/post"
+        android:title="Server URL"/>
+
+
+    <PreferenceCategory android:title="Monitoring">
+        <ListPreference
+            android:dependency="service_state"
+            android:defaultValue="all"
+            android:key="inst_pack"
+            android:title="Installed Packages"
+            android:summary="%s installed packages"
+            android:entries="@array/entries_package_types"
+            android:entryValues="@array/entryvalues_package_types">
+        </ListPreference>
+
+        <ListPreference
+            android:dependency="service_state"
+            android:defaultValue="all"
+            android:key="run_service"
+            android:title="Running Services"
+            android:summary="%s running services"
+            android:entries="@array/entries_package_types"
+            android:entryValues="@array/entryvalues_package_types">
+        </ListPreference>
+
+        <CheckBoxPreference
+            android:dependency="service_state"
+            android:key="battery"
+            android:defaultValue="true"
+            android:title="Battery"/>
+
+        <CheckBoxPreference
+            android:dependency="service_state"
+            android:key="calls"
+            android:defaultValue="true"
+            android:title="Call Log"/>
+
+    </PreferenceCategory>
+</PreferenceScreen>

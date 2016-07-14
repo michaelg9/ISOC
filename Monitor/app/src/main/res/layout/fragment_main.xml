@@ -1,0 +1,44 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.isoc.android.monitor.MainFragment">
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Start Service"
+        android:id="@+id/buttonStart"
+        android:layout_alignParentTop="true"
+        android:layout_toLeftOf="@+id/buttonShow"
+        android:layout_toStartOf="@+id/buttonShow" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Stop Service"
+        android:id="@+id/buttonStop"
+        android:layout_alignTop="@+id/buttonStart"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Show Results"
+        android:id="@+id/buttonShow"
+        android:layout_marginTop="96dp"
+        android:layout_gravity="center_vertical"
+        android:layout_below="@+id/buttonStart"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Send"
+        android:id="@+id/buttonSend"
+        android:layout_below="@+id/buttonShow"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="101dp" />
+
+</RelativeLayout>
