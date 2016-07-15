@@ -61,17 +61,17 @@ var batteryData = []models.Battery{
 
 /* mockDB has to implement:
  * type Datastore interface {
- * 	GetUser(user User) (fullUser User, err error)
- * 	CreateUser(user User) error
- * 	UpdateUser(user User, field string) error
- * 	DeleteUser(user User) error
- * 	GetDevicesFromUser(user User) ([]Device, error)
- * 	GetDeviceInfos(user User) ([]DeviceStored, error)
- * 	CreateDeviceForUser(user User, device DeviceStored) error
- * 	UpdateDevice(device DeviceStored, field string) error
- * 	DeleteDevice(device DeviceStored) error
- * 	GetData(device DeviceStored, ptrToData interface{}) error
- * 	CreateData(device DeviceStored, ptrToData interface{}) error
+ *     GetUser(user User) (fullUser User, err error)
+ *     CreateUser(user User) error
+ *     UpdateUser(user User, field string) error
+ *     DeleteUser(user User) error
+ *     GetDevicesFromUser(user User) ([]Device, error)
+ *     GetDeviceInfos(user User) ([]DeviceStored, error)
+ *     CreateDeviceForUser(user User, device DeviceStored) error
+ *     UpdateDevice(device DeviceStored, field string) error
+ *     DeleteDevice(device DeviceStored) error
+ *     GetData(device DeviceStored, ptrToData interface{}) error
+ *     CreateData(device DeviceStored, ptrToData interface{}) error
  * }
  */
 
@@ -133,8 +133,8 @@ func TestSignUp(t *testing.T) {
 	}{
 		{"/signup?email=user@mail.com&password=123456", "Success"},
 		{"/signup?email=user@usermail.com&password=123456", "User already exists"},
-		{"/signup?email=bla@blabla", "You have to specify a password and an email.\n"},
-		{"/signup?password=123456", "You have to specify a password and an email.\n"},
+		{"/signup?email=bla@blabla", errMissingPasswordOrEmail + "\n"},
+		{"/signup?password=123456", errMissingPasswordOrEmail + "\n"},
 	}
 
 	for _, test := range tests {
@@ -159,7 +159,7 @@ func TestDownload(t *testing.T) {
 		url      string
 		expected string
 	}{
-		{"/data/0.1/q", "No API Key given.\n"},
+		{"/data/0.1/q", errNoAPIKey + "\n"},
 		{"/data/0.1/q?appid=12345", string(jsonResponse)},
 		{"/data/0.1/q?appid=12345&out=json", string(jsonResponse)},
 		{"/data/0.1/q?appid=12345&out=xml", string(xmlResponse)},
@@ -178,8 +178,3 @@ func TestDownload(t *testing.T) {
 		}
 	}
 }
-
-// TODO: Upload test
-// TODO: InternalDownload test
-// TODO: Login test
-// TODO: Logout test

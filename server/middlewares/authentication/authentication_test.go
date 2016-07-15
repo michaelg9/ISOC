@@ -81,9 +81,9 @@ func TestRequireBasicAuth(t *testing.T) {
 		expected  string
 	}{
 		{true, "user@usermail.com", "123456", "Hello world!"},
-		{true, "user@usermail.com", "1234", "Unauthorized request\n"},
-		{true, "", "", "Unauthorized request\n"},
-		{false, "", "", "Unauthorized request\n"},
+		{true, "user@usermail.com", "1234", "Unauthorized request.\n"},
+		{true, "", "", "Unauthorized request.\n"},
+		{false, "", "", "Unauthorized request.\n"},
 	}
 
 	for _, test := range tests {

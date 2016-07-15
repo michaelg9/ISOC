@@ -4,7 +4,7 @@ $(document).ready(function(){
         var email = $("#email").val();
         var password = $("#password").val();
         var loginParams = {email: email, password: password};
-        var loginURL = "../auth/0.1/login?";
+        var loginURL = "../login?";
         $.post({
             url: loginURL,
             data: loginParams

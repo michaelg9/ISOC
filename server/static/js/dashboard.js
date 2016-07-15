@@ -100,7 +100,7 @@ $(document).ready(function() {
 // Logout the user on logout link
 $(document).ready(function(){
     $('.logout').on('click', function() {
-        var logoutURL = "../auth/0.1/logout";
+        var logoutURL = "../logout";
         $.post({
             url: logoutURL
         }).done(function(data, textStatus, jqXHR) {
