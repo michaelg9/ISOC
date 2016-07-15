@@ -1,7 +1,5 @@
 package controllers
 
-// TODO: User proper errors
-
 import (
 	"encoding/json"
 	"encoding/xml"
@@ -12,6 +10,12 @@ import (
 
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
+)
+
+const (
+	errMissingPasswordOrEmail = "No email and/or password specified."
+	errNoDeviceID             = "No device ID specified."
+	errNoAPIKey               = "No API key specified."
 )
 
 // Env contains the environment information
@@ -27,7 +31,7 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	// Check if parameters are non-empty
 	if email == "" || password == "" {
-		http.Error(w, "No email and/or password specified.", http.StatusInternalServerError)
+		http.Error(w, errMissingPasswordOrEmail, http.StatusBadRequest)
 		return
 	}
 
@@ -41,7 +45,7 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	// Check if given password fits with stored hash inside the server
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusForbidden)
 		return
 	}
 
@@ -85,7 +89,7 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	if email == "" || password == "" {
-		http.Error(w, "You have to specify a password and an email.", http.StatusInternalServerError)
+		http.Error(w, errMissingPasswordOrEmail, http.StatusBadRequest)
 		return
 	}
 
@@ -93,6 +97,7 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	user, err := env.DB.GetUser(models.User{Email: email})
 	switch {
 	// User does not exist
+	// TODO: Check which error occurs when there is no user
 	case user == models.User{}:
 		// Create new user with hashed password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -124,7 +129,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	// Decode the given XML from the request body into the struct defined in models
 	var d models.DataIn
 	if err := decoder.Decode(&d); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -132,7 +137,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	// Check if the device ID was specified in the input.
 	// If no ID was specified it defaults to 0.
 	if deviceID == 0 {
-		http.Error(w, "No device ID specified.", http.StatusInternalServerError)
+		http.Error(w, errNoDeviceID, http.StatusBadRequest)
 		return
 	}
 
@@ -174,7 +179,7 @@ func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 	// Get the value of the parameter appid in the URI
 	key := r.FormValue("appid")
 	if key == "" {
-		http.Error(w, "No API Key given.", http.StatusInternalServerError)
+		http.Error(w, errNoAPIKey, http.StatusBadRequest)
 		return
 	}
 

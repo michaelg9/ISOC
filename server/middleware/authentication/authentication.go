@@ -8,6 +8,10 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+const (
+	errNotAuthorized = "Unauthorized request."
+)
+
 // MiddlewareEnv embeds the controllers.Env struct so that we can write functions on it.
 type MiddlewareEnv struct {
 	*controllers.Env
@@ -17,21 +21,21 @@ type MiddlewareEnv struct {
 func (env *MiddlewareEnv) RequireBasicAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	email, password, ok := r.BasicAuth()
 	if !ok || email == "" || password == "" {
-		http.Error(w, "Unauthorized request", http.StatusUnauthorized)
+		http.Error(w, errNotAuthorized, http.StatusUnauthorized)
 		return
 	}
 
 	// Check if user is registered in database
 	user, err := env.DB.GetUser(models.User{Email: email})
 	if err != nil {
-		http.Error(w, "Unauthorized request", http.StatusUnauthorized)
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return
 	}
 
 	// Check if given password fits with stored hash inside the server
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
 	if err != nil {
-		http.Error(w, "Unauthorized request", http.StatusUnauthorized)
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return
 	}
 
@@ -56,7 +60,7 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 	email, found := session.Values["email"]
 	// If email not set redirect to login page
 	if !found || email == "" {
-		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		http.Redirect(w, r, "/login", http.StatusUnauthorized)
 		return
 	}
 
