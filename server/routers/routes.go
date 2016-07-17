@@ -32,11 +32,11 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.Index },
 	},
 	Route{
-		"LoginWeb",
+		"Login",
 		"GET",
 		"/login",
 		"",
-		func(env controllers.Env) http.HandlerFunc { return env.LoginWeb },
+		func(env controllers.Env) http.HandlerFunc { return env.LoginGET },
 	},
 	Route{
 		"Dashboard",
@@ -48,14 +48,14 @@ var routes = Routes{
 	Route{
 		"Login",
 		"POST",
-		"/auth/0.1/login",
+		"/login",
 		"",
-		func(env controllers.Env) http.HandlerFunc { return env.Login },
+		func(env controllers.Env) http.HandlerFunc { return env.LoginPOST },
 	},
 	Route{
 		"Logout",
 		"POST",
-		"/auth/0.1/logout",
+		"/logout",
 		"",
 		func(env controllers.Env) http.HandlerFunc { return env.Logout },
 	},
