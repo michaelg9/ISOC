@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/negroni"
 
 	"github.com/michaelg9/ISOC/server/controllers"
-	"github.com/michaelg9/ISOC/server/middleware/authentication"
+	"github.com/michaelg9/ISOC/server/middlewares/authentication"
 )
 
 // NewRouter creates router for server

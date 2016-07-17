@@ -1,5 +1,7 @@
 package controllers
 
+// TODO: set response code for POST requests
+
 import (
 	"database/sql"
 	"fmt"
@@ -47,8 +49,11 @@ func (env *Env) LoginPOST(w http.ResponseWriter, r *http.Request) {
 
 	// Check if given password fits with stored hash inside the server
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusForbidden)
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

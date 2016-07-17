@@ -92,7 +92,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Fprintln(w, "Success")
+	fmt.Fprint(w, "Success")
 }
 
 // InternalDownload handles /data/0.1/user and is only accessible when a user is logged in
