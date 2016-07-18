@@ -81,6 +81,9 @@ var batteryData = $.get({
     })
 });
 
+var userInfo;
+// TODO: Get User Info
+
 // Listener for daterangepicker
 $(document).ready(function() {
     $('#daterangepicker').daterangepicker({

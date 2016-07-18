@@ -39,7 +39,6 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	user, err := env.DB.GetUser(models.User{Email: email})
 	switch {
 	// User does not exist
-	// TODO: Check which error occurs when there is no user
 	case user == models.User{}:
 		// Create new user with hashed password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

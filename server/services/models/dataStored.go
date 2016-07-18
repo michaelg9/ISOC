@@ -9,9 +9,27 @@ import (
 
 // Battery is the struct for the battery
 // percentage element
+// TODO: Add charging attribute
 type Battery struct {
 	Time  string `xml:"time,attr" json:"time" db:"timestamp"`
 	Value int    `xml:",chardata" json:"value" db:"batteryPercentage"`
+}
+
+// Call is the struct for a tracked Call
+type Call struct {
+	Time     string `xml:"time,attr"`
+	Type     string `xml:"type,attr"`     // Type of call, either "Outgoing" or "Ingoing"
+	Duration int    `xml:"duration,attr"` // TODO: ask for unit or make from and to
+	Contact  string `xml:",chardate"`
+}
+
+// App is the struct for an installed application
+type App struct {
+	Name      string `xml:"name,attr"`
+	UID       string `xml:"uid,attr"`
+	Version   string `xml:"version,attr"`
+	Installed string `xml:"installed,attr"`
+	Label     string `xml:",chardata"`
 }
 
 var typeName = map[reflect.Type]string{

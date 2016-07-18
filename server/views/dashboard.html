@@ -23,6 +23,7 @@
   <script src="static/js/dashboard.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/css/bootstrap-datepicker.css">
   <style>
+    /* TODO: Move into own style file*/
     /* Set gray background color and 100% height */
     .sidenav {
       background-color: #f1f1f1;
@@ -32,6 +33,15 @@
     /* On small screens, set height to 'auto' for the grid */
     @media screen and (max-width: 767px) {
       .row.content {height: auto;}
+    }
+
+    .box-header > h4 {
+      float: left;
+    }
+
+    .box-header .form-group.has-feedback {
+      float: right;
+      width: 60%;
     }
   </style>
 </head>
@@ -50,7 +60,7 @@
     </div>
     <div class="collapse navbar-collapse" id="myNavbar">
       <ul class="nav navbar-nav">
-        <li class="active"><a href="#">Dashboard</a></li>
+        <li class="active"><a href="">Dashboard</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul>
     </div>
@@ -63,28 +73,43 @@
     <div class="col-sm-3 sidenav hidden-xs">
       <h2>Monitor</h2>
       <ul class="nav nav-pills nav-stacked">
-        <li class="active"><a href="#section1">Dashboard</a></li>
+        <li class="active"><a href="">Dashboard</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul><br>
     </div>
     <br>
 
     <div class="col-sm-9">
-      <div class="well" ng-app="deviceApp" ng-controller="deviceController">
-        <h4>Device</h4>
-        <p>
-          <b>Model: </b><span ng-bind="deviceInfo.model"></span><br/>
-          <b>Manufacturer: </b><span ng-bind="deviceInfo.manufacturer"></span><br/>
-          <b>Operating System: </b><span ng-bind="deviceInfo.os"></span><br/>
-        </p>
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="well" ng-app="deviceApp" ng-controller="deviceController">
+            <h4>Device</h4>
+            <p>
+              <b>Model: </b><span ng-bind="deviceInfo.model"></span><br/>
+              <b>Manufacturer: </b><span ng-bind="deviceInfo.manufacturer"></span><br/>
+              <b>Operating System: </b><span ng-bind="deviceInfo.os"></span><br/>
+            </p>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="well">
+            <h4>My Details</h4>
+            <p>
+              <b>Email: </b><br/>
+              <b>API key: </b><br/>
+            </p>
+          </div>
+        </div>
       </div>
       <div class="row">
         <div class="col-sm-6">
           <div class="well">
-            <h4>Battery</h4>
-            <div class="form-group has-feedback">
-              <input type="text" id="daterangepicker" class="form-control">
-              <i class="glyphicon glyphicon-calendar form-control-feedback"></i>
+            <div class="box-header">
+              <h4>Battery</h4>
+              <div class="form-group has-feedback">
+                <input type="text" id="daterangepicker" class="form-control">
+                <i class="glyphicon glyphicon-calendar form-control-feedback"></i>
+              </div>
             </div>
             <canvas id="batteryChart" width="400" height="400"></canvas>
           </div>

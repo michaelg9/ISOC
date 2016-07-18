@@ -8,6 +8,7 @@ type DataIn struct {
 }
 
 // Meta is the struct for the Metadata
+// TODO: Use device struct
 type Meta struct {
 	Device int `xml:"device"` // Device id to identify the sending device
 }
