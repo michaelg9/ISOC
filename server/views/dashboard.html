@@ -23,7 +23,7 @@
   <script src="static/js/dashboard.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/css/bootstrap-datepicker.css">
   <style>
-    /* TODO: Move into own style file*/
+    /*TODO: Put CSS into own style file*/
     /* Set gray background color and 100% height */
     .sidenav {
       background-color: #f1f1f1;
@@ -42,6 +42,14 @@
     .box-header .form-group.has-feedback {
       float: right;
       width: 60%;
+    }
+
+    table.borderless {
+      margin-bottom: 0px !important;
+    }
+
+    .table.borderless tbody tr td {
+      border: none !important;
     }
   </style>
 </head>
@@ -84,20 +92,41 @@
         <div class="col-sm-6">
           <div class="well" ng-app="deviceApp" ng-controller="deviceController">
             <h4>Device</h4>
-            <p>
-              <b>Model: </b><span ng-bind="deviceInfo.model"></span><br/>
-              <b>Manufacturer: </b><span ng-bind="deviceInfo.manufacturer"></span><br/>
-              <b>Operating System: </b><span ng-bind="deviceInfo.os"></span><br/>
-            </p>
+            <table class="table borderless">
+              <tbody>
+                <tr>
+                  <td><b>Model:</b></td>
+                  <td><span ng-bind="deviceInfo.model"></span></td>
+                </tr>
+                <tr>
+                  <td><b>Manufacturer:</b></td>
+                  <td><span ng-bind="deviceInfo.manufacturer"></span></td>
+                </tr>
+                <tr>
+                  <td><b>Operating System:</b></td>
+                  <td><span ng-bind="deviceInfo.os"></span></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
         <div class="col-sm-6">
           <div class="well">
             <h4>My Details</h4>
-            <p>
-              <b>Email: </b><br/>
-              <b>API key: </b><br/>
-            </p>
+            <table class="table borderless">
+              <tbody>
+                <tr>
+                  <td><b>Email:</b></td>
+                  <td>user@usermail.com</td>
+                  <td><a href="">Edit</a></td>
+                </tr>
+                <tr>
+                  <td><b>API key:</b></td>
+                  <td>123456789</td>
+                  <td><a href="">Get new key</a></td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
