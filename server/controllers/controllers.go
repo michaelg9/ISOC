@@ -104,8 +104,23 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user, err := env.DB.GetUser(models.User{Email: email.(string)})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Make sure we don't send the password hash over the wire
+	user.PasswordHash = ""
 
-	out, err := json.Marshal(models.DataOut{Device: devices})
+	outStruct := struct {
+		models.DataOut
+		User models.User `json:"user"`
+	}{
+		models.DataOut{Device: devices},
+		user,
+	}
+
+	out, err := json.Marshal(outStruct)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

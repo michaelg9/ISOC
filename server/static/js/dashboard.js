@@ -1,20 +1,34 @@
 var requestURL = "../data/0.1/user";
 
+// TODO: Commenting
+
 // Angular app
-var app = angular.module("deviceApp", []);
+var app = angular.module("dashboardApp", []);
 app.controller("deviceController", function($scope) {
     $scope.deviceInfo = {};
 });
+app.controller("userController", function($scope) {
+    $scope.userInfo = {}
+});
 
 function changeDeviceInfo(deviceInfo) {
-    var appElement = document.querySelector("[ng-app=deviceApp]");
-    var $scope = angular.element(appElement).scope();
+    var controllerElement = document.querySelector("[ng-controller=deviceController]");
+    var $scope = angular.element(controllerElement).scope();
     $scope.$apply(function() {
         $scope.deviceInfo = deviceInfo;
     });
 }
 
+function changeUserInfo(userInfo) {
+    var controllerElement = document.querySelector("[ng-controller=userController]");
+    var $scope = angular.element(controllerElement).scope();
+    $scope.$apply(function() {
+        $scope.userInfo = userInfo;
+    });
+}
+
 // AJAX call to server
+// TODO: Make function createGraph
 var batteryChart;
 var batteryData = $.get({
     url: requestURL
@@ -22,6 +36,7 @@ var batteryData = $.get({
     var ctx = $("#batteryChart");
     var userData = JSON.parse(data);
     changeDeviceInfo(userData.devices[0].deviceInfo);
+    changeUserInfo(userData.user);
     var batteryData = userData.devices[0].data.battery;
     batteryData.sort(function(a,b){
         var dateA = new Date(a.time);
@@ -81,8 +96,6 @@ var batteryData = $.get({
     })
 });
 
-var userInfo;
-// TODO: Get User Info
 
 // Listener for daterangepicker
 $(document).ready(function() {
