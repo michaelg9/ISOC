@@ -19,6 +19,8 @@
   <!-- Dependencies for Date Range Picker -->
   <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
   <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
+  <!-- Dependencies for Bootbox.js -->
+  <script src="https://cdn.jsdelivr.net/bootbox/4.4.0/bootbox.min.js"></script>
   <!-- Own JavaScript-->
   <script src="static/js/dashboard.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/css/bootstrap-datepicker.css">
@@ -49,12 +51,13 @@
       margin-bottom: 0px !important;
     }
 
-    .table.borderless tbody tr td {
+    table.borderless tbody tr td {
       border: none !important;
     }
   </style>
 </head>
 <body>
+<!-- TODO: Make tables responsive -->
 
 <!-- Collapsed Navbar -->
 <nav class="navbar navbar-inverse visible-xs">
@@ -93,7 +96,7 @@
         <div class="col-sm-6">
           <div class="well" ng-controller="deviceController">
             <h4>Device</h4>
-            <table class="table borderless">
+            <table class="table-responsive borderless">
               <tbody>
                 <tr>
                   <td><b>Model:</b></td>
@@ -114,12 +117,12 @@
         <div class="col-sm-6">
           <div class="well" ng-controller="userController">
             <h4>My Details</h4>
-            <table class="table borderless">
+            <table class="table-responsive borderless">
               <tbody>
                 <tr>
                   <td><b>Email:</b></td>
                   <td><span ng-bind="userInfo.email"></span></td>
-                  <td><a href="">Edit</a></td>
+                  <td><a href="" id="editEmail">Edit</a></td>
                 </tr>
                 <tr>
                   <td><b>API key:</b></td>

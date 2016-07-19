@@ -1,6 +1,7 @@
 var requestURL = "../data/0.1/user";
 
 // TODO: Commenting
+// TODO: Unified use of strings
 
 // Angular app
 var app = angular.module("dashboardApp", []);
@@ -96,6 +97,7 @@ var batteryData = $.get({
     })
 });
 
+// TODO: Check if you can put all that into one
 
 // Listener for daterangepicker
 $(document).ready(function() {
@@ -114,7 +116,7 @@ $(document).ready(function() {
 });
 
 // Logout the user on logout link
-$(document).ready(function(){
+$(document).ready(function() {
     $('.logout').on('click', function() {
         var logoutURL = "../logout";
         $.post({
@@ -127,6 +129,15 @@ $(document).ready(function(){
             // This should never happen
             console.log("Failed logout!");
             return false;
+        });
+    });
+});
+
+// Add the prompt for new email
+$(document).ready(function() {
+    $('#editEmail').on('click', function() {
+        bootbox.prompt("Please enter your new email", function(result) {
+            console.log(result);
         });
     });
 });
