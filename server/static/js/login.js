@@ -1,6 +1,6 @@
 // Listener for Login button
 $(document).ready(function(){
-    $("#login-btn").on('click', function(){
+    $("#login-btn").on("click", function(){
         var email = $("#email").val();
         var password = $("#password").val();
         var loginParams = {email: email, password: password};

@@ -1,7 +1,6 @@
 var requestURL = "../data/0.1/user";
 
 // TODO: Commenting
-// TODO: Unified use of strings
 
 // Angular app
 var app = angular.module("dashboardApp", []);
@@ -51,7 +50,7 @@ var batteryData = $.get({
         return battery.time;
     });
     batteryChart = new Chart(ctx, {
-        type: 'line',
+        type: "line",
         data: {
             labels: batteryTimes,
             datasets: [{
@@ -101,7 +100,7 @@ var batteryData = $.get({
 
 // Listener for daterangepicker
 $(document).ready(function() {
-    $('#daterangepicker').daterangepicker({
+    $("#daterangepicker").daterangepicker({
         startDate: moment().subtract(7, "days"),
         endDate: moment(),
         maxDate: moment(),
@@ -117,7 +116,7 @@ $(document).ready(function() {
 
 // Logout the user on logout link
 $(document).ready(function() {
-    $('.logout').on('click', function() {
+    $(".logout").on("click", function() {
         var logoutURL = "../logout";
         $.post({
             url: logoutURL
@@ -135,7 +134,7 @@ $(document).ready(function() {
 
 // Add the prompt for new email
 $(document).ready(function() {
-    $('#editEmail').on('click', function() {
+    $("#editEmail").on("click", function() {
         bootbox.prompt("Please enter your new email", function(result) {
             console.log(result);
         });
