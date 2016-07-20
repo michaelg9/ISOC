@@ -87,4 +87,11 @@ var routes = Routes{
 		sessionAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.InternalDownload },
 	},
+	Route{
+		"UpdateUser",
+		"POST",
+		"/update/user",
+		sessionAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.UpdateUser },
+	},
 }

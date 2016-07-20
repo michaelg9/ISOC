@@ -160,3 +160,51 @@ func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 
 	fmt.Fprint(w, string(out))
 }
+
+// UpdateUser handles /update/user
+// TODO: PUT request?
+// TODO: How to update API key
+// TODO: Proper error codes
+func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	session, _ := env.SessionStore.Get(r, "log-in")
+	email := session.Values["email"]
+
+	newEmail := r.FormValue("email")
+	password := r.FormValue("password")
+
+	user, err := env.DB.GetUser(models.User{Email: email.(string)})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if newEmail != "" {
+		user.Email = newEmail
+		// TODO: Don't use magic strings
+		err = env.DB.UpdateUser(user, "Email")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		session.Values["email"] = newEmail
+	}
+
+	if password != "" {
+		// TODO: Check if old password fits with stored password
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		user.PasswordHash = string(hashedPassword)
+		err = env.DB.UpdateUser(user, "PasswordHash")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	fmt.Fprint(w, "Success")
+}
