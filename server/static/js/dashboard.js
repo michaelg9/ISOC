@@ -1,6 +1,8 @@
 var requestURL = "../data/0.1/user";
+var batteryChart;
 
 // TODO: Commenting
+// TODO: Look into global variables in JS and use JS linter
 
 // Angular app
 var app = angular.module("dashboardApp", []);
@@ -27,9 +29,8 @@ function changeUserInfo(userInfo) {
     });
 }
 
+
 // AJAX call to server
-// TODO: Make function createGraph
-var batteryChart;
 var batteryData = $.get({
     url: requestURL
 }).done(function(data, textStatus, jqXHR) {
@@ -37,7 +38,11 @@ var batteryData = $.get({
     var userData = JSON.parse(data);
     changeDeviceInfo(userData.devices[0].deviceInfo);
     changeUserInfo(userData.user);
-    var batteryData = userData.devices[0].data.battery;
+    // TODO: Check if that works
+    createBatteryGraph(userData.devices[0].data.battery)
+});
+
+function createBatteryGraph(batteryData) {
     batteryData.sort(function(a,b){
         var dateA = new Date(a.time);
         var dateB = new Date(b.time);
@@ -94,7 +99,7 @@ var batteryData = $.get({
             }
         }
     })
-});
+}
 
 // TODO: Check if you can put all that into one
 
@@ -132,7 +137,7 @@ $(document).ready(function() {
     });
 });
 
-// Add the prompt for new email
+// Add the modal prompt for new email
 $(document).ready(function() {
     $("#editEmail").on("click", function() {
         bootbox.prompt("Please enter your new email", function(result) {

@@ -191,7 +191,6 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if password != "" {
-		// TODO: Check if old password fits with stored password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
