@@ -18,11 +18,13 @@
         	<battery time="2016-06-12 19:20:34" charging="false" temp="32.5">51</battery>
         	<call time="18-05-16 20:00:00" type="Outgoing" duration="50" name="John">0123456789</call>
 		<runservice uid="123" uptime="234" rx="23" tx="23">com.isoc.monitor</runservice>
-		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3" uid="2323">Monitor</installedapp>
+		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3" 
+                    uid="2323">Monitor</installedapp>
                 <data active="true" time="2016-06-12 19:21:55" since="2016-06-02 19:21:55" rx="2" tx="3">wifi</data>
                 
                 <action time="2016-06-12 19:21:55">boot</action>
-                <connection time="2016-06-12 19:20:34" local="192.168.01.144:2455" remote="8.8.8.8:445" type="tcp" status="" uid="180">proc</connection>
+                <connection time="2016-06-12 19:20:34" local="192.168.01.144:2455" remote="8.8.8.8:445" 
+                    type="tcp" status="" uid="180">proc</connection>
 
                                 
 	</device-data>
