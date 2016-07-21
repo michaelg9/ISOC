@@ -169,6 +169,7 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	newEmail := r.FormValue("email")
 	password := r.FormValue("password")
+	apiKey := r.FormValue("apiKey")
 
 	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
 	if err != nil {
@@ -202,6 +203,17 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 		user.PasswordHash = string(hashedPassword)
 		err = env.DB.UpdateUser(user, "PasswordHash")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// The value for the apiKey only has to be non-empty, since the actual key will be
+	// an UUID from the MySQL database
+	if apiKey != "" {
+		user.APIKey = apiKey
+		err = env.DB.UpdateUser(user, "APIKey")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

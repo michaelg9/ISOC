@@ -37,7 +37,7 @@ function updateUserInfo() {
         var userData = JSON.parse(data);
         changeUserInfo(userData.user);
     }).fail(function (data, textStatus, jqXHR) {
-        console.error(data);    
+        console.error(data);
     });
 }
 
@@ -152,7 +152,6 @@ $(document).ready(function() {
     $("#editEmail").on("click", function() {
         bootbox.prompt("Please enter your new email", function(result) {
             if (result != "") {
-                console.log(result);
                 var updateData = {email: result};
                 $.post({
                     url: updateUserURL,
@@ -163,6 +162,19 @@ $(document).ready(function() {
                     console.error(data);
                 });
             }
+        });
+    });
+
+    $("#updateAPIKey").on("click", function () {
+        // TODO: find a smarter way to do that
+        var updateData = {apiKey: "1"}; // Value just has to be non-zero
+        $.post({
+            url: updateUserURL,
+            data: updateData
+        }).done(function () {
+            updateUserInfo();
+        }).fail(function(data, textStatus, jqXHR) {
+            console.error(data);
         });
     });
 });
