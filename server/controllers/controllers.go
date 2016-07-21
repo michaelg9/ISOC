@@ -162,17 +162,15 @@ func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateUser handles /update/user
-// TODO: PUT request?
-// TODO: How to update API key
-// TODO: Proper error codes
 func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	// Because of the middleware we know that these values exist
 	session, _ := env.SessionStore.Get(r, "log-in")
-	email := session.Values["email"]
+	oldEmail := session.Values["email"]
 
 	newEmail := r.FormValue("email")
 	password := r.FormValue("password")
 
-	user, err := env.DB.GetUser(models.User{Email: email.(string)})
+	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -187,7 +185,12 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		// Update the current session with the new email address
 		session.Values["email"] = newEmail
+		if err = session.Save(r, w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 	}
 
 	if password != "" {

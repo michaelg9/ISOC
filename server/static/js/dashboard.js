@@ -1,4 +1,5 @@
-var requestURL = "../data/0.1/user";
+var retrieveDataURL = "../data/0.1/user";
+var updateUserURL = "../update/user?";
 var batteryChart;
 
 // TODO: Commenting
@@ -29,31 +30,45 @@ function changeUserInfo(userInfo) {
     });
 }
 
+function updateUserInfo() {
+    var data = $.get({
+        url: retrieveDataURL
+    }).done(function(data, textStatus, jqXHR) {
+        var userData = JSON.parse(data);
+        changeUserInfo(userData.user);
+    }).fail(function (data, textStatus, jqXHR) {
+        console.error(data);    
+    });
+}
+
 
 // AJAX call to server
 var batteryData = $.get({
-    url: requestURL
+    url: retrieveDataURL
 }).done(function(data, textStatus, jqXHR) {
-    var ctx = $("#batteryChart");
     var userData = JSON.parse(data);
     changeDeviceInfo(userData.devices[0].deviceInfo);
     changeUserInfo(userData.user);
-    // TODO: Check if that works
-    createBatteryGraph(userData.devices[0].data.battery)
+    createBatteryGraph(userData.devices[0].data.battery);
 });
 
 function createBatteryGraph(batteryData) {
+    // Sort data according to time so it gets displayed properly
     batteryData.sort(function(a,b){
         var dateA = new Date(a.time);
         var dateB = new Date(b.time);
         return dateB - dateA;
     });
+
     var batteryLevel = batteryData.map(function(battery) {
         return battery.value;
     });
     var batteryTimes = batteryData.map(function(battery) {
         return battery.time;
     });
+
+    // Get context
+    var ctx = $("#batteryChart");
     batteryChart = new Chart(ctx, {
         type: "line",
         data: {
@@ -101,10 +116,9 @@ function createBatteryGraph(batteryData) {
     })
 }
 
-// TODO: Check if you can put all that into one
-
-// Listener for daterangepicker
+// JQuery listeners
 $(document).ready(function() {
+    // Listener for daterangepicker
     $("#daterangepicker").daterangepicker({
         startDate: moment().subtract(7, "days"),
         endDate: moment(),
@@ -117,10 +131,8 @@ $(document).ready(function() {
         batteryChart.options.scales.xAxes[0].time.max = endDate;
         batteryChart.update();
     });
-});
 
-// Logout the user on logout link
-$(document).ready(function() {
+    // Logout the user on logout link
     $(".logout").on("click", function() {
         var logoutURL = "../logout";
         $.post({
@@ -135,13 +147,22 @@ $(document).ready(function() {
             return false;
         });
     });
-});
 
-// Add the modal prompt for new email
-$(document).ready(function() {
+    // Add the modal prompt for new email
     $("#editEmail").on("click", function() {
         bootbox.prompt("Please enter your new email", function(result) {
-            console.log(result);
+            if (result != "") {
+                console.log(result);
+                var updateData = {email: result};
+                $.post({
+                    url: updateUserURL,
+                    data: updateData
+                }).done(function () {
+                    updateUserInfo();
+                }).fail(function(data, textStatus, jqXHR) {
+                    console.error(data);
+                });
+            }
         });
     });
 });

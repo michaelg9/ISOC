@@ -33,7 +33,7 @@ func (db *DB) UpdateUser(user User, field string) error {
 	queries := map[string]string{
 		"Email":        `UPDATE User SET email = :email WHERE uid = :uid;`,
 		"PasswordHash": `UPDATE User SET passwordHash = :passwordHash WHERE uid = :uid;`,
-		"APIKey":       `UPDATE User SET apiKey = :apiKey WHERE uid = :uid;`,
+		"APIKey":       `UPDATE User SET apiKey = REPLACE(UUID(), '-','') WHERE uid = :uid;`,
 	}
 
 	_, err := db.NamedExec(queries[field], user)
