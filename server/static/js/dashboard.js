@@ -11,7 +11,7 @@ app.controller("deviceController", function($scope) {
     $scope.deviceInfo = {};
 });
 app.controller("userController", function($scope) {
-    $scope.userInfo = {}
+    $scope.userInfo = {};
 });
 
 function changeDeviceInfo(deviceInfo) {
@@ -113,7 +113,7 @@ function createBatteryGraph(batteryData) {
                 }]
             }
         }
-    })
+    });
 }
 
 // JQuery listeners
@@ -151,7 +151,7 @@ $(document).ready(function() {
     // Add the modal prompt for new email
     $("#editEmail").on("click", function() {
         bootbox.prompt("Please enter your new email", function(result) {
-            if (result != "") {
+            if (result !== "") {
                 var updateData = {email: result};
                 $.post({
                     url: updateUserURL,
