@@ -2,7 +2,6 @@ package com.isoc.android.monitor;
 
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.CallLog;
@@ -13,6 +12,7 @@ import android.provider.CallLog;
 
 public class ContactsCapture {
 
+    //TO DO: get only calls earlier than last captured call
     protected static void getCallLog(Context context) {
         String[] projection=new String[]{CallLog.Calls.NUMBER,CallLog.Calls.TYPE,CallLog.Calls.DURATION,CallLog.Calls.DATE,CallLog.Calls.CACHED_NAME};
         Cursor cursor = context.getContentResolver().query(CallLog.Calls.CONTENT_URI, projection, null, null, CallLog.Calls.DATE+ " DESC");
@@ -56,8 +56,7 @@ public class ContactsCapture {
         db.close();
     }
 
-    protected static String getCallXML(Context context, SharedPreferences prefs) {
-        SQLiteDatabase db=new Database(context).getReadableDatabase();
+    protected static String getCallXML(SQLiteDatabase db) {
         Cursor cursor = db.query(Database.DatabaseSchema.CallLog.TABLE_NAME,null,null,null,null,null,null);
         StringBuilder result=new StringBuilder();
         int date= cursor.getColumnIndex(Database.DatabaseSchema.CallLog.COLUMN_NAME_DATE);
@@ -71,7 +70,6 @@ public class ContactsCapture {
                         "\" duration=\"" + cursor.getString(duration) + "\" name=\"" + cursor.getString(name) + "\">" +
                         cursor.getString(number) + "</call>\n");
         }
-        db.close();
         cursor.close();
         return result.toString();
     }

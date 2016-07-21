@@ -44,9 +44,6 @@ public class MainActivity extends AppCompatActivity {
             getFragmentManager().beginTransaction().replace(R.id.fragment_container,new SettingsFragment()).addToBackStack(null).commit();
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
-
-
 }

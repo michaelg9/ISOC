@@ -3,7 +3,6 @@ package com.isoc.android.monitor;
 import android.app.ActivityManager;
 import android.content.ContentValues;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
@@ -21,14 +20,15 @@ import java.util.List;
  */
 public class PackageCapture {
 
-    protected static void getInstalledPackages(Context context){
+    protected static void getInstalledPackages(Context context,String pref){
         PackageManager packageManager= context.getPackageManager();
         int flags = PackageManager.GET_META_DATA;
         List<PackageInfo> packages = packageManager.getInstalledPackages(flags);
         SQLiteDatabase db=new Database(context).getWritableDatabase();
 
         for (int i =0; i<packages.size();i++){
-            if ((packages.get(i).applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) !=1) continue;
+            if ((pref.equals("sys")) && (packages.get(i).applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) !=1) continue;
+            else if ((pref.equals("usr")) && (packages.get(i).applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) ==1) continue;
             ContentValues values=new ContentValues();
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_PACKAGE_NAME,packages.get(i).packageName);
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_INSTALLED_DATE,packages.get(i).firstInstallTime);
@@ -36,12 +36,12 @@ public class PackageCapture {
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_UID,Integer.toString(packages.get(i).applicationInfo.uid));
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_LABEL,packageManager.getApplicationLabel(packages.get(i).applicationInfo).toString());
             db.insertWithOnConflict(Database.DatabaseSchema.InstalledPackages.TABLE_NAME,null,values,SQLiteDatabase.CONFLICT_IGNORE);
-
         }
         db.close();
     }
 
-    protected static void getRunningServices(Context context){
+
+    protected static void getRunningServices(Context context, String pref){
         ActivityManager am=(ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningServiceInfo> runningApps = am.getRunningServices(Integer.MAX_VALUE);
         SQLiteDatabase db=new Database(context).getWritableDatabase();
@@ -59,8 +59,7 @@ public class PackageCapture {
         db.close();
     }
 
-    protected static String getRunningServicesXML(Context context, SharedPreferences prefs) {
-        SQLiteDatabase db=new Database(context).getReadableDatabase();
+    protected static String getRunningServicesXML(SQLiteDatabase db) {
         Cursor cursor = db.query(Database.DatabaseSchema.RunningServices.TABLE_NAME,null,null,null,null,null,null);
         StringBuilder result=new StringBuilder();
         int uid = cursor.getColumnIndex(Database.DatabaseSchema.RunningServices.COLUMN_NAME_UID);
@@ -75,15 +74,14 @@ public class PackageCapture {
                     cursor.getString(tx) +"\">" +  cursor.getString(name) + "</runservice>\n");
         }
         cursor.close();
-        db.close();
         return result.toString();
     }
 
 
-    protected static String getInstalledPackagesXML(Context context) {
+    protected static String getInstalledPackagesXML(SQLiteDatabase db) {
         StringBuilder result=new StringBuilder();
-        SQLiteDatabase db=new Database(context).getReadableDatabase();
-        Cursor cursor = db.query(Database.DatabaseSchema.InstalledPackages.TABLE_NAME,null,null,null,null,null,null);
+        Cursor cursor = db.query(Database.DatabaseSchema.InstalledPackages.TABLE_NAME,null,null,null,null,null,
+                Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_INSTALLED_DATE+" DESC");
         int uid = cursor.getColumnIndex(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_UID);
         int label = cursor.getColumnIndex(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_LABEL);
         int version = cursor.getColumnIndex(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_VERSION);
@@ -95,7 +93,6 @@ public class PackageCapture {
                     TimeCapture.getTime(cursor.getLong(date)) + "\" version=\"" + cursor.getString(version) + "\" uid=\"" +
                     cursor.getString(uid) +"\">" + cursor.getString(label) + "</installedapp>\n");
         }
-        db.close();
         cursor.close();
         return result.toString();
     }

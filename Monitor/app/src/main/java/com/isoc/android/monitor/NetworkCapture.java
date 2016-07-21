@@ -1,11 +1,17 @@
 package com.isoc.android.monitor;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.TrafficStats;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import java.io.BufferedReader;
@@ -18,105 +24,131 @@ import java.util.Enumeration;
 
 /**
  * Created by maik on 1/7/2016.
- * !!!!!!!!!!!!!!!!!!!!!!!!!!!when mobile off, counters =0
+
  */
 public class NetworkCapture {
 
-    private static String getWifiIntfName(Context context){
+    private static String getWifiIntfName(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        String result = prefs.getString("wifiInterfaceName", null);                        //in resources...
+        if (result != null) return result;
+
         WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        WifiInfo wifiInfo=wifi.getConnectionInfo();
-        String result=new String();
+        WifiInfo wifiInfo = wifi.getConnectionInfo();
         try {
-            String wifiMAC=wifiInfo.getMacAddress().replaceAll(":","");
+            String wifiMAC = wifiInfo.getMacAddress().replaceAll(":", "");
             for (Enumeration<NetworkInterface> list = NetworkInterface.getNetworkInterfaces(); list.hasMoreElements(); ) {
                 NetworkInterface i = list.nextElement();
-                byte[] intfMACBytes=i.getHardwareAddress();
+                byte[] intfMACBytes = i.getHardwareAddress();
                 StringBuilder intfMAC = new StringBuilder();
-                if (!i.isLoopback() && intfMACBytes!=null){
+                if (!i.isLoopback() && intfMACBytes != null) {
                     for (byte b : intfMACBytes) {
                         intfMAC.append(String.format("%02x", b));
                         if (!wifiMAC.startsWith(intfMAC.toString())) break;
                     }
                 }
                 if (wifiMAC.equals(intfMAC.toString()))
-                    result= i.getDisplayName();
+                    result = i.getDisplayName();
             }
         } catch (SocketException e) {
-            Toast.makeText(context,e.toString(),Toast.LENGTH_LONG).show();
+            Toast.makeText(context, e.toString(), Toast.LENGTH_LONG).show();
         }
-        SharedPreferences.Editor wifiEdit = context.getSharedPreferences(Database.WifiNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE).edit();
-        wifiEdit.putString(Database.WifiNetworkInterface.KEY_INTF_NAME,result);
-        wifiEdit.apply();
+        prefs.edit().putString("wifiInterfaceName", result).apply();                 //in resources....
         return result;
     }
 
-    private static String readStatsFromFile(Context context, String fileLocation) {
+    public static String readStatsFromFile(Context context, String fileLocation) {
         FileReader file = null;
         BufferedReader in = null;
-        String result = new String();
+        StringBuilder result = new StringBuilder();
         try {
             file = new FileReader(fileLocation);
             in = new BufferedReader(file);
-            result = in.readLine();
+            String s = in.readLine();
+            while (s!=null){
+                result.append(s);
+                s = in.readLine();
+            }
+
         } catch (FileNotFoundException e) {
-            Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("EXCEPTION",e.getMessage());
         } catch (IOException e) {
-            Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+            Log.e("EXCEPTION",e.getMessage());
         } finally {
             if (file != null) try {
                 file.close();
             } catch (IOException e) {
-                Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("EXCEPTION",e.getMessage());
             }
             if (in != null) try {
                 in.close();
             } catch (IOException e) {
-                Toast.makeText(context, e.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e("EXCEPTION",e.getMessage());
             }
         }
-        return result;
+        return result.toString();
     }
 
-    protected static void getTrafficStats(Context context) {
-        ConnectivityManager cm = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        boolean wifiOn=false;
-        boolean mobileOn=false;
-        if (cm.getActiveNetworkInfo()!=null){
-            switch (cm.getActiveNetworkInfo().getType()) {
-                case ConnectivityManager.TYPE_WIFI:
-                    wifiOn = true;
-                    break;
-                case (ConnectivityManager.TYPE_MOBILE):
-                    mobileOn = true;
-                    break;
-                default:
-                    break;
-            }
+    protected static void saveCurrentStats(Context context){
+        SQLiteDatabase db=new Database(context).getWritableDatabase();
+        db.execSQL("UPDATE "+ Database.DatabaseSchema.NetworkInterface.TABLE_NAME+" SET "+
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX+" ="+
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_TX+ ","+
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX+" ="+
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_RX+ ","+
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_RX+"=0,"+
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_TX+"=0 WHERE "+
+                Database.DatabaseSchema.NetworkInterface._ID+"= (SELECT MAX("+ Database.DatabaseSchema.NetworkInterface._ID+") FROM "+
+                Database.DatabaseSchema.NetworkInterface.TABLE_NAME+")");
+        db.close();
+    }
+
+
+    protected static void getTrafficStats(Context context, NetworkInfo affectedNet) {
+        String time = TimeCapture.getTime();
+        String type = new String();
+        Log.e("NETCHANGE", affectedNet.toString());
+        long tx;
+        long rx;
+        switch (affectedNet.getType()) {
+            case ConnectivityManager.TYPE_WIFI:
+                type = "wifi";
+                String wifiIntfName = getWifiIntfName(context);
+                rx = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiIntfName + "/statistics/rx_bytes"));
+                tx = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiIntfName + "/statistics/tx_bytes"));
+                break;
+            case (ConnectivityManager.TYPE_MOBILE):
+                type = "mobile";
+                rx = TrafficStats.getMobileRxBytes();   //stupid method
+                tx = TrafficStats.getMobileTxBytes();   //another stupid method
+                break;
+            default:
+                return;
         }
+        SQLiteDatabase db = new Database(context).getWritableDatabase();
+        Cursor cursor=db.query(Database.DatabaseSchema.NetworkInterface.TABLE_NAME,
+                new String[]{Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX, Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX},
+                null,null,null,null, Database.DatabaseSchema.NetworkInterface._ID+" DESC","1");
 
-        SharedPreferences mobilePref = context.getSharedPreferences(Database.MobileNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
-        SharedPreferences.Editor mobileEdit = mobilePref.edit();
-        long mobileRxSaved = mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_RX,0);
-        long mobileTxSaved = mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_TX,0);
-        long mobileRx = (mobileRxSaved > TrafficStats.getMobileRxBytes()) ? mobileRxSaved : TrafficStats.getMobileRxBytes();
-        long mobileTx = (mobileTxSaved > TrafficStats.getMobileTxBytes()) ? mobileTxSaved : TrafficStats.getMobileTxBytes();
-        mobileEdit.putString(Database.MobileNetworkInterface.KEY_ACTIVE,Boolean.toString(mobileOn));
-        mobileEdit.putLong(Database.MobileNetworkInterface.KEY_CURRENT_RX,mobileRx);
-        mobileEdit.putLong(Database.MobileNetworkInterface.KEY_CURRENT_TX,mobileTx);
-        mobileEdit.apply();
 
-        SharedPreferences wifiPref = context.getSharedPreferences(Database.WifiNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
-        SharedPreferences.Editor wifiEdit = wifiPref.edit();
-        long wifiRxSaved = wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_RX,0);
-        long wifiTxSaved = wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_TX,0);
-        long wifiRxCurrent = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiPref.getString(Database.WifiNetworkInterface.KEY_INTF_NAME,getWifiIntfName(context)) + "/statistics/rx_bytes"));
-        long wifiTxCurrent = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiPref.getString(Database.WifiNetworkInterface.KEY_INTF_NAME,getWifiIntfName(context)) + "/statistics/tx_bytes"));
-        long wifiRx = (wifiRxSaved > wifiRxCurrent) ? wifiRxSaved :wifiRxCurrent;
-        long wifiTx = (wifiTxSaved > wifiTxCurrent) ? wifiTxSaved : wifiTxCurrent;
-        wifiEdit.putString(Database.WifiNetworkInterface.KEY_ACTIVE,Boolean.toString(wifiOn));
-        wifiEdit.putLong(Database.WifiNetworkInterface.KEY_CURRENT_RX,wifiRx);
-        wifiEdit.putLong(Database.WifiNetworkInterface.KEY_CURRENT_TX,wifiTx);
-        wifiEdit.apply();
+        long totalrx=0;
+        long totaltx=0;
+        if (cursor.moveToFirst()){  //if there is at least one entry, get the totals
+            totalrx=cursor.getLong(cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX));
+            totaltx=cursor.getLong(cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX));
+        }
+        cursor.close();
+        ContentValues values = new ContentValues();
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE, type);
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_ACTIVE, Boolean.toString(affectedNet.isConnected()));
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_RX, rx);
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_TX, tx);
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX,totalrx);
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX,totaltx);
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TIME, time);
+
+        db.insert(Database.DatabaseSchema.NetworkInterface.TABLE_NAME, null, values);
+        db.close();
     }
 
     /*
@@ -182,23 +214,27 @@ public class NetworkCapture {
         return result.toString();
     }*/
 
-    protected static String getTrafficXML(Context context) {
-        SharedPreferences mobilePref = context.getSharedPreferences(Database.MobileNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
-        SharedPreferences wifiPref = context.getSharedPreferences(Database.WifiNetworkInterface.PREFERENCES_FILENAME,Context.MODE_PRIVATE);
+    protected static String getTrafficXML(SQLiteDatabase db) {
+        Cursor cursor = db.query(Database.DatabaseSchema.NetworkInterface.TABLE_NAME, null, null, null, null, null, null);
+        int sinceIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_SINCE);
+        int activeIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_ACTIVE);
+        int curRxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_RX);
+        int curTxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_TX);
+        int totRxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX);
+        int totTxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX);
+        int typeIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE);
+        int timeIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TIME);
 
-        return ("<data active=\""+mobilePref.getString(Database.MobileNetworkInterface.KEY_ACTIVE,"false")+"\" time=\"" +
-                TimeCapture.getTime() + "\" since=\"" +
-                TimeCapture.getTime(mobilePref.getLong(Database.MobileNetworkInterface.KEY_SINCE,0)) +"\" rx=\""+
-                mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_RX,0)+
-                mobilePref.getLong(Database.MobileNetworkInterface.KEY_TOTAL_RX,0)+"\" tx=\""+
-                mobilePref.getLong(Database.MobileNetworkInterface.KEY_CURRENT_TX,0)+
-                mobilePref.getLong(Database.MobileNetworkInterface.KEY_TOTAL_TX,0) +"\">mobile</data>\n" +
-                "<data active=\""+wifiPref.getString(Database.WifiNetworkInterface.KEY_ACTIVE,"false")+"\" time=\"" +
-                TimeCapture.getTime() + "\" since=\"" +
-                TimeCapture.getTime(wifiPref.getLong(Database.WifiNetworkInterface.KEY_SINCE,0)) + "\" rx=\"" +
-                wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_RX,0)+
-                wifiPref.getLong(Database.WifiNetworkInterface.KEY_TOTAL_RX,0)+"\" tx=\""+
-                wifiPref.getLong(Database.WifiNetworkInterface.KEY_CURRENT_TX,0)+
-                wifiPref.getLong(Database.WifiNetworkInterface.KEY_TOTAL_TX,0)+"\">wifi</data>\n");
+        StringBuilder result = new StringBuilder();
+        while (cursor.moveToNext()) {
+            Log.e("tx-tot/cur",cursor.getLong(totTxIndex)+"/"+cursor.getLong(curTxIndex));
+            Log.e("rx-tot/cur",cursor.getLong(totRxIndex)+"/"+cursor.getLong(curRxIndex));
+            result.append("<data active=\"" + cursor.getString(activeIndex) + "\" time=\"" +
+                    cursor.getString(timeIndex) + "\" since=\"" + cursor.getString(sinceIndex) + "\" rx=\"" +
+                    Long.toString(cursor.getLong(curRxIndex) + cursor.getLong(totRxIndex)) + "\" tx=\"" + (cursor.getLong(curTxIndex) +
+                    cursor.getLong(totTxIndex)) + "\">" + cursor.getString(typeIndex) + "</data>\n");
+        }
+        cursor.close();
+        return result.toString();
     }
 }

@@ -1,44 +1,56 @@
 package com.isoc.android.monitor;
 
 import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import android.os.Build;
-import android.os.SystemClock;
 import android.telephony.TelephonyManager;
+
+import java.util.ArrayList;
 
 /**
  * Created by maik on 4/7/2016.
  */
 public class MetaDataCapture {
 
-    private static String[][] getTelephonyDetails(Context context){
-        String[] datatype=new String[]{"unknown","gprs","edge","umts","cdma","evdo0","evdoA","1xrtt","hsdpa","hsupa","hspa","iden","evdoB","lte","ehrpd","hspap"};
-        String[] datastate=new String[]{"disconnected","connecting","connected","suspended"};
-        TelephonyManager tm=(TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        String result[][]=new String[5][2];
-        result[0]=new String[]{"imei",tm.getDeviceId()};
-        result[1]=new String[]{"datanettype",datatype[tm.getNetworkType()]};
-        result[2]=new String[]{"country",tm.getNetworkCountryIso()};
-        result[3]=new String[]{"network",tm.getNetworkOperatorName()};
-        result[4]=new String[]{"carrier",tm.getSimOperatorName()};
+    private static ArrayList<String[]> getMetaData(Context context) {
+        ArrayList<String[]> result = new ArrayList<String[]>();
+        getTelephonyDetails(context, result);
+        getPhoneDetails(result);
+        getDefaultBrowser(context,result);
         return result;
     }
 
-    private static String[][] getPhoneDetails(){
-        String result[][] = new String[4][2];
-        result[0]=new String[]{"manufacturer",Build.MANUFACTURER};
-        result[1]=new String[]{"model",Build.MODEL};
-        result[2]=new String[]{"androidver",Build.VERSION.RELEASE};
-        result[3]=new String[]{"uptime",Long.toString(SystemClock.elapsedRealtime()/1000)};
-        return result;
+    private static void getTelephonyDetails(Context context, ArrayList<String[]> result) {
+        String[] datatype = new String[]{"unknown", "gprs", "edge", "umts", "cdma", "evdo0", "evdoA", "1xrtt", "hsdpa", "hsupa", "hspa", "iden", "evdoB", "lte", "ehrpd", "hspap"};
+        TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        result.add(new String[]{"imei", tm.getDeviceId()});
+        result.add(new String[]{"datanettype", datatype[tm.getNetworkType()]});
+        result.add(new String[]{"country", tm.getNetworkCountryIso()});
+        result.add(new String[]{"network", tm.getNetworkOperatorName()});
+        result.add(new String[]{"carrier", tm.getSimOperatorName()});
     }
 
-    protected static String getMetaDataXML(Context context){
-        StringBuilder result=new StringBuilder();
-        for (String[] d : getTelephonyDetails(context)) {
-            result.append("<"+d[0]+">" + d[1] + "</"+d[0]+">\n");
+    private static void getPhoneDetails(ArrayList<String[]> result) {
+        result.add(new String[]{"manufacturer", Build.MANUFACTURER});
+        result.add(new String[]{"model", Build.MODEL});
+        result.add(new String[]{"androidver", Build.VERSION.RELEASE});
+        result.add(new String[]{"uptime", Long.toString(TimeCapture.getUpTime())});
     }
-        for (String[] d : getPhoneDetails())
-            result.append("<"+d[0]+">" + d[1] + "</"+d[0]+">\n");
+
+    private static void getDefaultBrowser(Context context,ArrayList<String[]> result){
+        Intent browseIntent =new Intent("android.intent.action.VIEW", Uri.parse("http://"));
+        ResolveInfo defaultBrowse=context.getPackageManager().resolveActivity(browseIntent, PackageManager.MATCH_DEFAULT_ONLY);
+        result.add(new String[]{"defaultBrowser",defaultBrowse.activityInfo.packageName});
+    }
+
+    protected static String getMetaDataXML(Context context) {
+        StringBuilder result = new StringBuilder();
+        for (String[] d : getMetaData(context)) {
+            result.append("<" + d[0] + ">" + d[1] + "</" + d[0] + ">\n");
+        }
         return result.toString();
     }
 }

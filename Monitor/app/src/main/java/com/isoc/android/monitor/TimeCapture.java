@@ -1,5 +1,7 @@
 package com.isoc.android.monitor;
 
+import android.os.SystemClock;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -11,9 +13,9 @@ public class TimeCapture {
     private static final String defaultTimeFormat="yyyy-MM-dd HH:mm:ss";
 
     //given time in given format
-    protected static String getTime(String format,long seconds) {
+    protected static String getTime(String format,long milliseconds) {
         SimpleDateFormat sdf = new SimpleDateFormat(format);
-        return sdf.format(new Date(seconds));
+        return sdf.format(new Date(milliseconds));
     }
 
     //Current time in given format
@@ -28,4 +30,10 @@ public class TimeCapture {
     protected static String getTime(long seconds) {
         return getTime(defaultTimeFormat,seconds);
     }
+
+    protected static long getUpTime(){
+        return SystemClock.elapsedRealtime()/1000;
+    }
+
+    protected static String getUpDate(){return getTime((System.currentTimeMillis()-SystemClock.elapsedRealtime()));}
 }

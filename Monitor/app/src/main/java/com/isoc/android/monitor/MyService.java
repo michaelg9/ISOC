@@ -1,78 +1,67 @@
 package com.isoc.android.monitor;
 
-import android.app.Service;
+import android.app.AlarmManager;
+import android.app.IntentService;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.os.Binder;
-import android.os.IBinder;
+import android.os.SystemClock;
 import android.preference.PreferenceManager;
-import android.widget.Toast;
+import android.util.Log;
 
-public class MyService extends Service {
-    private SharedPreferences prefs;
+public class MyService extends IntentService {
 
-    private final IBinder mBinder = new LocalBinder();
 
-    public class LocalBinder extends Binder {
-        MyService getService() {
-            return MyService.this;
+    public MyService() {
+        super("RecordService");
+    }
+
+    @Override
+    protected void onHandleIntent(Intent intent) {
+        Log.e("RecordService","started: "+TimeCapture.getTime());
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        if (preferences.getBoolean("calls",true)) ContactsCapture.getCallLog(this);
+
+        String packagesPreference=preferences.getString("inst_pack","all");
+        if (!packagesPreference.equals("none")) PackageCapture.getInstalledPackages(this,packagesPreference);
+
+        String servicesPreference=preferences.getString("run_service","all");
+        if (!servicesPreference.equals("none")) PackageCapture.getRunningServices(this,servicesPreference);
+
+        if (preferences.getBoolean("sockets",true)) SocketsCapture.getSockets(this);
+
+        Log.e("RecordService","ended: "+TimeCapture.getTime());
+
+        ServiceReceiver.completeWakefulIntent(intent);
+    }
+
+
+    public static class ServiceControls{
+        private ServiceControls(){}
+
+        public static void startRepeated(Context context){
+            Intent intent=new Intent(context,MyService.class);
+            context.startService(intent);
+            intent = new Intent(context,ServiceReceiver.class);
+            final PendingIntent pendingIntent= PendingIntent.getBroadcast(context,1,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+            AlarmManager alarmManager=(AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            alarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME_WAKEUP, SystemClock.elapsedRealtime(),300000,pendingIntent);
+        }
+
+        public static void stopRepeated(Context context){
+            Intent intent=new Intent(context,ServiceReceiver.class);
+            final PendingIntent pendingIntent= PendingIntent.getBroadcast(context,1,intent,PendingIntent.FLAG_UPDATE_CURRENT);
+            AlarmManager alarmManager=(AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            alarmManager.cancel(pendingIntent);
+            pendingIntent.cancel();
+        }
+
+        public static boolean checkExistence(Context context){
+            Intent intent = new Intent(context,ServiceReceiver.class);
+            PendingIntent pendingIntent= PendingIntent.getBroadcast(context,1,intent,PendingIntent.FLAG_NO_CREATE);
+            return pendingIntent!=null;
+
         }
     }
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        prefs= PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-    }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-        return mBinder;
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Toast.makeText(this, "Service started", Toast.LENGTH_SHORT).show();
-        ContactsCapture.getCallLog(this);
-        NetworkCapture.getTrafficStats(this);
-        PackageCapture.getInstalledPackages(this);
-        PackageCapture.getRunningServices(this);
-        return super.onStartCommand(intent, flags, startId);
-    }
-
-    @Override
-    public boolean onUnbind(Intent intent) {
-        return true;
-    }
-
-    @Override
-    public void onRebind(Intent intent) {
-        super.onRebind(intent);
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Toast.makeText(this, "Service destroyed", Toast.LENGTH_SHORT).show();
-    }
-
-
-    public String generateXML() {
-
-        StringBuilder result = new StringBuilder("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-                "<data>\n"+
-                "<metadata>\n" +
-                MetaDataCapture.getMetaDataXML(this)+
-                "</metadata>\n" +
-                "<device-data>\n");
-        result.append(BatteryCapture.getBatteryXML(this,prefs));
-        result.append(NetworkCapture.getTrafficXML(this));
-//        result.append(ContactsCapture.getCallXML(this));
-        //result.append(PackageCapture.getRunningServicesXML(this));
-        result.append(PackageCapture.getInstalledPackagesXML(this));
-        result.append("</device-data>\n</data>");
-        return result.toString();
-
-    }
-
 }

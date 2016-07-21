@@ -1,15 +1,12 @@
 package com.isoc.android.monitor;
 
 import android.app.Fragment;
-import android.content.ComponentName;
 import android.content.Context;
-import android.content.Intent;
-import android.content.ServiceConnection;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -27,32 +24,33 @@ import java.net.URL;
 
 
 /**
- * A simple {@link Fragment} subclass.
+ * TO DO:
+ * WIFI / BLUETOOTH SCAN
+ * CONNECTIONS
+ * LOCATION
+ * TIMEZONE
+ * WHEN DEVICE SLEEPS
+ * ACTIONS PREFRENCE DETAILED NEW SCREENPREFERENCE
+ * MOBILE INTF READ DIRECTLY
+ * BROWSER HISTORY
+ * CELL TOWER CHANGE
+ * SYSTEM APPS REPORTING OLD INSTALLED DATE
+ * ----------
+ * NETWORK:
+ *  * when mobile off, counters =0. OK we get that directly from the source too...
+ * http://randomizedsort.blogspot.co.uk/2010/10/where-does-android-gets-its-traffic.html
+ *
+ * default since uptime, what if no capture and restart?
+ *
+ * Deprecated onreceive method, implement type?
+ * ------
  */
 public class MainFragment extends Fragment {
-    private MyService mService;
-    private boolean mBound = false;
 
     public MainFragment() {
         // Required empty public constructor
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        Intent intent = new Intent(getActivity(), MyService.class);
-        getActivity().bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
-
-    }
-
-    @Override
-    public void onStop() {
-        super.onStop();
-        if (mBound) {
-            getActivity().unbindService(mConnection);
-            mBound = false;
-        }
-    }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -61,20 +59,11 @@ public class MainFragment extends Fragment {
         View view= inflater.inflate(R.layout.fragment_main, container, false);
 
 
-        final Button buttonStart = (Button) view.findViewById(R.id.buttonStart);
-        buttonStart.setOnClickListener(new View.OnClickListener(){
+        final Button deleteDB = (Button) view.findViewById(R.id.delete_db);
+        deleteDB.setOnClickListener(new View.OnClickListener(){
             @Override
             public void onClick(View view) {
-                startService();
-            }
-        });
-
-        final Button buttonStop = (Button) view.findViewById(R.id.buttonStop);
-        buttonStop.setOnClickListener(new View.OnClickListener(){
-
-            @Override
-            public void onClick(View view) {
-                stopService();
+                getActivity().deleteDatabase(Database.DatabaseSchema.dbName);
             }
         });
 
@@ -96,49 +85,47 @@ public class MainFragment extends Fragment {
             }
         });
 
+
+        final Button checkAlarm = (Button) view.findViewById(R.id.checkAlarm);
+        checkAlarm.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                String s=(MyService.ServiceControls.checkExistence(getActivity())) ? "Exists!!" : "Doesn't exist :(";
+                Toast.makeText(getActivity(),s,Toast.LENGTH_LONG).show();
+            }
+        });
+
         return view;
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
     }
 
-    private ServiceConnection mConnection = new ServiceConnection() {
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder service) {
-            mBound = true;
-            MyService.LocalBinder binder = (MyService.LocalBinder) service;
-            mService = binder.getService();
-
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mBound = false;
-        }
-    };
-
-    public void startService() {
-        getActivity().startService(new Intent(getActivity(), MyService.class));
-    }
-
-    public void stopService() {
-        getActivity().stopService(new Intent(getActivity(), MyService.class));
-    }
-
-    public String getResults() {
-        String result=new String();
-        if (mService !=null)
-            result = mService.generateXML();
-        else
-            Toast.makeText(getActivity(),"Service not binded",Toast.LENGTH_LONG).show();
+    public String getResults(Context context){
+        SQLiteDatabase db = new Database(context).getReadableDatabase();
+        String result= "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<data>\n"+"<metadata>\n" +
+                MetaDataCapture.getMetaDataXML(context)+
+                "</metadata>\n" +"<device-data>\n"+
+                SocketsCapture.getSocketsXML(db)+
+                BatteryCapture.getBatteryXML(db)+
+                ActionCapture.getActionsXML(db)+
+                NetworkCapture.getTrafficXML(db)+
+                ContactsCapture.getCallXML(db)+
+                PackageCapture.getRunningServicesXML(db)+
+                PackageCapture.getInstalledPackagesXML(db)+
+                "</device-data>\n</data>";
+        db.close();
         return result;
     }
 
     public void showResults() {
+        String results=getResults(getActivity());
         Bundle bundle = new Bundle();
-        bundle.putString("results",getResults());
+        bundle.putString("results",results);
         ShowFragment showFragment=new ShowFragment();
         showFragment.setArguments(bundle);
         getFragmentManager().beginTransaction().replace(R.id.fragment_container,showFragment).addToBackStack(null).commit();
@@ -157,13 +144,12 @@ public class MainFragment extends Fragment {
     public void sendXML(){
         if (!checkNet()) return;
         String ip =PreferenceManager.getDefaultSharedPreferences(getActivity()).getString("server_url",null);
-        new Post().execute(ip,getResults());
+        new Post().execute(ip,getResults(getActivity()));
 
     }
 
 
     private class Post extends AsyncTask<String,Void,String> {
-
         @Override
         protected String doInBackground(String... args) {
             String result;

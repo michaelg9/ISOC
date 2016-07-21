@@ -3,21 +3,20 @@
 
     <SwitchPreference
         android:key="service_state"
-        android:defaultValue="true"
-        android:title="Service State"
+        android:defaultValue="false"
+        android:title="Background Service State"
         android:summaryOn="Enabled"
         android:summaryOff="Disabled"/>
 
     <EditTextPreference
         android:key="server_url"
-        android:defaultValue="http://104.155.40.104:3000/app/0.1/post"
+        android:defaultValue="http://104.155.40.104:3000/app/0.1/upload"
         android:title="Server URL"/>
-
 
     <PreferenceCategory android:title="Monitoring">
         <ListPreference
             android:dependency="service_state"
-            android:defaultValue="all"
+            android:defaultValue="none"
             android:key="inst_pack"
             android:title="Installed Packages"
             android:summary="%s installed packages"
@@ -27,7 +26,7 @@
 
         <ListPreference
             android:dependency="service_state"
-            android:defaultValue="all"
+            android:defaultValue="none"
             android:key="run_service"
             android:title="Running Services"
             android:summary="%s running services"
@@ -36,10 +35,14 @@
         </ListPreference>
 
         <CheckBoxPreference
-            android:dependency="service_state"
             android:key="battery"
             android:defaultValue="true"
             android:title="Battery"/>
+
+        <CheckBoxPreference
+            android:key="connectivity"
+            android:defaultValue="true"
+            android:title="Connectivity"/>
 
         <CheckBoxPreference
             android:dependency="service_state"
@@ -47,5 +50,30 @@
             android:defaultValue="true"
             android:title="Call Log"/>
 
+        <CheckBoxPreference
+            android:key="sockets"
+            android:dependency="service_state"
+            android:defaultValue="true"
+            android:title="Sockets"
+            android:summary="Active Connections"/>
+
+        <CheckBoxPreference
+            android:key="actions"
+            android:defaultValue="true"
+            android:title="Actions"
+            android:summary="Shutdown, Boot, Airplane Mode"/>
+
+        <!--PreferenceScreen android:title="Actions"
+            android:enabled="false">
+            <CheckBoxPreference
+                android:key="airplane"
+                android:defaultValue="true"
+                android:title="Airplane Mode"/>
+            <CheckBoxPreference
+                android:key="power"
+                android:defaultValue="true"
+                android:title="Power Actions"
+                android:summary="Power On/Off, Reboot"/>
+        </PreferenceScreen!-->
     </PreferenceCategory>
 </PreferenceScreen>

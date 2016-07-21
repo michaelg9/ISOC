@@ -7,29 +7,10 @@
     <Button
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Start Service"
-        android:id="@+id/buttonStart"
-        android:layout_alignParentTop="true"
-        android:layout_toLeftOf="@+id/buttonShow"
-        android:layout_toStartOf="@+id/buttonShow" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Stop Service"
-        android:id="@+id/buttonStop"
-        android:layout_alignTop="@+id/buttonStart"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentEnd="true" />
-
-    <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
         android:text="Show Results"
         android:id="@+id/buttonShow"
         android:layout_marginTop="96dp"
         android:layout_gravity="center_vertical"
-        android:layout_below="@+id/buttonStart"
         android:layout_centerHorizontal="true" />
 
     <Button
@@ -40,5 +21,23 @@
         android:layout_below="@+id/buttonShow"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="101dp" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Delete Database"
+        android:id="@+id/delete_db"
+        android:layout_marginTop="57dp"
+        android:layout_below="@+id/buttonSend"
+        android:layout_centerHorizontal="true" />
+
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Check Alarm"
+        android:id="@+id/checkAlarm"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true" />
+
 
 </RelativeLayout>

@@ -4,14 +4,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.BatteryManager;
 
 /**
  * Created by maik on 1/7/2016.
- * Capture batttery statistics
+ * Capture battery statistics
  */
 public class BatteryCapture {
 
@@ -20,6 +19,7 @@ public class BatteryCapture {
         Intent battery = context.getApplicationContext().registerReceiver(null, iFilter);
         if (battery==null) return;
         ContentValues values=new ContentValues();
+        values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_TEMP,((float) battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1))/10);
         values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_CHARGING,battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1));
         values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_LEVEL,battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
         values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_DATE,TimeCapture.getTime());
@@ -28,21 +28,21 @@ public class BatteryCapture {
         db.close();
     }
 
-    protected static String getBatteryXML(Context context, SharedPreferences prefs) {
-        SQLiteDatabase db=new Database(context).getReadableDatabase();
+    protected static String getBatteryXML(SQLiteDatabase db) {
         Cursor cursor = db.query(Database.DatabaseSchema.Battery.TABLE_NAME,null,null,null,null,null,null);
         StringBuilder sb=new StringBuilder();
         int dateIndex = cursor.getColumnIndex(Database.DatabaseSchema.Battery.COLUMN_NAME_DATE);
         int chargeIndex = cursor.getColumnIndex(Database.DatabaseSchema.Battery.COLUMN_NAME_CHARGING);
         int levelIndex = cursor.getColumnIndex(Database.DatabaseSchema.Battery.COLUMN_NAME_LEVEL);
+        int tempIndex = cursor.getColumnIndex(Database.DatabaseSchema.Battery.COLUMN_NAME_TEMP);
         while (cursor.moveToNext()) {
             boolean charging =cursor.getInt(chargeIndex)!=0;
-            sb.append("<battery time=\"" + cursor.getString(dateIndex) + "\" charging=\"" + charging +
-                    "\">" + cursor.getInt(levelIndex) + "</battery>\n");
+            sb.append("<battery time=\"" + cursor.getString(dateIndex) + "\" charging=\"" + charging +"\" temp=\""+
+                    cursor.getFloat(tempIndex)+"\">" + cursor.getInt(levelIndex) + "</battery>\n");
         }
-        db.close();
         cursor.close();
         return sb.toString();
     }
+
 
 }
