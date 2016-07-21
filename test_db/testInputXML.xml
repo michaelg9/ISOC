@@ -24,7 +24,7 @@
                 
                 <action time="2016-06-12 19:21:55">boot</action>
                 <connection time="2016-06-12 19:20:34" local="192.168.01.144:2455" remote="8.8.8.8:445" 
-                    type="tcp" status="" uid="180">proc</connection>
+                    type="tcp" status="established" uid="180">proc</connection>
 
                                 
 	</device-data>
