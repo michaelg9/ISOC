@@ -107,5 +107,3 @@ func TestRequireBasicAuth(t *testing.T) {
 		}
 	}
 }
-
-// TODO: RequireSessionAuth test

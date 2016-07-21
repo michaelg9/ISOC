@@ -39,7 +39,6 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	user, err := env.DB.GetUser(models.User{Email: email})
 	switch {
 	// User does not exist
-	// TODO: Check which error occurs when there is no user
 	case user == models.User{}:
 		// Create new user with hashed password
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -105,8 +104,23 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	user, err := env.DB.GetUser(models.User{Email: email.(string)})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// Make sure we don't send the password hash over the wire
+	user.PasswordHash = ""
 
-	out, err := json.Marshal(models.DataOut{Device: devices})
+	outStruct := struct {
+		models.DataOut
+		User models.User `json:"user"`
+	}{
+		models.DataOut{Device: devices},
+		user,
+	}
+
+	out, err := json.Marshal(outStruct)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -145,4 +159,66 @@ func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(out))
+}
+
+// UpdateUser handles /update/user
+func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	// Because of the middleware we know that these values exist
+	session, _ := env.SessionStore.Get(r, "log-in")
+	oldEmail := session.Values["email"]
+
+	newEmail := r.FormValue("email")
+	password := r.FormValue("password")
+	apiKey := r.FormValue("apiKey")
+
+	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if newEmail != "" {
+		user.Email = newEmail
+		// TODO: Don't use magic strings
+		err = env.DB.UpdateUser(user, "Email")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		// Update the current session with the new email address
+		session.Values["email"] = newEmail
+		if err = session.Save(r, w); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	if password != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		user.PasswordHash = string(hashedPassword)
+		err = env.DB.UpdateUser(user, "PasswordHash")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	// The value for the apiKey only has to be non-empty, since the actual key will be
+	// an UUID from the MySQL database
+	if apiKey != "" {
+		user.APIKey = apiKey
+		err = env.DB.UpdateUser(user, "APIKey")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	fmt.Fprint(w, "Success")
 }

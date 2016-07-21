@@ -1,7 +1,5 @@
 package controllers
 
-// TODO: set response code for POST requests
-
 import (
 	"database/sql"
 	"fmt"

@@ -2,10 +2,10 @@ package models
 
 // User is the struct of the stored user data
 type User struct {
-	ID           int    `db:"uid"`
-	Email        string `db:"email"`
-	PasswordHash string `db:"passwordHash"`
-	APIKey       string `db:"apiKey"`
+	ID           int    `db:"uid" json:"id"`
+	Email        string `db:"email" json:"email"`
+	PasswordHash string `db:"passwordHash" json:"passwordHash"`
+	APIKey       string `db:"apiKey" json:"apiKey"`
 }
 
 // GetUser gets a user with the specified email
@@ -33,7 +33,7 @@ func (db *DB) UpdateUser(user User, field string) error {
 	queries := map[string]string{
 		"Email":        `UPDATE User SET email = :email WHERE uid = :uid;`,
 		"PasswordHash": `UPDATE User SET passwordHash = :passwordHash WHERE uid = :uid;`,
-		"APIKey":       `UPDATE User SET apiKey = :apiKey WHERE uid = :uid;`,
+		"APIKey":       `UPDATE User SET apiKey = REPLACE(UUID(), '-','') WHERE uid = :uid;`,
 	}
 
 	_, err := db.NamedExec(queries[field], user)

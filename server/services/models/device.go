@@ -10,6 +10,7 @@ type Device struct {
 // device data
 type DeviceStored struct {
 	ID           int    `json:"id" db:"id"`
+	IMEI         string `json:"imei" db:"imei"`
 	Manufacturer string `json:"manufacturer" db:"manufacturer"`
 	Model        string `json:"model" db:"modelName"`
 	OS           string `json:"os" db:"osVersion"`

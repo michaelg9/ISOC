@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" ng-app="dashboardApp">
 <head>
   <title>Monitor</title>
   <meta charset="utf-8">
@@ -14,28 +14,18 @@
   <!-- Dependencies for Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.min.js"></script>
-  <!-- Dependencies for Datepicker -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/js/bootstrap-datepicker.js"></script>
   <!-- Dependencies for Date Range Picker -->
   <script type="text/javascript" src="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.js"></script>
   <link rel="stylesheet" type="text/css" href="//cdn.jsdelivr.net/bootstrap.daterangepicker/2/daterangepicker.css" />
-  <!-- Own JavaScript-->
+  <!-- Dependencies for Bootbox.js -->
+  <script src="https://cdn.jsdelivr.net/bootbox/4.4.0/bootbox.min.js"></script>
+  <!-- Own JavaScript -->
   <script src="static/js/dashboard.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.6.1/css/bootstrap-datepicker.css">
-  <style>
-    /* Set gray background color and 100% height */
-    .sidenav {
-      background-color: #f1f1f1;
-      height: 100%;
-    }
-
-    /* On small screens, set height to 'auto' for the grid */
-    @media screen and (max-width: 767px) {
-      .row.content {height: auto;}
-    }
-  </style>
+  <!-- Own CSS -->
+  <link rel="stylesheet" href="static/dashboardStyle.css">
 </head>
 <body>
+<!-- TODO: Make tables responsive -->
 
 <!-- Collapsed Navbar -->
 <nav class="navbar navbar-inverse visible-xs">
@@ -50,7 +40,7 @@
     </div>
     <div class="collapse navbar-collapse" id="myNavbar">
       <ul class="nav navbar-nav">
-        <li class="active"><a href="#">Dashboard</a></li>
+        <li class="active"><a href="">Dashboard</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul>
     </div>
@@ -63,28 +53,64 @@
     <div class="col-sm-3 sidenav hidden-xs">
       <h2>Monitor</h2>
       <ul class="nav nav-pills nav-stacked">
-        <li class="active"><a href="#section1">Dashboard</a></li>
+        <li class="active"><a href="">Dashboard</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul><br>
     </div>
     <br>
 
-    <div class="col-sm-9">
-      <div class="well" ng-app="deviceApp" ng-controller="deviceController">
-        <h4>Device</h4>
-        <p>
-          <b>Model: </b><span ng-bind="deviceInfo.model"></span><br/>
-          <b>Manufacturer: </b><span ng-bind="deviceInfo.manufacturer"></span><br/>
-          <b>Operating System: </b><span ng-bind="deviceInfo.os"></span><br/>
-        </p>
+    <div class="col-sm-9 col-sm-offset-3">
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="well" ng-controller="deviceController">
+            <h4>Device</h4>
+            <table class="table-responsive borderless">
+              <tbody>
+                <tr>
+                  <td><b>Model:</b></td>
+                  <td><span ng-bind="deviceInfo.model"></span></td>
+                </tr>
+                <tr>
+                  <td><b>Manufacturer:</b></td>
+                  <td><span ng-bind="deviceInfo.manufacturer"></span></td>
+                </tr>
+                <tr>
+                  <td><b>Operating System:</b></td>
+                  <td><span ng-bind="deviceInfo.os"></span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="well" ng-controller="userController">
+            <h4>My Details</h4>
+            <table class="table-responsive borderless">
+              <tbody>
+                <tr>
+                  <td><b>Email:</b></td>
+                  <td><span ng-bind="userInfo.email"></span></td>
+                  <td><a href="" id="editEmail">Edit</a></td>
+                </tr>
+                <tr>
+                  <td><b>API key:</b></td>
+                  <td><span ng-bind="userInfo.apiKey"></span></td>
+                  <td><a href="" id="updateAPIKey">Get new key</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
       <div class="row">
         <div class="col-sm-6">
           <div class="well">
-            <h4>Battery</h4>
-            <div class="form-group has-feedback">
-              <input type="text" id="daterangepicker" class="form-control">
-              <i class="glyphicon glyphicon-calendar form-control-feedback"></i>
+            <div class="box-header">
+              <h4>Battery</h4>
+              <div class="form-group has-feedback">
+                <input type="text" id="daterangepicker" class="form-control">
+                <i class="glyphicon glyphicon-calendar form-control-feedback"></i>
+              </div>
             </div>
             <canvas id="batteryChart" width="400" height="400"></canvas>
           </div>
