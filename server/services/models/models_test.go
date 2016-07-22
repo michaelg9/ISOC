@@ -118,7 +118,7 @@ var batteryData = []models.Battery{
 
 func setup() (*models.DB, error) {
 	// Panics if there is a connection error
-	db := models.NewDB("test_user:test_pwd@/test_db")
+	db := models.NewDB("treigerm:Hip$terSWAG@/test_db")
 
 	// Create tables
 	db.MustExec(schemaUser)
@@ -270,15 +270,12 @@ func TestUpdateUser(t *testing.T) {
 	pwd, err := bcrypt.GenerateFromPassword([]byte("12345"), bcrypt.DefaultCost)
 	checkErr(t, err)
 	user.PasswordHash = string(pwd)
-	user.APIKey = "12345678abcdefg"
-	err = db.UpdateUser(user, "Email")
-	checkErr(t, err)
-	err = db.UpdateUser(user, "PasswordHash")
-	checkErr(t, err)
-	err = db.UpdateUser(user, "APIKey")
+	user.APIKey = "1"
+	err = db.UpdateUser(user)
 	checkErr(t, err)
 
 	result, err := db.GetUser(user)
+	user.APIKey = result.APIKey
 	checkErr(t, err)
 	checkEqual(t, user, result)
 }
@@ -292,11 +289,7 @@ func TestUpdateDevice(t *testing.T) {
 	device.Manufacturer = "Apple"
 	device.Model = "iPhone 6"
 	device.OS = "iOS 10"
-	err = db.UpdateDevice(device, "Manufacturer")
-	checkErr(t, err)
-	err = db.UpdateDevice(device, "Model")
-	checkErr(t, err)
-	err = db.UpdateDevice(device, "OS")
+	err = db.UpdateDevice(device)
 	checkErr(t, err)
 
 	expected := []models.DeviceStored{device}

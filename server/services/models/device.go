@@ -67,15 +67,14 @@ func (db *DB) CreateDeviceForUser(user User, device DeviceStored) error {
 }
 
 // UpdateDevice updates the given field of the device with the given id
-func (db *DB) UpdateDevice(device DeviceStored, field string) error {
+func (db *DB) UpdateDevice(device DeviceStored) error {
 	queries := map[string]string{
 		"Manufacturer": `UPDATE Device SET manufacturer = :manufacturer WHERE id = :id;`,
 		"Model":        `UPDATE Device SET modelName = :modelName WHERE id = :id;`,
 		"OS":           `UPDATE Device SET osVersion = :osVersion WHERE id = :id;`,
 	}
 
-	_, err := db.NamedExec(queries[field], device)
-	return err
+	return db.update(queries, device)
 }
 
 // DeleteDevice deletes the device with that specified in the struct.
