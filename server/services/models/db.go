@@ -36,10 +36,12 @@ func NewDB(dsn string) *DB {
 	return &DB{db}
 }
 
+// update takes a struct and the a map from the field names to database queries for updating
+// the value stored in the field. If a value in the given struct is non-empty and there is an
+// update query for the field stored in the map, we update the database.
 func (db *DB) update(queries map[string]string, arg interface{}) error {
 	value := reflect.ValueOf(arg)
 
-	// Return an error if arg is not a struct
 	if value.Kind() != reflect.Struct {
 		return errors.New("Need to pass a struct to update.")
 	}

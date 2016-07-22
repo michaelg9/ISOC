@@ -167,12 +167,15 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	session, _ := env.SessionStore.Get(r, "log-in")
 	oldEmail := session.Values["email"]
 
+	// We need to get the user from the database to get its user ID
 	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
+	// Overwrite the stored values with the values given in the request.
+	// If a value isn't given it defaults to the empty string, thus we don't update it.
 	user.Email = r.FormValue("email")
 	user.PasswordHash = r.FormValue("password")
 	user.APIKey = r.FormValue("apiKey")
@@ -197,7 +200,7 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	// For the API key we use 0/1 for false/true since the actual value of the key will be determined
 	// by the MySQL database by calling the UUID() function. Hence if the value is not 1 we set the
-	// value in the struct to be the empty string so that the apiKey won't be updated
+	// value in the struct to be the empty string so that the apiKey won't be updated.
 	if user.APIKey != "1" {
 		user.APIKey = ""
 	}
