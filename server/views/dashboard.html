@@ -25,8 +25,6 @@
   <link rel="stylesheet" href="static/dashboardStyle.css">
 </head>
 <body>
-<!-- TODO: Make tables responsive -->
-
 <!-- Collapsed Navbar -->
 <nav class="navbar navbar-inverse visible-xs">
   <div class="container-fluid">
@@ -64,41 +62,45 @@
         <div class="col-sm-6">
           <div class="well" ng-controller="deviceController">
             <h4>Device</h4>
-            <table class="table-responsive borderless">
-              <tbody>
-                <tr>
-                  <td><b>Model:</b></td>
-                  <td><span ng-bind="deviceInfo.model"></span></td>
-                </tr>
-                <tr>
-                  <td><b>Manufacturer:</b></td>
-                  <td><span ng-bind="deviceInfo.manufacturer"></span></td>
-                </tr>
-                <tr>
-                  <td><b>Operating System:</b></td>
-                  <td><span ng-bind="deviceInfo.os"></span></td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table borderless">
+                <tbody>
+                  <tr>
+                    <td><b>Model:</b></td>
+                    <td><span ng-bind="deviceInfo.model"></span></td>
+                  </tr>
+                  <tr>
+                    <td><b>Manufacturer:</b></td>
+                    <td><span ng-bind="deviceInfo.manufacturer"></span></td>
+                  </tr>
+                  <tr>
+                    <td><b>Operating System:</b></td>
+                    <td><span ng-bind="deviceInfo.os"></span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
         <div class="col-sm-6">
           <div class="well" ng-controller="userController">
             <h4>My Details</h4>
-            <table class="table-responsive borderless">
-              <tbody>
-                <tr>
-                  <td><b>Email:</b></td>
-                  <td><span ng-bind="userInfo.email"></span></td>
-                  <td><a href="" id="editEmail">Edit</a></td>
-                </tr>
-                <tr>
-                  <td><b>API key:</b></td>
-                  <td><span ng-bind="userInfo.apiKey"></span></td>
-                  <td><a href="" id="updateAPIKey">Get new key</a></td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="table-responsive">
+              <table class="table borderless">
+                <tbody>
+                  <tr>
+                    <td><b>Email:</b></td>
+                    <td><span ng-bind="userInfo.email"></span></td>
+                    <td><a href="" id="editEmail">Edit</a></td>
+                  </tr>
+                  <tr>
+                    <td><b>API key:</b></td>
+                    <td><span ng-bind="userInfo.apiKey"></span></td>
+                    <td><a href="" id="updateAPIKey">Get new key</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>

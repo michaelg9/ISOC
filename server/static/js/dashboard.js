@@ -2,8 +2,7 @@ var retrieveDataURL = "../data/0.1/user";
 var updateUserURL = "../update/user?";
 var batteryChart;
 
-// TODO: Commenting
-// TODO: Look into global variables in JS and use JS linter
+// TODO: Look into global variables and JS code structure
 
 // Angular app
 var app = angular.module("dashboardApp", []);
