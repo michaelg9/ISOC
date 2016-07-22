@@ -165,8 +165,7 @@ $(document).ready(function() {
     });
 
     $("#updateAPIKey").on("click", function () {
-        // TODO: find a smarter way to do that
-        var updateData = {apiKey: "1"}; // Value just has to be non-zero
+        var updateData = {apiKey: "1"}; // Use 1 for true
         $.post({
             url: updateUserURL,
             data: updateData

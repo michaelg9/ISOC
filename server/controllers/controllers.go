@@ -209,10 +209,9 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// The value for the apiKey only has to be non-empty, since the actual key will be
-	// an UUID from the MySQL database
-	if apiKey != "" {
-		user.APIKey = apiKey
+	// For the API key we use 0/1 for false/true since the actual value of the key will be determined
+	// by the MySQL database by calling the UUID() function
+	if apiKey == "1" {
 		err = env.DB.UpdateUser(user, "APIKey")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
