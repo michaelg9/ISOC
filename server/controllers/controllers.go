@@ -167,57 +167,47 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	session, _ := env.SessionStore.Get(r, "log-in")
 	oldEmail := session.Values["email"]
 
-	newEmail := r.FormValue("email")
-	password := r.FormValue("password")
-	apiKey := r.FormValue("apiKey")
-
+	// We need to get the user from the database to get its user ID
 	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if newEmail != "" {
-		user.Email = newEmail
-		// TODO: Don't use magic strings
-		err = env.DB.UpdateUser(user, "Email")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	// Overwrite the stored values with the values given in the request.
+	// If a value isn't given it defaults to the empty string, thus we don't update it.
+	user.Email = r.FormValue("email")
+	user.PasswordHash = r.FormValue("password")
+	user.APIKey = r.FormValue("apiKey")
 
+	if user.Email != "" {
 		// Update the current session with the new email address
-		session.Values["email"] = newEmail
+		session.Values["email"] = user.Email
 		if err = session.Save(r, w); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 	}
 
-	if password != "" {
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if user.PasswordHash != "" {
+		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		user.PasswordHash = string(hashedPassword)
-		err = env.DB.UpdateUser(user, "PasswordHash")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
 	}
 
-	// The value for the apiKey only has to be non-empty, since the actual key will be
-	// an UUID from the MySQL database
-	if apiKey != "" {
-		user.APIKey = apiKey
-		err = env.DB.UpdateUser(user, "APIKey")
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
+	// For the API key we use 0/1 for false/true since the actual value of the key will be determined
+	// by the MySQL database by calling the UUID() function. Hence if the value is not 1 we set the
+	// value in the struct to be the empty string so that the apiKey won't be updated.
+	if user.APIKey != "1" {
+		user.APIKey = ""
+	}
+
+	if err = env.DB.UpdateUser(user); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprint(w, "Success")

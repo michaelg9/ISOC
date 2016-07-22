@@ -1,0 +1,30 @@
+.form-signin {
+    margin: 0 auto;
+    padding: 15px;
+    max-width: 330px;
+}
+
+body {
+    padding-top: 40px;
+    padding-bottom: 40px;
+    background-color: #eee;
+}
+
+#email {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+#password {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+}
+
+#forgot-password {
+    margin-top: 10px;
+}
+
+#login-btn {
+    width: 100%;
+    margin-top: 10px;
+}

@@ -2,8 +2,7 @@ var retrieveDataURL = "../data/0.1/user";
 var updateUserURL = "../update/user?";
 var batteryChart;
 
-// TODO: Commenting
-// TODO: Look into global variables in JS and use JS linter
+// TODO: Look into global variables and JS code structure
 
 // Angular app
 var app = angular.module("dashboardApp", []);
@@ -166,8 +165,7 @@ $(document).ready(function() {
     });
 
     $("#updateAPIKey").on("click", function () {
-        // TODO: find a smarter way to do that
-        var updateData = {apiKey: "1"}; // Value just has to be non-zero
+        var updateData = {apiKey: "1"}; // Use 1 for true
         $.post({
             url: updateUserURL,
             data: updateData

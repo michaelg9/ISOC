@@ -29,15 +29,14 @@ func (db *DB) CreateUser(user User) error {
 }
 
 // UpdateUser update the specified user
-func (db *DB) UpdateUser(user User, field string) error {
+func (db *DB) UpdateUser(user User) error {
 	queries := map[string]string{
 		"Email":        `UPDATE User SET email = :email WHERE uid = :uid;`,
 		"PasswordHash": `UPDATE User SET passwordHash = :passwordHash WHERE uid = :uid;`,
 		"APIKey":       `UPDATE User SET apiKey = REPLACE(UUID(), '-','') WHERE uid = :uid;`,
 	}
 
-	_, err := db.NamedExec(queries[field], user)
-	return err
+	return db.update(queries, user)
 }
 
 // DeleteUser deletes the user with the information in the user struct.

@@ -1,0 +1,15 @@
+.navbar {
+  margin-bottom: 0;
+  border-radius: 0;
+  width: 100%;
+}
+
+#login-btn {
+    margin-right: 20px;
+    margin-left: 20px;
+}
+
+#uoe-logo {
+    text-align: left;
+    margin-top: 20px;
+}
