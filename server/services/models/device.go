@@ -47,7 +47,7 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 
 // GetDeviceInfos gets all the registered devices without the stored data from the given user.
 func (db *DB) GetDeviceInfos(user User) (devices []DeviceStored, err error) {
-	getDevicesQuery := `SELECT dev.id, dev.manufacturer, dev.modelName, dev.osVersion
+	getDevicesQuery := `SELECT dev.id, dev.imei, dev.manufacturer, dev.modelName, dev.osVersion
                 	   FROM Device dev, User u
                 	   WHERE (u.email = :email OR u.apiKey = :apiKey) AND u.uid = dev.user;`
 	stmt, err := db.PrepareNamed(getDevicesQuery)
@@ -61,12 +61,14 @@ func (db *DB) GetDeviceInfos(user User) (devices []DeviceStored, err error) {
 
 // CreateDeviceForUser creates the device which was passed as a struct
 func (db *DB) CreateDeviceForUser(user User, device DeviceStored) error {
-	createDeviceQuery := "INSERT INTO Device (manufacturer, modelName, osVersion, user) VALUES (?, ?, ?, ?);"
-	_, err := db.Exec(createDeviceQuery, device.Manufacturer, device.Model, device.OS, user.ID)
+	// TODO: Use named query with interface
+	createDeviceQuery := "INSERT INTO Device (imei, manufacturer, modelName, osVersion, user) VALUES (?, ?, ?, ?, ?);"
+	_, err := db.Exec(createDeviceQuery, device.IMEI, device.Manufacturer, device.Model, device.OS, user.ID)
 	return err
 }
 
 // UpdateDevice updates the given field of the device with the given id
+// NOTE: What should one be able to update?
 func (db *DB) UpdateDevice(device DeviceStored) error {
 	queries := map[string]string{
 		"Manufacturer": `UPDATE Device SET manufacturer = :manufacturer WHERE id = :id;`,
