@@ -36,7 +36,8 @@ Changes:
 <runservice>: uptime removed. since attribute indicates when the service started, time attribute indicates the time of capture.
 <call>: name attribute replaced by boolean saved attribute, which records if the number is registered as a contact. Additionally,
         the text of the tag that used to be the number dialled now is replaced by an arbitrary number
-<battery>: charging value goes from boolean to one of ac (when on a power socket), wireless (wireless charging source), usb, no (on battery).
+<battery>: charging value goes from boolean to one of: ac (when on a power socket), wireless (wireless charging source), usb, no (on battery), 
+        unknown(shouldnt appear under normal circumstances)
 <wifiAP>: lists the APs that were found in the last wifi scan. caps are the capabilities of the AP, each in a seperate pair of brackets.
         signal is a number (worst)0-10(best). frequency is in MHz. The text is the SSID of the AP
 
