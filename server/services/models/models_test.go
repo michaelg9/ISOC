@@ -1,5 +1,7 @@
 package models_test
 
+// TODO: Create test db with tables but without entries
+
 import (
 	"database/sql"
 	"reflect"
@@ -9,6 +11,8 @@ import (
 
 	"github.com/michaelg9/ISOC/server/services/models"
 )
+
+/* Database schema */
 
 var schemaUser = `
 CREATE TABLE User (
@@ -24,6 +28,7 @@ CREATE TABLE User (
 var schemaDevice = `
 CREATE TABLE Device (
   id int(11) NOT NULL AUTO_INCREMENT,
+  imei varchar(17) DEFAULT NULL,
   manufacturer varchar(50) DEFAULT NULL,
   modelName varchar(50) DEFAULT NULL,
   osVersion varchar(50) DEFAULT NULL,
@@ -43,17 +48,74 @@ CREATE TABLE BatteryStatus (
   CONSTRAINT BatteryStatus_ibfk_2 FOREIGN KEY (device) REFERENCES Device (id) ON DELETE CASCADE
 );`
 
+var schemaCall = `
+CREATE TABLE ` + "`" + `Call` + "`" + ` (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    callType varchar(8) NOT NULL,
+    ` + "`" + `start` + "`" + ` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ` + "`" + `end` + "`" + ` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    contact varchar(50),
+    device int(11) NOT NULL,
+    PRIMARY KEY (id),
+    KEY device (device),
+    CONSTRAINT Call_ibfk_1 FOREIGN KEY (device) REFERENCES Device (id) ON DELETE CASCADE
+);`
+
+var schemaApp = `
+CREATE TABLE App (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    name varchar(100) NOT NULL,
+    uid int(11) NOT NULL,
+    version varchar(10) NOT NULL,
+    installed timestamp NOT NULL,
+    label varchar(50) NOT NULL,
+    device int(11) NOT NULL,
+    PRIMARY KEY (id),
+    KEY device (device),
+    CONSTRAINT App_ibfk_1 FOREIGN KEY (device) REFERENCES Device (id) ON DELETE CASCADE
+);`
+
+var schemaRunservice = `
+CREATE TABLE Runservice (
+    id int(11) NOT NULL AUTO_INCREMENT,
+    appName varchar(100) NOT NULL,
+    rx int(11) NOT NULL,
+    tx int(11) NOT NULL,
+    ` + "`" + `start` + "`" + ` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    ` + "`" + `end` + "`" + ` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    device int(11) NOT NULL,
+    PRIMARY KEY (id),
+    KEY device (device),
+    CONSTRAINT Runservice_ibfk_1 FOREIGN KEY (device) REFERENCES Device (id) ON DELETE CASCADE
+);`
+
+/* Database data */
+
 var insertionUser = `
 INSERT INTO User VALUES (1,'user@usermail.com','$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK','37e72ff927f511e688adb827ebf7e157');
 `
 
 var insertionDevice = `
-INSERT INTO Device VALUES (1,'Motorola','Moto X (2nd Generation)','Android 5.0',1);
+INSERT INTO Device VALUES (1,'123456789012345','Motorola','Moto X (2nd Generation)','Android 5.0',1);
 `
 
 var insertionBattery = `
 INSERT INTO BatteryStatus VALUES (1,70,'2016-05-31 11:48:48',1);
 `
+
+var insertionCall = `
+INSERT INTO ` + "`" + `Call` + "`" + ` VALUES (1,'Outgoing','2016-05-31 11:50:00','2016-05-31 11:51:00','43A',1);
+`
+
+var insertionApp = `
+INSERT INTO App VALUES (1,'com.isoc.Monitor',123,'2.3','2016-05-31 11:50:00','Monitor',1);
+`
+
+var insertionRunservice = `
+INSERT INTO Runservice VALUES (1,'com.isoc.Monitor',12,10,'2016-05-31 11:50:00','2016-05-31 13:50:00',1);
+`
+
+/* Database deletion */
 
 var destroyUser = `
 DROP TABLE User;
@@ -65,6 +127,18 @@ DROP TABLE Device;
 
 var destroyBattery = `
 DROP TABLE BatteryStatus;
+`
+
+var destroyCall = `
+DROP TABLE ` + "`" + `Call` + "`" + `;
+`
+
+var destroyApp = `
+DROP TABLE App;
+`
+
+var destroyRunservice = `
+DROP TABLE Runservice;
 `
 
 var users = []models.User{
@@ -84,12 +158,14 @@ var users = []models.User{
 var deviceInfos = []models.DeviceStored{
 	models.DeviceStored{
 		ID:           1,
+		IMEI:         "123456789012345",
 		Manufacturer: "Motorola",
 		Model:        "Moto X (2nd Generation)",
 		OS:           "Android 5.0",
 	},
 	models.DeviceStored{
 		ID:           2,
+		IMEI:         "12345678901234567",
 		Manufacturer: "One Plus",
 		Model:        "Three",
 		OS:           "Android 6.0",
@@ -105,6 +181,10 @@ var devices = []models.Device{
 	},
 }
 
+/* Slices for the several data types. The first entry is always the data that's already in the
+   database and the second entry is used to test the insert.
+*/
+
 var batteryData = []models.Battery{
 	models.Battery{
 		Value: 70,
@@ -116,19 +196,80 @@ var batteryData = []models.Battery{
 	},
 }
 
+var callData = []models.Call{
+	models.Call{
+		Type:    "Outgoing",
+		Start:   "2016-05-31 11:50:00",
+		End:     "2016-05-31 11:51:00",
+		Contact: "43A",
+	},
+	models.Call{
+		Type:    "Ingoing",
+		Start:   "2016-06-30 11:50:00",
+		End:     "2016-06-30 11:51:00",
+		Contact: "43A",
+	},
+}
+
+var appData = []models.App{
+	models.App{
+		Name:      "com.isoc.Monitor",
+		UID:       123,
+		Version:   "2.3",
+		Installed: "2016-05-31 11:50:00",
+		Label:     "Monitor",
+	},
+	models.App{
+		Name:      "com.isoc.MobileApp",
+		UID:       124,
+		Version:   "2.0",
+		Installed: "2016-05-31 11:51:00",
+		Label:     "MobileApp",
+	},
+}
+
+var runserviceData = []models.Runservice{
+	models.Runservice{
+		AppName: "com.isoc.Monitor",
+		RX:      12,
+		TX:      10,
+		Start:   "2016-05-31 11:50:00",
+		End:     "2016-05-31 13:50:00",
+	},
+	models.Runservice{
+		AppName: "com.isoc.Monitor",
+		RX:      15,
+		TX:      0,
+		Start:   "2016-05-31 14:50:00",
+		End:     "2016-05-31 15:50:00",
+	},
+}
+
 func setup() (*models.DB, error) {
 	// Panics if there is a connection error
-	db := models.NewDB("treigerm:Hip$terSWAG@/test_db")
+	db := models.NewDB("[username]:[password]@/test_db?")
+
+	// Start transaction
+	tx := db.MustBegin()
 
 	// Create tables
-	db.MustExec(schemaUser)
-	db.MustExec(schemaDevice)
-	db.MustExec(schemaBattery)
+	tx.MustExec(schemaUser)
+	tx.MustExec(schemaDevice)
+	tx.MustExec(schemaBattery)
+	tx.MustExec(schemaCall)
+	tx.MustExec(schemaApp)
+	tx.MustExec(schemaRunservice)
 
 	// Populate tables
-	db.MustExec(insertionUser)
-	db.MustExec(insertionDevice)
-	db.MustExec(insertionBattery)
+	tx.MustExec(insertionUser)
+	tx.MustExec(insertionDevice)
+	tx.MustExec(insertionBattery)
+	tx.MustExec(insertionCall)
+	tx.MustExec(insertionApp)
+	tx.MustExec(insertionRunservice)
+
+	// Commit transaction
+	tx.Commit()
 
 	return db, nil
 }
@@ -140,9 +281,14 @@ func checkDBErr(t *testing.T, err error) {
 }
 
 func cleanUp(db *models.DB) {
-	db.MustExec(destroyBattery)
-	db.MustExec(destroyDevice)
-	db.MustExec(destroyUser)
+	tx := db.MustBegin()
+	tx.MustExec(destroyBattery)
+	tx.MustExec(destroyCall)
+	tx.MustExec(destroyApp)
+	tx.MustExec(destroyRunservice)
+	tx.MustExec(destroyDevice)
+	tx.MustExec(destroyUser)
+	tx.Commit()
 }
 
 func checkErr(t *testing.T, err error) {
@@ -182,6 +328,7 @@ func TestGetDevicesFromUser(t *testing.T) {
 	checkEqual(t, expected, result)
 }
 
+// TODO: Make this a private method and test from inside
 func TestGetDeviceInfos(t *testing.T) {
 	db, err := setup()
 	checkDBErr(t, err)
@@ -201,12 +348,23 @@ func TestGetData(t *testing.T) {
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
+	var tests = []struct {
+		ptrToResult interface{}
+		expected    interface{}
+	}{
+		{&[]models.Battery{}, batteryData[:1]},
+		{&[]models.Call{}, callData[:1]},
+		{&[]models.App{}, appData[:1]},
+		{&[]models.Runservice{}, runserviceData[:1]},
+	}
+
 	device := deviceInfos[0]
-	var batteries []models.Battery
-	expected := batteryData[:1]
-	err = db.GetData(device, &batteries)
-	checkErr(t, err)
-	checkEqual(t, expected, batteries)
+	for _, test := range tests {
+		err = db.GetData(device, test.ptrToResult)
+		checkErr(t, err)
+		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
+		checkEqual(t, test.expected, result)
+	}
 }
 
 func TestCreateUser(t *testing.T) {
@@ -248,16 +406,32 @@ func TestCreateData(t *testing.T) {
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
-	device := deviceInfos[0]
-	batteriesToInsert := batteryData[1:]
-	err = db.CreateData(device, &batteriesToInsert)
-	checkErr(t, err)
+	toInsertBattery := batteryData[1:]
+	toInsertCall := callData[1:]
+	toInsertApp := appData[1:]
+	toInsertRunservice := runserviceData[1:]
 
-	var batteries []models.Battery
-	err = db.GetData(device, &batteries)
-	expected := batteryData
-	checkErr(t, err)
-	checkEqual(t, expected, batteries)
+	var tests = []struct {
+		ptrToResult interface{}
+		toInsert    interface{}
+		expected    interface{}
+	}{
+		{&[]models.Battery{}, &toInsertBattery, batteryData},
+		{&[]models.Call{}, &toInsertCall, callData},
+		{&[]models.App{}, &toInsertApp, appData},
+		{&[]models.Runservice{}, &toInsertRunservice, runserviceData},
+	}
+
+	device := deviceInfos[0]
+	for _, test := range tests {
+		err = db.CreateData(device, test.toInsert)
+		checkErr(t, err)
+
+		err = db.GetData(device, test.ptrToResult)
+		checkErr(t, err)
+		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
+		checkEqual(t, test.expected, result)
+	}
 }
 
 func TestUpdateUser(t *testing.T) {

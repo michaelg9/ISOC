@@ -16,6 +16,36 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `App`
+--
+
+DROP TABLE IF EXISTS `App`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `App` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `uid` int(11) NOT NULL,
+  `version` varchar(10) NOT NULL,
+  `installed` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `label` varchar(50) NOT NULL,
+  `device` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `device` (`device`),
+  CONSTRAINT `App_ibfk_1` FOREIGN KEY (`device`) REFERENCES `Device` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `App`
+--
+
+LOCK TABLES `App` WRITE;
+/*!40000 ALTER TABLE `App` DISABLE KEYS */;
+/*!40000 ALTER TABLE `App` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `BatteryStatus`
 --
 
@@ -29,7 +59,7 @@ CREATE TABLE `BatteryStatus` (
   `device` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `device` (`device`),
-  CONSTRAINT `BatteryStatus_ibfk_2` FOREIGN KEY (`device`) REFERENCES `Device` (`id`) ON DELETE CASCADE
+  CONSTRAINT `BatteryStatus_ibfk_1` FOREIGN KEY (`device`) REFERENCES `Device` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=1008 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -44,6 +74,35 @@ INSERT INTO `BatteryStatus` VALUES (1,70,'2016-05-31 11:48:48',1),(2,69,'2016-05
 UNLOCK TABLES;
 
 --
+-- Table structure for table `Call`
+--
+
+DROP TABLE IF EXISTS `Call`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Call` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `callType` varchar(8) NOT NULL,
+  `from` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `to` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `contact` varchar(50) DEFAULT NULL,
+  `device` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `device` (`device`),
+  CONSTRAINT `Call_ibfk_1` FOREIGN KEY (`device`) REFERENCES `Device` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Call`
+--
+
+LOCK TABLES `Call` WRITE;
+/*!40000 ALTER TABLE `Call` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Call` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `Device`
 --
 
@@ -52,13 +111,14 @@ DROP TABLE IF EXISTS `Device`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `Device` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
+  `imei` varchar(17) DEFAULT NULL,
   `manufacturer` varchar(50) DEFAULT NULL,
   `modelName` varchar(50) DEFAULT NULL,
   `osVersion` varchar(50) DEFAULT NULL,
   `user` int(11) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `user` (`user`),
-  CONSTRAINT `Device_ibfk_1` FOREIGN KEY (`user`) REFERENCES `User` (`uid`) ON DELETE CASCADE
+  CONSTRAINT `Device_ibfk_2` FOREIGN KEY (`user`) REFERENCES `User` (`uid`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -70,6 +130,36 @@ LOCK TABLES `Device` WRITE;
 /*!40000 ALTER TABLE `Device` DISABLE KEYS */;
 INSERT INTO `Device` VALUES (1,'Motorola','Moto X (2nd Generation)','Android 5.0',1);
 /*!40000 ALTER TABLE `Device` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `Runservice`
+--
+
+DROP TABLE IF EXISTS `Runservice`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `Runservice` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `appName` varchar(100) NOT NULL,
+  `rx` int(11) NOT NULL,
+  `tx` int(11) NOT NULL,
+  `from` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `to` timestamp NOT NULL DEFAULT '0000-00-00 00:00:00',
+  `device` int(11) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `device` (`device`),
+  CONSTRAINT `Runservice_ibfk_1` FOREIGN KEY (`device`) REFERENCES `Device` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `Runservice`
+--
+
+LOCK TABLES `Runservice` WRITE;
+/*!40000 ALTER TABLE `Runservice` DISABLE KEYS */;
+/*!40000 ALTER TABLE `Runservice` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -85,6 +175,7 @@ CREATE TABLE `User` (
   `passwordHash` char(64) NOT NULL,
   `apiKey` varchar(32) DEFAULT NULL,
   PRIMARY KEY (`uid`),
+  UNIQUE KEY `username` (`email`),
   UNIQUE KEY `email` (`email`),
   UNIQUE KEY `apiKey` (`apiKey`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=latin1;
@@ -109,4 +200,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2016-07-02  9:26:18
+-- Dump completed on 2016-07-25  9:32:04
