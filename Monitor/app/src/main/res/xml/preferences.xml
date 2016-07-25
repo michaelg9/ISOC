@@ -2,11 +2,10 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
     <SwitchPreference
-        android:key="service_state"
+        android:key="monitoring"
         android:defaultValue="false"
-        android:title="Background Service State"
-        android:summaryOn="Enabled"
-        android:summaryOff="Disabled"/>
+        android:title="Monitoring"
+        android:summary="atm you need to untick everything..."/>
 
     <EditTextPreference
         android:key="server_url"
@@ -15,53 +14,59 @@
 
     <PreferenceCategory android:title="Monitoring">
         <ListPreference
-            android:dependency="service_state"
+            android:dependency="monitoring"
             android:defaultValue="none"
             android:key="inst_pack"
             android:title="Installed Packages"
-            android:summary="%s installed packages"
+            android:summary="%s"
             android:entries="@array/entries_package_types"
-            android:entryValues="@array/entryvalues_package_types">
-        </ListPreference>
-
-        <ListPreference
-            android:dependency="service_state"
-            android:defaultValue="none"
-            android:key="run_service"
-            android:title="Running Services"
-            android:summary="%s running services"
-            android:entries="@array/entries_package_types"
-            android:entryValues="@array/entryvalues_package_types">
-        </ListPreference>
+            android:entryValues="@array/entryvalues_package_types"/>
 
         <CheckBoxPreference
+            android:dependency="monitoring"
+            android:defaultValue="false"
+            android:key="run_service"
+            android:title="Running Services"
+            android:summary="Background Services"/>
+
+        <CheckBoxPreference
+            android:dependency="monitoring"
             android:key="battery"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:title="Battery"/>
 
         <CheckBoxPreference
+            android:dependency="monitoring"
             android:key="connectivity"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:title="Connectivity"/>
 
         <CheckBoxPreference
-            android:dependency="service_state"
+            android:dependency="monitoring"
             android:key="calls"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:title="Call Log"/>
 
         <CheckBoxPreference
             android:key="sockets"
-            android:dependency="service_state"
-            android:defaultValue="true"
+            android:dependency="monitoring"
+            android:defaultValue="false"
             android:title="Sockets"
             android:summary="Active Connections"/>
 
         <CheckBoxPreference
+            android:dependency="monitoring"
             android:key="actions"
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:title="Actions"
             android:summary="Shutdown, Boot, Airplane Mode"/>
+
+        <CheckBoxPreference
+            android:dependency="monitoring"
+            android:key="wifiScan"
+            android:defaultValue="false"
+            android:title="Wifi APs"
+            android:summary="Scan results"/>
 
         <!--PreferenceScreen android:title="Actions"
             android:enabled="false">

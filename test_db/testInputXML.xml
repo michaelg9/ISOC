@@ -10,28 +10,36 @@
 		<manufacturer>LGE</manufacturer>
 		<model>LG-D855</model>
 		<androidver>6.0</androidver>
-		<uptime>3546</uptime>
+		<lastReboot>2016-06-12 19:20:34</lastReboot>
                 <defaultBrowser>com.android.chrome</defaultBrowser>
     	</metadata>
 
     	<device-data>
-        	<battery time="2016-06-12 19:20:34" charging="false" temp="32.5">51</battery>
-        	<call time="18-05-16 20:00:00" type="Outgoing" duration="50" name="John">0123456789</call>
-		<runservice uid="123" uptime="234" rx="23" tx="23">com.isoc.monitor</runservice>
+        	<battery time="2016-06-12 19:20:34" charging="AC" temp="32.5">51</battery>
+        	<call time="18-05-16 20:00:00" type="Outgoing" duration="50" saved="true">1</call>
+		<runservice uid="123" since="2016-06-12 19:20:34" time="2016-06-12 19:20:34" rx="23" tx="23">com.isoc.monitor</runservice>
 		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3" 
                     uid="2323">Monitor</installedapp>
                 <data active="true" time="2016-06-12 19:21:55" since="2016-06-02 19:21:55" rx="2" tx="3">wifi</data>
-                
                 <action time="2016-06-12 19:21:55">boot</action>
                 <connection time="2016-06-12 19:20:34" local="192.168.01.144:2455" remote="8.8.8.8:445" 
                     type="tcp" status="established" uid="180">proc</connection>
-
-                                
+                
+                <wifiAP bssid="00:00:00:00:00:00" caps="[WPS][WPA-PSK-CCMP][WPA2-PSK-CCMP][ESS]" signal="5" frequency="2452">eduroam</wifiAP>
 	</device-data>
 </data>
 
 <!-- 
 Changes:
+22/07:
+<uptime> in metadata becomes <lastReboot>
+<runservice>: uptime removed. since attribute indicates when the service started, time attribute indicates the time of capture.
+<call>: name attribute replaced by boolean saved attribute, which records if the number is registered as a contact. Additionally,
+        the text of the tag that used to be the number dialled now is replaced by an arbitrary number
+<battery>: charging value goes from boolean to one of ac (when on a power socket), wireless (wireless charging source), usb, no (on battery).
+<wifiAP>: lists the APs that were found in the last wifi scan. caps are the capabilities of the AP, each in a seperate pair of brackets.
+        signal is a number (worst)0-10(best). frequency is in MHz. The text is the SSID of the AP
+
 
 21/07:
 Added <defaultBrowser> tag in metadata. This is the default package name (not label) that android uses to open webpages.

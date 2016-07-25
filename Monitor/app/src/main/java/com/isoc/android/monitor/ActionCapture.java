@@ -21,14 +21,11 @@ public class ActionCapture {
     }
 
     public static String getActionsXML(SQLiteDatabase db){
-        Cursor cursor = db.query(Database.DatabaseSchema.Actions.TABLE_NAME,null,null,null,null,null,null);
-        StringBuilder sb=new StringBuilder();
-        int dateIndex = cursor.getColumnIndex(Database.DatabaseSchema.Actions.COLUMN_NAME_DATE);
-        int actionIndex = cursor.getColumnIndex(Database.DatabaseSchema.Actions.COLUMN_NAME_ACTION);
-        while (cursor.moveToNext()) {
-            sb.append("<action date=\"" + cursor.getString(dateIndex) +"\">" + cursor.getString(actionIndex) + "</action>\n");
-        }
+        String[] projection = new String[]{Database.DatabaseSchema.Actions.COLUMN_NAME_ACTION,
+                Database.DatabaseSchema.Actions.COLUMN_NAME_DATE};
+        Cursor cursor = db.query(Database.DatabaseSchema.Actions.TABLE_NAME,projection,null,null,null,null,null);
+        String result= XMLProduce.tableToXML(cursor,Database.DatabaseSchema.Actions.TAG,Database.DatabaseSchema.Actions.COLUMN_NAME_ACTION);
         cursor.close();
-        return sb.toString();
+        return result;
     }
 }

@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -19,20 +20,24 @@ public class MyService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
+        SQLiteDatabase db = new Database(getApplicationContext()).getWritableDatabase();
+
         Log.e("RecordService","started: "+TimeCapture.getTime());
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
-        if (preferences.getBoolean("calls",true)) ContactsCapture.getCallLog(this);
+        if (preferences.getBoolean("calls",false)) ContactsCapture.getCallLog(this,db);
 
         String packagesPreference=preferences.getString("inst_pack","all");
-        if (!packagesPreference.equals("none")) PackageCapture.getInstalledPackages(this,packagesPreference);
+        if (!packagesPreference.equals("none")) PackageCapture.getInstalledPackages(this,packagesPreference,db);
 
-        String servicesPreference=preferences.getString("run_service","all");
-        if (!servicesPreference.equals("none")) PackageCapture.getRunningServices(this,servicesPreference);
+        if (preferences.getBoolean("run_service",false)) PackageCapture.getRunningServices(this,db);
 
-        if (preferences.getBoolean("sockets",true)) SocketsCapture.getSockets(this);
+        if (preferences.getBoolean("sockets",false)) SocketsCapture.getSockets(this,db);
+
+        if (preferences.getBoolean("wifiScan",false)) NetworkCapture.getWifiAPs(this,db);
 
         Log.e("RecordService","ended: "+TimeCapture.getTime());
 
+        db.close();
         ServiceReceiver.completeWakefulIntent(intent);
     }
 

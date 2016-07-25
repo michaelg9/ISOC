@@ -25,11 +25,12 @@ import java.net.URL;
 
 /**
  * TO DO:
+ * Formatting call log numbers: a number without country code is taken as a different number than the same number with country code
  * WIFI / BLUETOOTH SCAN
+ * SMS
  * CONNECTIONS
  * LOCATION
  * TIMEZONE
- * WHEN DEVICE SLEEPS
  * ACTIONS PREFRENCE DETAILED NEW SCREENPREFERENCE
  * MOBILE INTF READ DIRECTLY
  * BROWSER HISTORY
@@ -114,15 +115,19 @@ public class MainFragment extends Fragment {
                 BatteryCapture.getBatteryXML(db)+
                 ActionCapture.getActionsXML(db)+
                 NetworkCapture.getTrafficXML(db)+
-                ContactsCapture.getCallXML(db)+
+                NetworkCapture.getWifiAPResultsXML(db)+
+                ContactsCapture.getCallXML2(db)+
                 PackageCapture.getRunningServicesXML(db)+
-                PackageCapture.getInstalledPackagesXML(db)+
+                PackageCapture.getInstalledPackagesXML2(db)+
                 "</device-data>\n</data>";
         db.close();
+
         return result;
+
     }
 
     public void showResults() {
+
         String results=getResults(getActivity());
         Bundle bundle = new Bundle();
         bundle.putString("results",results);
@@ -167,7 +172,7 @@ public class MainFragment extends Fragment {
                 out.write(xml.getBytes());
                 out.flush();
                 out.close();
-                result="Done!";
+                result="Done! Response code: "+client.getResponseCode();
             }catch (java.net.SocketTimeoutException e){
                 result="TimeOut";
             }catch (MalformedURLException e) {

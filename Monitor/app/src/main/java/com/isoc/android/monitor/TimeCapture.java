@@ -19,21 +19,17 @@ public class TimeCapture {
     }
 
     //Current time in given format
-    protected static String getTime(String format){ return getTime(format,Calendar.getInstance().getTimeInMillis());
-    }
+    protected static String getTime(String format){ return getTime(format,Calendar.getInstance().getTimeInMillis());}
 
     //Current time in default format
-    protected static String getTime(){ return getTime(defaultTimeFormat,Calendar.getInstance().getTimeInMillis());
-    }
+    protected static String getTime(){ return getTime(defaultTimeFormat,Calendar.getInstance().getTimeInMillis());}
 
     //given time in default format
     protected static String getTime(long seconds) {
         return getTime(defaultTimeFormat,seconds);
     }
 
-    protected static long getUpTime(){
-        return SystemClock.elapsedRealtime()/1000;
-    }
+    protected static long getUpTime(){return (System.currentTimeMillis()-SystemClock.elapsedRealtime());}
 
     protected static String getUpDate(){return getTime((System.currentTimeMillis()-SystemClock.elapsedRealtime()));}
 }

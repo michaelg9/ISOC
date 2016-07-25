@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.TrafficStats;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.preference.PreferenceManager;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.util.Enumeration;
+import java.util.List;
 
 /**
  * Created by maik on 1/7/2016.
@@ -57,7 +59,7 @@ public class NetworkCapture {
         return result;
     }
 
-    public static String readStatsFromFile(Context context, String fileLocation) {
+    public static String readStatsFromFile(String fileLocation) {
         FileReader file = null;
         BufferedReader in = null;
         StringBuilder result = new StringBuilder();
@@ -103,7 +105,6 @@ public class NetworkCapture {
         db.close();
     }
 
-
     protected static void getTrafficStats(Context context, NetworkInfo affectedNet) {
         String time = TimeCapture.getTime();
         String type = new String();
@@ -114,8 +115,8 @@ public class NetworkCapture {
             case ConnectivityManager.TYPE_WIFI:
                 type = "wifi";
                 String wifiIntfName = getWifiIntfName(context);
-                rx = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiIntfName + "/statistics/rx_bytes"));
-                tx = Long.parseLong(readStatsFromFile(context, "/sys/class/net/" + wifiIntfName + "/statistics/tx_bytes"));
+                rx = Long.parseLong(readStatsFromFile("/sys/class/net/" + wifiIntfName + "/statistics/rx_bytes"));
+                tx = Long.parseLong(readStatsFromFile("/sys/class/net/" + wifiIntfName + "/statistics/tx_bytes"));
                 break;
             case (ConnectivityManager.TYPE_MOBILE):
                 type = "mobile";
@@ -127,19 +128,24 @@ public class NetworkCapture {
         }
         SQLiteDatabase db = new Database(context).getWritableDatabase();
         Cursor cursor=db.query(Database.DatabaseSchema.NetworkInterface.TABLE_NAME,
-                new String[]{Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX, Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX},
-                null,null,null,null, Database.DatabaseSchema.NetworkInterface._ID+" DESC","1");
+                new String[]{Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX,
+                        Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX,
+                        Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_SINCE},null,null,null,null,
+                Database.DatabaseSchema.NetworkInterface._ID+" DESC","1");
 
 
         long totalrx=0;
         long totaltx=0;
+        String since = TimeCapture.getUpDate();  // if there's no entry in the table, 'since' will be last reboot date
         if (cursor.moveToFirst()){  //if there is at least one entry, get the totals
             totalrx=cursor.getLong(cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX));
             totaltx=cursor.getLong(cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX));
+            since = cursor.getString(cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_SINCE));
         }
         cursor.close();
         ContentValues values = new ContentValues();
         values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE, type);
+        values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_SINCE, since);
         values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_ACTIVE, Boolean.toString(affectedNet.isConnected()));
         values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_RX, rx);
         values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_TX, tx);
@@ -147,94 +153,54 @@ public class NetworkCapture {
         values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX,totaltx);
         values.put(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TIME, time);
 
-        db.insert(Database.DatabaseSchema.NetworkInterface.TABLE_NAME, null, values);
+        db.insertWithOnConflict(Database.DatabaseSchema.NetworkInterface.TABLE_NAME, null, values,SQLiteDatabase.CONFLICT_IGNORE);
         db.close();
     }
 
-    /*
-    //retrieve active interface(s) on API>=21
-    @TargetApi(21)
-    private static String[][] getActiveInterface21(Context context) {
-        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        Network[] networks = connectivityManager.getAllNetworks();
-        String[][] result = new String[networks.length][4];
-        for (int i = 0; i < networks.length; i++) {
-            if (connectivityManager.getNetworkInfo(networks[i]).isConnected()) {
-                result[i][0] = connectivityManager.getLinkProperties(networks[i]).getInterfaceName();
-                result[i][1] = connectivityManager.getNetworkInfo(networks[i]).getTypeName();
-                result[i][2] = readStatsFromFile(context, "/sys/class/net/" + result[i][0] + "/statistics/rx_bytes");
-                result[i][3] = readStatsFromFile(context, "/sys/class/net/" + result[i][0] + "/statistics/tx_bytes");
-                //result[i][2] = Integer.toString(connectivityManager.getNetworkCapabilities(networks[i]).getLinkDownstreamBandwidthKbps());
-                //result[i][3] = Integer.toString(connectivityManager.getNetworkCapabilities(networks[i]).getLinkUpstreamBandwidthKbps());
-
-            }
+    public static void getWifiAPs(Context context,SQLiteDatabase db){
+        WifiManager wifiManager=(WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        List<ScanResult> scanResults=wifiManager.getScanResults();
+        for (ScanResult sr : scanResults){
+            ContentValues values=new ContentValues();
+            values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_BSSID,sr.BSSID);
+            values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_SSID,sr.SSID);
+            values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_CAPABILITIES,sr.capabilities);
+            //values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_SEEN,sr.timestamp);
+            values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_SIGNAL,WifiManager.calculateSignalLevel(sr.level,11));
+            values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_FREQ,sr.frequency);
+            db.insertWithOnConflict(Database.DatabaseSchema.WifiAP.TABLE_NAME,null,values,SQLiteDatabase.CONFLICT_IGNORE);
         }
-        return result;
     }
 
-    //retrieve active interface on API<21
-    private static String[] getActiveInterface15(Context context) {
-        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo network = connectivityManager.getActiveNetworkInfo();
-
-        ArrayList<NetworkInterface> active = new ArrayList<NetworkInterface>();
-        try {
-            for (Enumeration<NetworkInterface> list = NetworkInterface.getNetworkInterfaces(); list.hasMoreElements(); ) {
-                NetworkInterface i = list.nextElement();
-                if (i.isUp() && !i.isLoopback() && i.getInterfaceAddresses().size() > 0)
-                    active.add(i);
-            }
-        } catch (SocketException e) {
-            Toast.makeText(context,e.toString(),Toast.LENGTH_LONG).show();
-        }
-
-        if (network == null || active.size() != 1) return null;
-
-        String[] result = new String[4];
-        result[0] = active.get(0).getDisplayName();
-        result[1] = network.getTypeName();
-        //result[2] =network.getSubtypeName();// Integer.toString(connectivityManager.getNetworkCapabilities(networks[i]).getLinkDownstreamBandwidthKbps());
-        //result[3] =null;// Integer.toString(connectivityManager.getNetworkCapabilities(networks[i]).getLinkUpstreamBandwidthKbps());
-        result[2] = readStatsFromFile(context, "/sys/class/net/" + result[0] + "/statistics/rx_bytes");
-        result[3] = readStatsFromFile(context, "/sys/class/net/" + result[0] + "/statistics/tx_bytes");
+    public static String getWifiAPResultsXML(SQLiteDatabase db){
+        String[] projection = new String[]{Database.DatabaseSchema.WifiAP.COLUMN_NAME_BSSID,
+                Database.DatabaseSchema.WifiAP.COLUMN_NAME_SSID,
+                Database.DatabaseSchema.WifiAP.COLUMN_NAME_CAPABILITIES,
+                Database.DatabaseSchema.WifiAP.COLUMN_NAME_SIGNAL,
+                Database.DatabaseSchema.WifiAP.COLUMN_NAME_FREQ};
+        Cursor cursor=db.query(Database.DatabaseSchema.WifiAP.TABLE_NAME,projection,null,null,null,null,null);
+        String result=XMLProduce.tableToXML(cursor,Database.DatabaseSchema.WifiAP.TAG,Database.DatabaseSchema.WifiAP.COLUMN_NAME_SSID);
+        cursor.close();
         return result;
     }
-
-    protected static String getActiveInterfaceXML(Context context) {
-        StringBuilder result = new StringBuilder();
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            String[] i =getActiveInterface15(context);
-            result.append("<intf name=\""+i[0]+"\" rx=\"" + i[2] + "\" tx=\"" + i[3] + "\">" + i[1] + "</intf>\n");
-        }
-        else{
-            for (String[] i : getActiveInterface21(context))
-                result.append("<activeintf name=\""+i[0]+"\" rx=\"" + i[2] + "\" tx=\"" + i[3] + "\">" + i[1] + "</activeintf>\n");
-        }
-
-        return result.toString();
-    }*/
 
     protected static String getTrafficXML(SQLiteDatabase db) {
-        Cursor cursor = db.query(Database.DatabaseSchema.NetworkInterface.TABLE_NAME, null, null, null, null, null, null);
-        int sinceIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_SINCE);
-        int activeIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_ACTIVE);
-        int curRxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_RX);
-        int curTxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_TX);
-        int totRxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX);
-        int totTxIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX);
-        int typeIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE);
-        int timeIndex = cursor.getColumnIndex(Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TIME);
-
-        StringBuilder result = new StringBuilder();
-        while (cursor.moveToNext()) {
-            Log.e("tx-tot/cur",cursor.getLong(totTxIndex)+"/"+cursor.getLong(curTxIndex));
-            Log.e("rx-tot/cur",cursor.getLong(totRxIndex)+"/"+cursor.getLong(curRxIndex));
-            result.append("<data active=\"" + cursor.getString(activeIndex) + "\" time=\"" +
-                    cursor.getString(timeIndex) + "\" since=\"" + cursor.getString(sinceIndex) + "\" rx=\"" +
-                    Long.toString(cursor.getLong(curRxIndex) + cursor.getLong(totRxIndex)) + "\" tx=\"" + (cursor.getLong(curTxIndex) +
-                    cursor.getLong(totTxIndex)) + "\">" + cursor.getString(typeIndex) + "</data>\n");
-        }
+        String query=String.format("SELECT %s,%s,%s,(%s+%s) AS rx,(%s+%s) AS tx,%s FROM %s",
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_ACTIVE,
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TIME,
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_SINCE,
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_RX,
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_RX,
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TOTAL_TX,
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_CURRENT_TX,
+                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE,
+                Database.DatabaseSchema.NetworkInterface.TABLE_NAME);
+        Cursor cursor = db.rawQuery(query, null);
+        String result = XMLProduce.tableToXML(cursor,Database.DatabaseSchema.NetworkInterface.TAG,Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE);
         cursor.close();
-        return result.toString();
+        return result;
     }
+
+
+
 }

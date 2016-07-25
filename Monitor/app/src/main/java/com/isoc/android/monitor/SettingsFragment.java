@@ -9,7 +9,6 @@ import android.preference.CheckBoxPreference;
 import android.preference.EditTextPreference;
 import android.preference.Preference;
 import android.preference.PreferenceFragment;
-import android.preference.PreferenceScreen;
 import android.preference.SwitchPreference;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.Toolbar;
@@ -28,19 +27,6 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         super.onCreate(savedInstanceState);
         setHasOptionsMenu(true);
     }
-
-    @Override
-    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference) {
-        super.onPreferenceTreeClick(preferenceScreen, preference);
-        if (preference != null && preference instanceof PreferenceScreen) {
-            if (((PreferenceScreen) preference).getDialog() != null) {
-                //        preferenceScreen.getDialog().getActionBar().hide();
-                //getWindow().getDecorView().setBackground( getActivity().getWindow().getDecorView().getBackground().getConstantState().newDrawable());
-            }
-        }
-        return false;
-    }
-
 
     @Override
     public void onResume() {
@@ -77,8 +63,13 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         Preference preference = findPreference(s);
         if (preference instanceof SwitchPreference){
-            if (((SwitchPreference)preference).isChecked()) MyService.ServiceControls.startRepeated(getActivity());
-            else MyService.ServiceControls.stopRepeated(getActivity());
+            if (((SwitchPreference)preference).isChecked()) {
+                MyService.ServiceControls.startRepeated(getActivity());
+            }
+            else {
+                MyService.ServiceControls.stopRepeated(getActivity());  //you need to disable everything too
+            }
+
         }else if (preference instanceof EditTextPreference) {
             EditTextPreference editPreference = (EditTextPreference) preference;
             editPreference.setSummary(editPreference.getText());

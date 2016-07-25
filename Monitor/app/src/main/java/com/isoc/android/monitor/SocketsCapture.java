@@ -18,12 +18,11 @@ public class SocketsCapture {
     private static String Connection4 = "\\d+: " + socket4 + " " + socket4 + " \\p{XDigit}{2} \\p{XDigit}*:\\p{XDigit}* \\p{XDigit}{2}:\\p{XDigit}{8} \\p{XDigit}{8}\\s+\\d+";
     private static String Connection6 = "\\d+: " + socket6 + " " + socket6 + " \\p{XDigit}{2} \\p{XDigit}*:\\p{XDigit}* \\p{XDigit}{2}:\\p{XDigit}{8} \\p{XDigit}{8}\\s+\\d+";
 
-    public static void getSockets(Context context) {
-        SQLiteDatabase db=new Database(context).getWritableDatabase();
+    public static void getSockets(Context context,SQLiteDatabase db) {
         String time = TimeCapture.getTime();
         String[] types={"tcp","udp","raw","tcp6","udp6","raw6"};
         for (String type :types) {
-            String content = NetworkCapture.readStatsFromFile(context, "/proc/net/"+type);
+            String content = NetworkCapture.readStatsFromFile("/proc/net/"+type);
             Matcher m;
             boolean is6 = type.contains("6");
             if (is6) m=Pattern.compile(Connection6).matcher(content);
@@ -42,7 +41,6 @@ public class SocketsCapture {
                 db.insert(Database.DatabaseSchema.Sockets.TABLE_NAME,null,values);
             }
         }
-        db.close();
     }
 
     public static String getSocketsXML(SQLiteDatabase db){
@@ -67,7 +65,6 @@ public class SocketsCapture {
         cursor.close();
         return sb.toString();
     }
-
 
     private abstract static class Socket {
         private String localIP;

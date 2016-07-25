@@ -27,7 +27,7 @@ public class MetaDataCapture {
         String[] datatype = new String[]{"unknown", "gprs", "edge", "umts", "cdma", "evdo0", "evdoA", "1xrtt", "hsdpa", "hsupa", "hspa", "iden", "evdoB", "lte", "ehrpd", "hspap"};
         TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         result.add(new String[]{"imei", tm.getDeviceId()});
-        result.add(new String[]{"datanettype", datatype[tm.getNetworkType()]});
+        result.add(new String[]{"dataNetType", datatype[tm.getNetworkType()]});
         result.add(new String[]{"country", tm.getNetworkCountryIso()});
         result.add(new String[]{"network", tm.getNetworkOperatorName()});
         result.add(new String[]{"carrier", tm.getSimOperatorName()});
@@ -36,8 +36,8 @@ public class MetaDataCapture {
     private static void getPhoneDetails(ArrayList<String[]> result) {
         result.add(new String[]{"manufacturer", Build.MANUFACTURER});
         result.add(new String[]{"model", Build.MODEL});
-        result.add(new String[]{"androidver", Build.VERSION.RELEASE});
-        result.add(new String[]{"uptime", Long.toString(TimeCapture.getUpTime())});
+        result.add(new String[]{"androidVer", Build.VERSION.RELEASE});
+        result.add(new String[]{"lastReboot", TimeCapture.getUpDate()});
     }
 
     private static void getDefaultBrowser(Context context,ArrayList<String[]> result){
