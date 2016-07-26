@@ -335,8 +335,7 @@ func TestGetDeviceInfos(t *testing.T) {
 	defer cleanUp(db)
 
 	user := models.User{Email: "user@usermail.com"}
-	device := deviceInfos[0]
-	expected := []models.DeviceStored{device}
+	expected := deviceInfos[:1]
 
 	result, err := db.GetDeviceInfos(user)
 	checkErr(t, err)

@@ -47,9 +47,9 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 
 // GetDeviceInfos gets all the registered devices without the stored data from the given user.
 func (db *DB) GetDeviceInfos(user User) (devices []DeviceStored, err error) {
-	getDevicesQuery := `SELECT dev.id, dev.imei, dev.manufacturer, dev.modelName, dev.osVersion
-                	   FROM Device dev, User u
-                	   WHERE (u.email = :email OR u.apiKey = :apiKey) AND u.uid = dev.user;`
+	getDevicesQuery := `SELECT id, imei, manufacturer, modelName, osVersion
+                	   FROM Device, User
+                	   WHERE (email = :email OR apiKey = :apiKey) AND uid = user;`
 	stmt, err := db.PrepareNamed(getDevicesQuery)
 	if err != nil {
 		return
