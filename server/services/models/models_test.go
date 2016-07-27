@@ -1,6 +1,4 @@
-package models_test
-
-// TODO: Create test db with tables but without entries
+package models
 
 import (
 	"database/sql"
@@ -8,8 +6,6 @@ import (
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
-
-	"github.com/michaelg9/ISOC/server/services/models"
 )
 
 /* Database schema */
@@ -141,29 +137,29 @@ var destroyRunservice = `
 DROP TABLE Runservice;
 `
 
-var users = []models.User{
-	models.User{
+var users = []User{
+	User{
 		ID:           1,
 		Email:        "user@usermail.com",
 		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
 		APIKey:       "37e72ff927f511e688adb827ebf7e157",
 	},
-	models.User{
+	User{
 		ID:     2,
 		Email:  "user@mail.com",
 		APIKey: "",
 	},
 }
 
-var deviceInfos = []models.DeviceStored{
-	models.DeviceStored{
+var deviceInfos = []DeviceStored{
+	DeviceStored{
 		ID:           1,
 		IMEI:         "123456789012345",
 		Manufacturer: "Motorola",
 		Model:        "Moto X (2nd Generation)",
 		OS:           "Android 5.0",
 	},
-	models.DeviceStored{
+	DeviceStored{
 		ID:           2,
 		IMEI:         "12345678901234567",
 		Manufacturer: "One Plus",
@@ -172,10 +168,10 @@ var deviceInfos = []models.DeviceStored{
 	},
 }
 
-var devices = []models.Device{
-	models.Device{
+var devices = []Device{
+	Device{
 		DeviceInfo: deviceInfos[0],
-		Data: models.DeviceData{
+		Data: DeviceData{
 			Battery: batteryData[:1],
 		},
 	},
@@ -185,25 +181,25 @@ var devices = []models.Device{
    database and the second entry is used to test the insert.
 */
 
-var batteryData = []models.Battery{
-	models.Battery{
+var batteryData = []Battery{
+	Battery{
 		Value: 70,
 		Time:  "2016-05-31 11:48:48",
 	},
-	models.Battery{
+	Battery{
 		Value: 71,
 		Time:  "2016-05-31 11:50:31",
 	},
 }
 
-var callData = []models.Call{
-	models.Call{
+var callData = []Call{
+	Call{
 		Type:    "Outgoing",
 		Start:   "2016-05-31 11:50:00",
 		End:     "2016-05-31 11:51:00",
 		Contact: "43A",
 	},
-	models.Call{
+	Call{
 		Type:    "Ingoing",
 		Start:   "2016-06-30 11:50:00",
 		End:     "2016-06-30 11:51:00",
@@ -211,15 +207,15 @@ var callData = []models.Call{
 	},
 }
 
-var appData = []models.App{
-	models.App{
+var appData = []App{
+	App{
 		Name:      "com.isoc.Monitor",
 		UID:       123,
 		Version:   "2.3",
 		Installed: "2016-05-31 11:50:00",
 		Label:     "Monitor",
 	},
-	models.App{
+	App{
 		Name:      "com.isoc.MobileApp",
 		UID:       124,
 		Version:   "2.0",
@@ -228,15 +224,15 @@ var appData = []models.App{
 	},
 }
 
-var runserviceData = []models.Runservice{
-	models.Runservice{
+var runserviceData = []Runservice{
+	Runservice{
 		AppName: "com.isoc.Monitor",
 		RX:      12,
 		TX:      10,
 		Start:   "2016-05-31 11:50:00",
 		End:     "2016-05-31 13:50:00",
 	},
-	models.Runservice{
+	Runservice{
 		AppName: "com.isoc.Monitor",
 		RX:      15,
 		TX:      0,
@@ -245,9 +241,9 @@ var runserviceData = []models.Runservice{
 	},
 }
 
-func setup() (*models.DB, error) {
+func setup() (*DB, error) {
 	// Panics if there is a connection error
-	db := models.NewDB("[username]:[password]@/test_db?")
+	db := NewDB("treigerm:Hip$terSWAG@/test_db?")
 
 	// Start transaction
 	tx := db.MustBegin()
@@ -280,7 +276,7 @@ func checkDBErr(t *testing.T, err error) {
 	}
 }
 
-func cleanUp(db *models.DB) {
+func cleanUp(db *DB) {
 	tx := db.MustBegin()
 	tx.MustExec(destroyBattery)
 	tx.MustExec(destroyCall)
@@ -308,7 +304,7 @@ func TestGetUser(t *testing.T) {
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
-	user := models.User{Email: "user@usermail.com"}
+	user := User{Email: "user@usermail.com"}
 	expected := users[0]
 	result, err := db.GetUser(user)
 	checkErr(t, err)
@@ -320,7 +316,7 @@ func TestGetDevicesFromUser(t *testing.T) {
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
-	user := models.User{Email: "user@usermail.com"}
+	user := User{Email: "user@usermail.com"}
 	expected := devices
 
 	result, err := db.GetDevicesFromUser(user)
@@ -328,16 +324,15 @@ func TestGetDevicesFromUser(t *testing.T) {
 	checkEqual(t, expected, result)
 }
 
-// TODO: Make this a private method and test from inside
 func TestGetDeviceInfos(t *testing.T) {
 	db, err := setup()
 	checkDBErr(t, err)
 	defer cleanUp(db)
 
-	user := models.User{Email: "user@usermail.com"}
+	user := User{Email: "user@usermail.com"}
 	expected := deviceInfos[:1]
 
-	result, err := db.GetDeviceInfos(user)
+	result, err := db.getDeviceInfos(user)
 	checkErr(t, err)
 	checkEqual(t, expected, result)
 }
@@ -351,10 +346,10 @@ func TestGetData(t *testing.T) {
 		ptrToResult interface{}
 		expected    interface{}
 	}{
-		{&[]models.Battery{}, batteryData[:1]},
-		{&[]models.Call{}, callData[:1]},
-		{&[]models.App{}, appData[:1]},
-		{&[]models.Runservice{}, runserviceData[:1]},
+		{&[]Battery{}, batteryData[:1]},
+		{&[]Call{}, callData[:1]},
+		{&[]App{}, appData[:1]},
+		{&[]Runservice{}, runserviceData[:1]},
 	}
 
 	device := deviceInfos[0]
@@ -394,8 +389,8 @@ func TestCreateDeviceForUser(t *testing.T) {
 	checkErr(t, err)
 
 	oldDevice := deviceInfos[0]
-	expected := []models.DeviceStored{oldDevice, newDevice}
-	result, err := db.GetDeviceInfos(user)
+	expected := []DeviceStored{oldDevice, newDevice}
+	result, err := db.getDeviceInfos(user)
 	checkErr(t, err)
 	checkEqual(t, expected, result)
 }
@@ -415,10 +410,10 @@ func TestCreateData(t *testing.T) {
 		toInsert    interface{}
 		expected    interface{}
 	}{
-		{&[]models.Battery{}, &toInsertBattery, batteryData},
-		{&[]models.Call{}, &toInsertCall, callData},
-		{&[]models.App{}, &toInsertApp, appData},
-		{&[]models.Runservice{}, &toInsertRunservice, runserviceData},
+		{&[]Battery{}, &toInsertBattery, batteryData},
+		{&[]Call{}, &toInsertCall, callData},
+		{&[]App{}, &toInsertApp, appData},
+		{&[]Runservice{}, &toInsertRunservice, runserviceData},
 	}
 
 	device := deviceInfos[0]
@@ -465,8 +460,8 @@ func TestUpdateDevice(t *testing.T) {
 	err = db.UpdateDevice(device)
 	checkErr(t, err)
 
-	expected := []models.DeviceStored{device}
-	result, err := db.GetDeviceInfos(users[0])
+	expected := []DeviceStored{device}
+	result, err := db.getDeviceInfos(users[0])
 	checkErr(t, err)
 	checkEqual(t, expected, result)
 }
@@ -494,7 +489,7 @@ func TestDeleteDevice(t *testing.T) {
 	err = db.DeleteDevice(device)
 	checkErr(t, err)
 
-	result, err := db.GetDeviceInfos(models.User{Email: "user@usermail.com"})
+	result, err := db.getDeviceInfos(User{Email: "user@usermail.com"})
 	if err == nil && len(result) != 0 {
 		t.Errorf("\n...expected error but got = %v", result)
 	} else if err != nil {

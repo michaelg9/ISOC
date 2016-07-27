@@ -1,12 +1,14 @@
 package models
 
-// TODO: Check everywhere for semicolons
-
 import (
 	"errors"
 	"reflect"
 
 	"github.com/fatih/structs"
+)
+
+const (
+	errDataNotStored = "Type of data is not stored."
 )
 
 // Battery is the struct for the battery
@@ -72,7 +74,7 @@ func (db *DB) GetData(device DeviceStored, ptrToData interface{}) error {
 	}
 	query, ok := getQueries[typeName[value.Type()]]
 	if !ok {
-		return errors.New("Type of data is not stored.") // TODO: error as string
+		return errors.New(errDataNotStored)
 	}
 
 	stmt, err := db.PrepareNamed(query)
@@ -94,7 +96,7 @@ func (db *DB) CreateData(device DeviceStored, ptrToData interface{}) error {
 	// Get the right query for that type of data
 	query, ok := createQueries[typeName[value.Type()]]
 	if !ok {
-		return errors.New("Type of data is not stored.")
+		return errors.New(errDataNotStored)
 	}
 
 	// Insert each data point in the slice into the database
