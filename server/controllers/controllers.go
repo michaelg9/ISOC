@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"net/http"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/michaelg9/ISOC/server/services/models"
 
 	"github.com/gorilla/sessions"
@@ -18,6 +21,8 @@ const (
 	errNoDeviceID             = "No device ID specified."
 	errNoAPIKey               = "No API key specified."
 	errNoSessionSet           = "No session set to log-out."
+
+	hmacSecret = "secret"
 )
 
 // Env contains the environment information
@@ -211,4 +216,48 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, "Success")
+}
+
+// Login handles /auth/0.1/login
+func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
+	// Get the parameter values for email and password from the URI
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	// Check if parameters are non-empty
+	if email == "" || password == "" {
+		http.Error(w, errMissingPasswordOrEmail, http.StatusBadRequest)
+		return
+	}
+
+	// Get the userdata from the specified email
+	user, err := env.DB.GetUser(models.User{Email: email})
+	if err == sql.ErrNoRows {
+		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if given password fits with stored hash inside the server
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": user.Email,
+		"exp": time.Now().Add(time.Hour * time.Duration(24)).Unix(), // Sets expiration time one day from now
+	})
+
+	tokenString, err := token.SignedString(hmacSecret)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	fmt.Fprint(w, tokenString)
 }

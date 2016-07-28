@@ -1,11 +1,14 @@
 package authentication
 
 import (
+	"database/sql"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/michaelg9/ISOC/server/controllers"
 	"github.com/michaelg9/ISOC/server/services/models"
 	"github.com/urfave/negroni"
@@ -26,14 +29,14 @@ func (mdb *mockDB) GetUser(user models.User) (models.User, error) {
 	if user.Email == users[0].Email {
 		return users[0], nil
 	}
-	return models.User{}, nil
+	return models.User{}, sql.ErrNoRows
 }
 
 func (mdb *mockDB) CreateUser(user models.User) error {
 	return nil
 }
 
-func (mdb *mockDB) UpdateUser(user models.User, field string) error {
+func (mdb *mockDB) UpdateUser(user models.User) error {
 	return nil
 }
 
@@ -45,15 +48,11 @@ func (mdb *mockDB) GetDevicesFromUser(user models.User) ([]models.Device, error)
 	return []models.Device{}, nil
 }
 
-func (mdb *mockDB) GetDeviceInfos(user models.User) ([]models.DeviceStored, error) {
-	return []models.DeviceStored{}, nil
-}
-
 func (mdb *mockDB) CreateDeviceForUser(user models.User, device models.DeviceStored) error {
 	return nil
 }
 
-func (mdb *mockDB) UpdateDevice(device models.DeviceStored, field string) error {
+func (mdb *mockDB) UpdateDevice(device models.DeviceStored) error {
 	return nil
 }
 
@@ -106,4 +105,51 @@ func TestRequireBasicAuth(t *testing.T) {
 			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
 		}
 	}
+}
+
+func TestRequireTokenAuth(t *testing.T) {
+	tomorrow := time.Now().Add(time.Hour * time.Duration(24)).Unix()
+	yesterday := time.Now().AddDate(0, 0, -1).Unix()
+	var tests = []struct {
+		tokenAuth bool
+		token     string
+		expected  string
+	}{
+		{true, newToken("user@usermail.com", tomorrow), "Hello world!"},
+		{true, newToken("user@usermail.com", yesterday), "Unauthorized request.\n"},
+		{true, newToken("user@mail.com", tomorrow), "Unauthorized request.\n"},
+		{true, "", "Unauthorized request.\n"},
+		{false, "", "Unauthorized request.\n"},
+	}
+
+	for _, test := range tests {
+		rec := httptest.NewRecorder()
+		req, _ := http.NewRequest("GET", "/hello", nil)
+		if test.tokenAuth {
+			req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", test.token))
+		}
+
+		env := MiddlewareEnv{&controllers.Env{DB: &mockDB{}}}
+		var handler http.Handler
+		handler = negroni.New(
+			negroni.HandlerFunc(env.RequireTokenAuth),
+			negroni.Wrap(http.HandlerFunc(helloHandler)),
+		)
+		handler.ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		if test.expected != obtained {
+			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
+		}
+	}
+}
+
+func newToken(email string, time int64) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": email,
+		"exp": time,
+	})
+
+	tokenString, _ := token.SignedString([]byte(hmacSecret))
+	return tokenString
 }

@@ -26,6 +26,7 @@ func (env *Env) LoginGET(w http.ResponseWriter, r *http.Request) {
 
 // LoginPOST handles POST /login
 func (env *Env) LoginPOST(w http.ResponseWriter, r *http.Request) {
+	// TODO: Refactor into function "checkUser"
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
 	password := r.FormValue("password")

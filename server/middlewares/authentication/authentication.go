@@ -1,15 +1,21 @@
 package authentication
 
 import (
+	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/michaelg9/ISOC/server/controllers"
 	"github.com/michaelg9/ISOC/server/services/models"
+
+	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	errNotAuthorized = "Unauthorized request."
+
+	hmacSecret = "secret"
 )
 
 // MiddlewareEnv embeds the controllers.Env struct so that we can write functions on it.
@@ -61,6 +67,53 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 	// If email not set redirect to login page
 	if !found || email == "" {
 		http.Redirect(w, r, "/login", http.StatusUnauthorized)
+		return
+	}
+
+	next(w, r)
+}
+
+// RequireTokenAuth is the middleware for routes that require JWT authentication.
+// NOTE: Might want to use library
+func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		return
+	}
+
+	authHeaderParts := strings.Split(authHeader, " ")
+	if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		return
+	}
+
+	tokenString := authHeaderParts[1]
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return []byte(hmacSecret), nil
+	})
+	if err != nil {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		return
+	}
+
+	var email string
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		email = claims["sub"].(string)
+		// TODO: Authenticate here
+	} else {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		return
+	}
+
+	// Check if user is registered in database
+	// TODO: Is this necessary?
+	_, err = env.DB.GetUser(models.User{Email: email})
+	if err != nil {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return
 	}
 
