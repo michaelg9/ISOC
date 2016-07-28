@@ -17,6 +17,7 @@ func NewRouter(env controllers.Env) *mux.Router {
 	for _, route := range routes {
 		var handler http.Handler
 
+		// TODO: Refactor
 		// Get the stored handler function for the route
 		switch route.Authentication {
 		case basicAuth:
@@ -29,6 +30,12 @@ func NewRouter(env controllers.Env) *mux.Router {
 			middlewareEnv := &authentication.MiddlewareEnv{&env}
 			handler = negroni.New(
 				negroni.HandlerFunc(middlewareEnv.RequireSessionAuth),
+				negroni.Wrap(route.HandlerFunc(env)),
+			)
+		case tokenAuth:
+			middlewareEnv := &authentication.MiddlewareEnv{&env}
+			handler = negroni.New(
+				negroni.HandlerFunc(middlewareEnv.RequireTokenAuth),
 				negroni.Wrap(route.HandlerFunc(env)),
 			)
 		default:

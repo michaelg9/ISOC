@@ -117,6 +117,7 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 	// Make sure we don't send the password hash over the wire
 	user.PasswordHash = ""
 
+	// TODO: Move into own file
 	outStruct := struct {
 		models.DataOut
 		User models.User `json:"user"`
@@ -254,10 +255,23 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 		"exp": time.Now().Add(time.Hour * time.Duration(24)).Unix(), // Sets expiration time one day from now
 	})
 
-	tokenString, err := token.SignedString(hmacSecret)
+	tokenString, err := token.SignedString([]byte(hmacSecret))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 
-	fmt.Fprint(w, tokenString)
+	// TODO: Move into own models file
+	response := struct {
+		AccessToken string `json:"accessToken"`
+	}{
+		AccessToken: tokenString,
+	}
+
+	out, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(out))
 }

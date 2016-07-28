@@ -1,5 +1,7 @@
 package controllers
 
+// TODO: Better names for functions
+
 import (
 	"database/sql"
 	"fmt"

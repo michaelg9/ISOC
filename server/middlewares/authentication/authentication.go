@@ -110,7 +110,7 @@ func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Check if user is registered in database
-	// TODO: Is this necessary?
+	// TODO: Is this necessary? If not user library
 	_, err = env.DB.GetUser(models.User{Email: email})
 	if err != nil {
 		http.Error(w, errNotAuthorized, http.StatusForbidden)
