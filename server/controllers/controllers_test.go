@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/michaelg9/ISOC/server/services/models"
+	"github.com/michaelg9/ISOC/server/models"
 )
 
 var users = []models.User{
@@ -88,7 +88,7 @@ func (mdb *mockDB) CreateUser(user models.User) error {
 	return nil
 }
 
-func (mdb *mockDB) UpdateUser(user models.User, field string) error {
+func (mdb *mockDB) UpdateUser(user models.User) error {
 	return nil
 }
 
@@ -108,7 +108,7 @@ func (mdb *mockDB) CreateDeviceForUser(user models.User, device models.DeviceSto
 	return nil
 }
 
-func (mdb *mockDB) UpdateDevice(device models.DeviceStored, field string) error {
+func (mdb *mockDB) UpdateDevice(device models.DeviceStored) error {
 	return nil
 }
 
@@ -172,6 +172,31 @@ func TestDownload(t *testing.T) {
 		env := Env{DB: &mockDB{}}
 		http.HandlerFunc(env.Download).ServeHTTP(rec, req)
 
+		obtained := rec.Body.String()
+		if test.expected != obtained {
+			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
+		}
+	}
+}
+
+func TestWriteResponse(t *testing.T) {
+	response := models.DataOut{Device: devices}
+	jsonResponse, _ := json.Marshal(response)
+	xmlResponse, _ := xml.Marshal(response)
+	var tests = []struct {
+		format   string
+		response interface{}
+		expected string
+	}{
+		{"", response, string(jsonResponse)},
+		{"json", response, string(jsonResponse)},
+		{"xml", response, string(xmlResponse)},
+		{"yml", response, ""},
+	}
+
+	for _, test := range tests {
+		rec := httptest.NewRecorder()
+		_ = writeResponse(rec, test.format, test.response)
 		obtained := rec.Body.String()
 		if test.expected != obtained {
 			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)

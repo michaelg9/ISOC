@@ -6,11 +6,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/michaelg9/ISOC/server/services/models"
+	"github.com/michaelg9/ISOC/server/models"
 
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
@@ -155,22 +156,10 @@ func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
 		Device: devices,
 	}
 
-	// Format the output into either JSON or XML according to the
-	// value specified from the parameter "out". The default value
-	// is JSON.
-	var out []byte
-	switch r.FormValue("out") {
-	case "", "json":
-		out, err = json.Marshal(response)
-	case "xml":
-		out, err = xml.Marshal(response)
-	}
+	err = writeResponse(w, r.FormValue("out"), response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	fmt.Fprint(w, string(out))
 }
 
 // UpdateUser handles /update/user
@@ -264,7 +253,7 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create long-lived refresh token
-	refreshToken, err := env.Tokens.NewToken(user, refreshTokenDelta)
+	refreshToken, err := env.Tokens.NewToken(user, refreshTolkenDelta)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -275,13 +264,10 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 		RefreshToken: refreshToken,
 	}
 
-	out, err := json.Marshal(response)
+	err = writeResponse(w, "json", response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	fmt.Fprint(w, string(out))
 }
 
 // Token handles /auth/0.1/token
@@ -305,13 +291,10 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := json.Marshal(models.Tokens{AccessToken: accessToken})
+	err = writeResponse(w, "json", models.Tokens{AccessToken: accessToken})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	fmt.Fprint(w, string(out))
 }
 
 // Refresh handles /auth/0.1/refresh
@@ -340,17 +323,14 @@ func (env *Env) Refresh(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	out, err := json.Marshal(models.Tokens{RefreshToken: newRefreshToken})
+	err = writeResponse(w, "json", models.Tokens{RefreshToken: newRefreshToken})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	fmt.Fprint(w, string(out))
 }
 
 // LogoutToken invalidates the given refresh token and therefore logs out the user.
-func (env *Eng) LogoutToken(w http.ResponseWriter, r *http.Request) {
+func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	if token == "" {
 		http.Error(w, errMissingToken, http.StatusBadRequest)
@@ -366,4 +346,22 @@ func (env *Eng) LogoutToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Success")
 }
 
-// TODO: Implement function which takes struct and writes JSON to ResponseWriter
+// NOTE: Might want to split up into two functions
+func writeResponse(w http.ResponseWriter, format string, response interface{}) (err error) {
+	var out []byte
+	switch format {
+	case "", "json":
+		out, err = json.Marshal(response)
+	case "xml":
+		out, err = xml.Marshal(response)
+	default:
+		err = errors.New("Output type not supported.")
+	}
+	if err != nil {
+		return
+	}
+
+	fmt.Fprint(w, string(out))
+
+	return
+}

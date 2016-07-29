@@ -8,7 +8,7 @@ import (
 	"html/template"
 	"net/http"
 
-	"github.com/michaelg9/ISOC/server/services/models"
+	"github.com/michaelg9/ISOC/server/models"
 	"golang.org/x/crypto/bcrypt"
 )
 
