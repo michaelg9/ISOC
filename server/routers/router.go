@@ -17,7 +17,6 @@ func NewRouter(env controllers.Env) *mux.Router {
 	for _, route := range routes {
 		var handler http.Handler
 
-		// TODO: Refactor
 		// Get the stored handler function for the route
 		switch route.Authentication {
 		case basicAuth:

@@ -1,5 +1,7 @@
 package authentication
 
+// TODO: Put up one directory and into file auth.go
+
 import (
 	"fmt"
 	"net/http"
@@ -74,7 +76,6 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 }
 
 // RequireTokenAuth is the middleware for routes that require JWT authentication.
-// NOTE: Might want to use library
 func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {

@@ -1,5 +1,7 @@
 package controllers
 
+// TODO: Change routing with v1..
+
 import (
 	"database/sql"
 	"encoding/json"
@@ -258,6 +260,7 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	tokenString, err := token.SignedString([]byte(hmacSecret))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 
 	// TODO: Move into own models file
@@ -274,4 +277,14 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(out))
+}
+
+// Token handles /auth/0.1/token
+func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
+	refreshToken := r.FormValue("refreshToken")
+	if refreshToken == "" {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 }
