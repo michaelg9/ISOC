@@ -111,21 +111,24 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 	// Because of the middleware we know that these values exist
 	session, _ := env.SessionStore.Get(r, "log-in")
 	email := session.Values["email"]
+
 	devices, err := env.DB.GetDevicesFromUser(models.User{Email: email.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	user, err := env.DB.GetUser(models.User{Email: email.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	// Make sure we don't send the password hash over the wire
 	user.PasswordHash = ""
 
 	// TODO: Move into own file
-	outStruct := struct {
+	response := struct {
 		models.DataOut
 		User models.User `json:"user"`
 	}{
@@ -133,13 +136,10 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 		user,
 	}
 
-	out, err := json.Marshal(outStruct)
+	err = writeResponse(w, "json", response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
 	}
-
-	fmt.Fprint(w, string(out))
 }
 
 // Download handles /data/0.1/q
@@ -191,6 +191,7 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.PasswordHash != "" {
+		// If password is non-empty create a new hash for the database.
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.PasswordHash), bcrypt.DefaultCost)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -214,7 +215,8 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Success")
 }
 
-// Login handles /auth/0.1/login
+// Login handles /auth/0.1/login. It returns a short-lived acces token and a long-lived refresh token.
+// With the refresh token it is possible to get a new access token via /auth/0.1/token.
 func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
@@ -270,14 +272,17 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Token handles /auth/0.1/token
+// Token handles /auth/0.1/token. It returns a new access token if the user provided
+// a valid refresh token.
 func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
+	// Get the refresh token from the URI
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
 		http.Error(w, errMissingToken, http.StatusBadRequest)
 		return
 	}
 
+	// Check the validity of the token
 	email, err := env.Tokens.CheckToken(refreshToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
@@ -285,6 +290,7 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// TODO: Check if email is actually saved
+	// Create a new access token for the given user
 	accessToken, err := env.Tokens.NewToken(models.User{Email: email}, accessTokenDelta)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -297,7 +303,8 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Refresh handles /auth/0.1/refresh
+// Refresh handles /auth/0.1/refresh. The user can get a new refresh token in exchange
+// for a valid one. Before the new token gets issued the old one is blacklisted.
 func (env *Env) Refresh(w http.ResponseWriter, r *http.Request) {
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
@@ -329,7 +336,7 @@ func (env *Env) Refresh(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// LogoutToken invalidates the given refresh token and therefore logs out the user.
+// LogoutToken handles /auth/0.1/logout. The given token will be blacklisted.
 func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	if token == "" {
@@ -343,10 +350,11 @@ func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprintln(w, "Success")
+	fmt.Fprint(w, "Success")
 }
 
-// NOTE: Might want to split up into two functions
+// writeResponse prints a given struct in the specified format to the response writer. If no
+// format is specified it will be JSON.
 func writeResponse(w http.ResponseWriter, format string, response interface{}) (err error) {
 	var out []byte
 	switch format {
@@ -362,6 +370,5 @@ func writeResponse(w http.ResponseWriter, format string, response interface{}) (
 	}
 
 	fmt.Fprint(w, string(out))
-
 	return
 }
