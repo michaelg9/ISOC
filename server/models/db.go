@@ -1,7 +1,5 @@
 package models
 
-// TODO: Put models folder up one directory
-
 import (
 	"errors"
 	"reflect"

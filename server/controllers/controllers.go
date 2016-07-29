@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/michaelg9/ISOC/server/services/models"
 
 	"github.com/gorilla/sessions"
@@ -23,13 +22,18 @@ const (
 	errNoDeviceID             = "No device ID specified."
 	errNoAPIKey               = "No API key specified."
 	errNoSessionSet           = "No session set to log-out."
+	errMissingToken           = "No token given."
 
 	hmacSecret = "secret"
+
+	accessTokenDelta   = time.Minute * time.Duration(10) // Ten minutes
+	refreshTolkenDelta = time.Hour * time.Duration(168)  // One week
 )
 
 // Env contains the environment information
 type Env struct {
 	DB           models.Datastore
+	Tokens       models.TokenControl
 	SessionStore *sessions.CookieStore
 }
 
@@ -252,22 +256,23 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.Email,
-		"exp": time.Now().Add(time.Hour * time.Duration(24)).Unix(), // Sets expiration time one day from now
-	})
-
-	tokenString, err := token.SignedString([]byte(hmacSecret))
+	// Create short-lived acces token
+	accessToken, err := env.Tokens.NewToken(user, accessTokenDelta)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// TODO: Move into own models file
-	response := struct {
-		AccessToken string `json:"accessToken"`
-	}{
-		AccessToken: tokenString,
+	// Create long-lived refresh token
+	refreshToken, err := env.Tokens.NewToken(user, refreshTokenDelta)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	response := models.Tokens{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
 	}
 
 	out, err := json.Marshal(response)
@@ -283,8 +288,82 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		http.Error(w, errMissingToken, http.StatusBadRequest)
 		return
 	}
 
+	email, err := env.Tokens.CheckToken(refreshToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	// TODO: Check if email is actually saved
+	accessToken, err := env.Tokens.NewToken(models.User{Email: email}, accessTokenDelta)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	out, err := json.Marshal(models.Tokens{AccessToken: accessToken})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(out))
 }
+
+// Refresh handles /auth/0.1/refresh
+func (env *Env) Refresh(w http.ResponseWriter, r *http.Request) {
+	refreshToken := r.FormValue("refreshToken")
+	if refreshToken == "" {
+		http.Error(w, errMissingToken, http.StatusBadRequest)
+		return
+	}
+
+	email, err := env.Tokens.CheckToken(refreshToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+		return
+	}
+
+	err = env.Tokens.InvalidateToken(refreshToken)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	newRefreshToken, err := env.Tokens.NewToken(models.User{Email: email}, refreshTolkenDelta)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	out, err := json.Marshal(models.Tokens{RefreshToken: newRefreshToken})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(out))
+}
+
+// LogoutToken invalidates the given refresh token and therefore logs out the user.
+func (env *Eng) LogoutToken(w http.ResponseWriter, r *http.Request) {
+	token := r.FormValue("token")
+	if token == "" {
+		http.Error(w, errMissingToken, http.StatusBadRequest)
+		return
+	}
+
+	err := env.Tokens.InvalidateToken(token)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintln(w, "Success")
+}
+
+// TODO: Implement function which takes struct and writes JSON to ResponseWriter

@@ -1,5 +1,7 @@
 package models
 
+// TODO: Test time input
+
 import (
 	"database/sql"
 	"reflect"

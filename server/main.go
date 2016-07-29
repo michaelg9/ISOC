@@ -17,7 +17,8 @@ import (
 func main() {
 	db := startDB()
 	sessionStore := startSessions()
-	env := controllers.Env{DB: db, SessionStore: sessionStore}
+	tokenstore := models.NewTokenstore()
+	env := controllers.Env{DB: db, SessionStore: sessionStore, Tokenstore: tokenstore}
 
 	router := routers.NewRouter(env)
 
