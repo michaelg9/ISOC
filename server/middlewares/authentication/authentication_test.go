@@ -10,7 +10,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/michaelg9/ISOC/server/controllers"
-	"github.com/michaelg9/ISOC/server/services/models"
+	"github.com/michaelg9/ISOC/server/models"
 	"github.com/urfave/negroni"
 )
 
@@ -129,7 +129,8 @@ func TestRequireTokenAuth(t *testing.T) {
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", test.token))
 		}
 
-		env := MiddlewareEnv{&controllers.Env{DB: &mockDB{}}}
+		tokenstore := models.NewTokenstore()
+		env := MiddlewareEnv{&controllers.Env{DB: &mockDB{}, Tokens: tokenstore}}
 		var handler http.Handler
 		handler = negroni.New(
 			negroni.HandlerFunc(env.RequireTokenAuth),

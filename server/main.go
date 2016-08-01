@@ -8,17 +8,20 @@ import (
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
 	"github.com/michaelg9/ISOC/server/controllers"
+	"github.com/michaelg9/ISOC/server/models"
 	"github.com/michaelg9/ISOC/server/routers"
-	"github.com/michaelg9/ISOC/server/services/models"
 
 	"github.com/urfave/negroni"
 )
 
+// Number of redis database
+const dbNR = 0
+
 func main() {
 	db := startDB()
 	sessionStore := startSessions()
-	tokenstore := models.NewTokenstore()
-	env := controllers.Env{DB: db, SessionStore: sessionStore, Tokenstore: tokenstore}
+	tokenstore := models.NewTokenstore(os.Getenv("REDIS_HOST")+":6379", dbNR)
+	env := controllers.Env{DB: db, SessionStore: sessionStore, Tokens: tokenstore}
 
 	router := routers.NewRouter(env)
 

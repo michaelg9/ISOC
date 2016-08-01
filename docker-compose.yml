@@ -1,19 +1,36 @@
+# TODO: Rename database variables like mysql and mysql-test
 version: '2'
 services:
   go-server:
     build: ./server
-    command: gin -a 8080 -b .gin-bin run
     ports:
      - "3000:3000"
-    # Comment this out if deploying on GCE 
+    # Comment this out if deploying on GCE
     volumes:
      - ./server:/go/src/github.com/michaelg9/ISOC/server
     depends_on:
      - db
+     - test-db
+     - redis
     environment:
      - DB_HOST=db
      - DB_USER=treigerm
      - DB_PWD=123
+     - TEST_DB_HOST=test-db
+     - TEST_DB_USER=root
+     - TEST_DB_PWD=123
+     - REDIS_HOST=redis
      - PORT=8080
   db:
     build: ./test_db
+  test-db:
+    image: mysql:latest
+    ports:
+     - "3306:3306"
+    environment:
+     - MYSQL_ROOT_PASSWORD=123
+     - MYSQL_DATABASE=test_db
+  redis:
+    image: redis
+    ports:
+     - "6379:6379"

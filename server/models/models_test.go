@@ -1,14 +1,22 @@
 package models
 
+// TODO: error return redundant
+
 // TODO: Test time input
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
 	"reflect"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
 )
+
+var testDBHost = os.Getenv("TEST_DB_HOST")
+var testDBUser = os.Getenv("TEST_DB_USER")
+var testDBPassword = os.Getenv("TEST_DB_PWD")
 
 /* Database schema */
 
@@ -244,8 +252,10 @@ var runserviceData = []Runservice{
 }
 
 func setup() (*DB, error) {
+	// TODO: error return redundant
 	// Panics if there is a connection error
-	db := NewDB("treigerm:Hip$terSWAG@/test_db?")
+	dsn := fmt.Sprintf("%v:%v@tcp(%v:3306)/test_db?", testDBUser, testDBPassword, testDBHost)
+	db := NewDB(dsn)
 
 	// Start transaction
 	tx := db.MustBegin()
