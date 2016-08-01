@@ -9,6 +9,7 @@ import (
 const (
 	basicAuth   = "Basic"
 	sessionAuth = "Session"
+	tokenAuth   = "Token"
 )
 
 // Route struct for creating routes
@@ -70,7 +71,7 @@ var routes = Routes{
 		"Upload",
 		"POST",
 		"/app/0.1/upload",
-		basicAuth,
+		tokenAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.Upload },
 	},
 	Route{
@@ -93,5 +94,12 @@ var routes = Routes{
 		"/update/user",
 		sessionAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.UpdateUser },
+	},
+	Route{
+		"Login",
+		"POST",
+		"/auth/0.1/login",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Login },
 	},
 }

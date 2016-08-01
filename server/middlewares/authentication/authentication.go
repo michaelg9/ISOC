@@ -2,14 +2,18 @@ package authentication
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/michaelg9/ISOC/server/controllers"
-	"github.com/michaelg9/ISOC/server/services/models"
+	"github.com/michaelg9/ISOC/server/models"
+
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
 	errNotAuthorized = "Unauthorized request."
+
+	hmacSecret = "secret"
 )
 
 // MiddlewareEnv embeds the controllers.Env struct so that we can write functions on it.
@@ -61,6 +65,37 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 	// If email not set redirect to login page
 	if !found || email == "" {
 		http.Redirect(w, r, "/login", http.StatusUnauthorized)
+		return
+	}
+
+	next(w, r)
+}
+
+// RequireTokenAuth is the middleware for routes that require JWT authentication.
+func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		return
+	}
+
+	authHeaderParts := strings.Split(authHeader, " ")
+	if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		return
+	}
+
+	tokenString := authHeaderParts[1]
+	email, err := env.Tokens.CheckToken(tokenString)
+	if err != nil {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		return
+	}
+
+	// Check if user is registered in database
+	_, err = env.DB.GetUser(models.User{Email: email})
+	if err != nil {
+		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return
 	}
 

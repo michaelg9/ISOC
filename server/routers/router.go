@@ -31,6 +31,12 @@ func NewRouter(env controllers.Env) *mux.Router {
 				negroni.HandlerFunc(middlewareEnv.RequireSessionAuth),
 				negroni.Wrap(route.HandlerFunc(env)),
 			)
+		case tokenAuth:
+			middlewareEnv := &authentication.MiddlewareEnv{&env}
+			handler = negroni.New(
+				negroni.HandlerFunc(middlewareEnv.RequireTokenAuth),
+				negroni.Wrap(route.HandlerFunc(env)),
+			)
 		default:
 			handler = route.HandlerFunc(env)
 		}

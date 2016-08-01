@@ -1,5 +1,7 @@
 package models
 
+import "github.com/fatih/structs"
+
 // Device contains all stored information about one device
 type Device struct {
 	DeviceInfo DeviceStored `xml:"device-info" json:"deviceInfo"`
@@ -19,7 +21,7 @@ type DeviceStored struct {
 // GetDevicesFromUser gets all the devices and the tracked data from the given user.
 func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 	// Query the database for the data which belongs to the API key
-	devicesInfo, err := db.GetDeviceInfos(user)
+	devicesInfo, err := db.getDeviceInfos(user)
 	if err != nil {
 		return
 	}
@@ -45,11 +47,11 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 	return
 }
 
-// GetDeviceInfos gets all the registered devices without the stored data from the given user.
-func (db *DB) GetDeviceInfos(user User) (devices []DeviceStored, err error) {
-	getDevicesQuery := `SELECT dev.id, dev.imei, dev.manufacturer, dev.modelName, dev.osVersion
-                	   FROM Device dev, User u
-                	   WHERE (u.email = :email OR u.apiKey = :apiKey) AND u.uid = dev.user;`
+// getDeviceInfos gets all the registered devices without the stored data from the given user.
+func (db *DB) getDeviceInfos(user User) (devices []DeviceStored, err error) {
+	getDevicesQuery := `SELECT id, imei, manufacturer, modelName, osVersion
+                	   FROM Device, User
+                	   WHERE (email = :email OR apiKey = :apiKey) AND uid = user;`
 	stmt, err := db.PrepareNamed(getDevicesQuery)
 	if err != nil {
 		return
@@ -61,9 +63,13 @@ func (db *DB) GetDeviceInfos(user User) (devices []DeviceStored, err error) {
 
 // CreateDeviceForUser creates the device which was passed as a struct
 func (db *DB) CreateDeviceForUser(user User, device DeviceStored) error {
-	// TODO: Use named query with interface
-	createDeviceQuery := "INSERT INTO Device (imei, manufacturer, modelName, osVersion, user) VALUES (?, ?, ?, ?, ?);"
-	_, err := db.Exec(createDeviceQuery, device.IMEI, device.Manufacturer, device.Model, device.OS, user.ID)
+	createDeviceQuery := `INSERT INTO Device (imei, manufacturer, modelName, osVersion, user)
+                          VALUES (:IMEI, :Manufacturer, :Model, :OS, :User);`
+
+	// Transform the device struct into a map[string]interface{} so we can add the user ID
+	args := structs.Map(device)
+	args["User"] = user.ID
+	_, err := db.NamedExec(createDeviceQuery, args)
 	return err
 }
 
@@ -83,7 +89,7 @@ func (db *DB) UpdateDevice(device DeviceStored) error {
 // Also deletes all the collected data from device.
 // IDEA: pass optional value to see if data should be deleted as well
 func (db *DB) DeleteDevice(device DeviceStored) error {
-	deleteDeviceQuery := `DELETE FROM Device WHERE id = :id`
+	deleteDeviceQuery := `DELETE FROM Device WHERE id = :id;`
 	_, err := db.NamedExec(deleteDeviceQuery, device)
 	return err
 }

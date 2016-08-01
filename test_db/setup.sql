@@ -128,7 +128,7 @@ CREATE TABLE `Device` (
 
 LOCK TABLES `Device` WRITE;
 /*!40000 ALTER TABLE `Device` DISABLE KEYS */;
-INSERT INTO `Device` VALUES (1,'Motorola','Moto X (2nd Generation)','Android 5.0',1);
+INSERT INTO `Device` VALUES (1,'123456789012345','Motorola','Moto X (2nd Generation)','Android 5.0',1);
 /*!40000 ALTER TABLE `Device` ENABLE KEYS */;
 UNLOCK TABLES;
 
