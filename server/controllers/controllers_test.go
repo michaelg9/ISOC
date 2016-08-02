@@ -231,7 +231,7 @@ func TestToken(t *testing.T) {
 	}{
 		{"123", string(jsonResponse)},
 		{"", errMissingToken + "\n"},
-		{"12345", "Token is invalid." + "\n"},
+		{"12345", errTokenInvalid + "\n"},
 	}
 
 	for _, test := range tests {
@@ -257,7 +257,7 @@ func TestRefreshToken(t *testing.T) {
 	}{
 		{"123", string(jsonResponse)},
 		{"", errMissingToken + "\n"},
-		{"12345", "Token is invalid." + "\n"},
+		{"12345", errTokenInvalid + "\n"},
 	}
 
 	for _, test := range tests {
@@ -282,7 +282,7 @@ func TestLogoutToken(t *testing.T) {
 	}{
 		{"123", "Success"},
 		{"", errMissingToken + "\n"},
-		{"12345", "Token already invalid." + "\n"},
+		{"12345", errTokenAlreadyInvalid + "\n"},
 	}
 
 	for _, test := range tests {

@@ -24,6 +24,8 @@ const (
 	errNoAPIKey               = "No API key specified."
 	errNoSessionSet           = "No session set to log-out."
 	errMissingToken           = "No token given."
+	errTokenInvalid           = "Token is invalid."
+	errTokenAlreadyInvalid    = "Token already invalid."
 
 	hmacSecret = "secret"
 
@@ -285,12 +287,10 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	// Check the validity of the token
 	email, err := env.Tokens.CheckToken(refreshToken)
 	if err != nil {
-		// TODO: Throw error "token is invalid."
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, errTokenInvalid, http.StatusUnauthorized)
 		return
 	}
 
-	// TODO: Check if email is actually saved
 	// Create a new access token for the given user
 	accessToken, err := env.Tokens.NewToken(models.User{Email: email}, accessTokenDelta)
 	if err != nil {
@@ -315,13 +315,13 @@ func (env *Env) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	email, err := env.Tokens.CheckToken(refreshToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, errTokenInvalid, http.StatusUnauthorized)
 		return
 	}
 
 	err = env.Tokens.InvalidateToken(refreshToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, errTokenAlreadyInvalid, http.StatusInternalServerError)
 		return
 	}
 
@@ -347,7 +347,7 @@ func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 
 	err := env.Tokens.InvalidateToken(token)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, errTokenAlreadyInvalid, http.StatusInternalServerError)
 		return
 	}
 
