@@ -129,11 +129,7 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 	// Make sure we don't send the password hash over the wire
 	user.PasswordHash = ""
 
-	// TODO: Move into own file
-	response := struct {
-		models.DataOut
-		User models.User `json:"user"`
-	}{
+	response := models.SessionData{
 		models.DataOut{Device: devices},
 		user,
 	}
@@ -220,6 +216,10 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // Login handles /auth/0.1/login. It returns a short-lived acces token and a long-lived refresh token.
 // With the refresh token it is possible to get a new access token via /auth/0.1/token.
 func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
+	// Set header values to prevent caching
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
 	password := r.FormValue("password")
@@ -277,6 +277,10 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 // Token handles /auth/0.1/token. It returns a new access token if the user provided
 // a valid refresh token.
 func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
+	// Set header values to prevent caching
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	// Get the refresh token from the URI
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
@@ -307,6 +311,10 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 // RefreshToken handles /auth/0.1/refresh. The user can get a new refresh token in exchange
 // for a valid one. Before the new token gets issued the old one is blacklisted.
 func (env *Env) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	// Set header values to prevent caching
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
 		http.Error(w, errMissingToken, http.StatusBadRequest)

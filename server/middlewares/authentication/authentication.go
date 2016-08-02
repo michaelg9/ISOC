@@ -1,5 +1,7 @@
 package authentication
 
+// TODO: Middleware for no caching
+
 import (
 	"net/http"
 	"strings"
@@ -49,6 +51,7 @@ func (env *MiddlewareEnv) RequireBasicAuth(w http.ResponseWriter, r *http.Reques
 
 // RequireSessionAuth is the middleware for routes that require a session to be set with an email.
 func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	// Set header values to prevent caching
 	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
 	w.Header().Set("Pragma", "no-cache")
 	w.Header().Set("Expires", "-1")
@@ -73,6 +76,10 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 
 // RequireTokenAuth is the middleware for routes that require JWT authentication.
 func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
+	// Set header values to prevent caching
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		http.Error(w, errNotAuthorized, http.StatusForbidden)

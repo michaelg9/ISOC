@@ -1,6 +1,7 @@
 package models
 
 // TODO: Test time input
+// TODO: Use assert package
 
 import (
 	"database/sql"
@@ -12,9 +13,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var testDBHost = os.Getenv("TEST_DB_HOST")
-var testDBUser = os.Getenv("TEST_DB_USER")
-var testDBPassword = os.Getenv("TEST_DB_PWD")
+var (
+	testDBHost     = os.Getenv("TEST_MYSQL_HOST")
+	testDBUser     = os.Getenv("TEST_MYSQL_USER")
+	testDBPassword = os.Getenv("TEST_MYSQL_PWD")
+)
 
 /* Database schema */
 

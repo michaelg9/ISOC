@@ -1,4 +1,3 @@
-# TODO: Rename database variables like mysql and mysql-test
 version: '2'
 services:
   go-server:
@@ -9,21 +8,21 @@ services:
     volumes:
      - ./server:/go/src/github.com/michaelg9/ISOC/server
     depends_on:
-     - db
-     - test-db
+     - mysql
+     - mysql-test
      - redis
     environment:
-     - DB_HOST=db
-     - DB_USER=treigerm
-     - DB_PWD=123
-     - TEST_DB_HOST=test-db
-     - TEST_DB_USER=root
-     - TEST_DB_PWD=123
+     - MYSQL_HOST=mysql
+     - MYSQL_USER=treigerm
+     - MYSQL_PWD=123
+     - TEST_MYSQL_HOST=mysql-test
+     - TEST_MYSQL_USER=root
+     - TEST_MYSQL_PWD=123
      - REDIS_HOST=redis
      - PORT=8080
-  db:
+  mysql:
     build: ./test_db
-  test-db:
+  mysql-test:
     image: mysql:latest
     ports:
      - "3306:3306"
