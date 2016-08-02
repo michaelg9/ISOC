@@ -1,7 +1,5 @@
 package models
 
-// TODO: error return redundant
-
 // TODO: Test time input
 
 import (
@@ -251,8 +249,7 @@ var runserviceData = []Runservice{
 	},
 }
 
-func setup() (*DB, error) {
-	// TODO: error return redundant
+func setup() *DB {
 	// Panics if there is a connection error
 	dsn := fmt.Sprintf("%v:%v@tcp(%v:3306)/test_db?", testDBUser, testDBPassword, testDBHost)
 	db := NewDB(dsn)
@@ -279,13 +276,7 @@ func setup() (*DB, error) {
 	// Commit transaction
 	tx.Commit()
 
-	return db, nil
-}
-
-func checkDBErr(t *testing.T, err error) {
-	if err != nil {
-		t.Errorf("\n...error on db setup = %v", err.Error())
-	}
+	return db
 }
 
 func cleanUp(db *DB) {
@@ -312,8 +303,7 @@ func checkEqual(t *testing.T, expected, obtained interface{}) {
 }
 
 func TestGetUser(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	user := User{Email: "user@usermail.com"}
@@ -324,8 +314,7 @@ func TestGetUser(t *testing.T) {
 }
 
 func TestGetDevicesFromUser(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	user := User{Email: "user@usermail.com"}
@@ -337,8 +326,7 @@ func TestGetDevicesFromUser(t *testing.T) {
 }
 
 func TestGetDeviceInfos(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	user := User{Email: "user@usermail.com"}
@@ -350,8 +338,7 @@ func TestGetDeviceInfos(t *testing.T) {
 }
 
 func TestGetData(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	var tests = []struct {
@@ -366,7 +353,7 @@ func TestGetData(t *testing.T) {
 
 	device := deviceInfos[0]
 	for _, test := range tests {
-		err = db.GetData(device, test.ptrToResult)
+		err := db.GetData(device, test.ptrToResult)
 		checkErr(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
 		checkEqual(t, test.expected, result)
@@ -374,14 +361,13 @@ func TestGetData(t *testing.T) {
 }
 
 func TestCreateUser(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	newUser := users[1]
 	pwd, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 	newUser.PasswordHash = string(pwd)
-	err = db.CreateUser(newUser)
+	err := db.CreateUser(newUser)
 	checkErr(t, err)
 
 	result, err := db.GetUser(newUser)
@@ -390,14 +376,13 @@ func TestCreateUser(t *testing.T) {
 }
 
 func TestCreateDeviceForUser(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	user := users[0]
 	newDevice := deviceInfos[1]
 
-	err = db.CreateDeviceForUser(user, newDevice)
+	err := db.CreateDeviceForUser(user, newDevice)
 	checkErr(t, err)
 
 	oldDevice := deviceInfos[0]
@@ -408,8 +393,7 @@ func TestCreateDeviceForUser(t *testing.T) {
 }
 
 func TestCreateData(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	toInsertBattery := batteryData[1:]
@@ -430,7 +414,7 @@ func TestCreateData(t *testing.T) {
 
 	device := deviceInfos[0]
 	for _, test := range tests {
-		err = db.CreateData(device, test.toInsert)
+		err := db.CreateData(device, test.toInsert)
 		checkErr(t, err)
 
 		err = db.GetData(device, test.ptrToResult)
@@ -441,8 +425,7 @@ func TestCreateData(t *testing.T) {
 }
 
 func TestUpdateUser(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	user := users[0]
@@ -461,15 +444,14 @@ func TestUpdateUser(t *testing.T) {
 }
 
 func TestUpdateDevice(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	device := deviceInfos[0]
 	device.Manufacturer = "Apple"
 	device.Model = "iPhone 6"
 	device.OS = "iOS 10"
-	err = db.UpdateDevice(device)
+	err := db.UpdateDevice(device)
 	checkErr(t, err)
 
 	expected := []DeviceStored{device}
@@ -479,12 +461,11 @@ func TestUpdateDevice(t *testing.T) {
 }
 
 func TestDeleteUser(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	user := users[0]
-	err = db.DeleteUser(user)
+	err := db.DeleteUser(user)
 	checkErr(t, err)
 
 	expectedErr := sql.ErrNoRows
@@ -493,12 +474,11 @@ func TestDeleteUser(t *testing.T) {
 }
 
 func TestDeleteDevice(t *testing.T) {
-	db, err := setup()
-	checkDBErr(t, err)
+	db := setup()
 	defer cleanUp(db)
 
 	device := deviceInfos[0]
-	err = db.DeleteDevice(device)
+	err := db.DeleteDevice(device)
 	checkErr(t, err)
 
 	result, err := db.getDeviceInfos(User{Email: "user@usermail.com"})
