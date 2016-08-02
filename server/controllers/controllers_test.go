@@ -3,9 +3,12 @@ package controllers
 import (
 	"encoding/json"
 	"encoding/xml"
+	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/michaelg9/ISOC/server/models"
 )
@@ -59,21 +62,7 @@ var batteryData = []models.Battery{
 	},
 }
 
-/* mockDB has to implement:
- * type Datastore interface {
- *     GetUser(user User) (fullUser User, err error)
- *     CreateUser(user User) error
- *     UpdateUser(user User, field string) error
- *     DeleteUser(user User) error
- *     GetDevicesFromUser(user User) ([]Device, error)
- *     GetDeviceInfos(user User) ([]DeviceStored, error)
- *     CreateDeviceForUser(user User, device DeviceStored) error
- *     UpdateDevice(device DeviceStored, field string) error
- *     DeleteDevice(device DeviceStored) error
- *     GetData(device DeviceStored, ptrToData interface{}) error
- *     CreateData(device DeviceStored, ptrToData interface{}) error
- * }
- */
+/* mockDB implements the Datastore interface so we can use it to mock the DB */
 
 type mockDB struct{}
 
@@ -125,6 +114,31 @@ func (mdb *mockDB) GetData(device models.DeviceStored, ptrToData interface{}) er
 func (mdb *mockDB) CreateData(device models.DeviceStored, ptrToData interface{}) error {
 	return nil
 }
+
+/* mockTokens implements the TokenControl interface so it can be used to mock the token back-end */
+
+type mockTokens struct{}
+
+func (mTkns *mockTokens) CheckToken(tokenString string) (email string, err error) {
+	if tokenString == "123" {
+		return "user@usermail.com", nil
+	}
+	return "", errors.New("Token is invalid.")
+}
+
+func (mTkns *mockTokens) NewToken(user models.User, duration time.Duration) (string, error) {
+	return "123", nil
+}
+
+func (mTkns *mockTokens) InvalidateToken(tokenString string) error {
+	if tokenString != "123" {
+		return errors.New("Token already invalid.")
+	}
+	return nil
+}
+
+/* Test controller functions */
+// TODO: create URL later in testbody
 
 func TestSignUp(t *testing.T) {
 	var tests = []struct {
@@ -178,6 +192,115 @@ func TestDownload(t *testing.T) {
 		}
 	}
 }
+
+func TestLogin(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.Tokens{AccessToken: "123", RefreshToken: "123"})
+	var tests = []struct {
+		email    string
+		password string
+		expected string
+	}{
+		{"user@usermail.com", "123456", string(jsonResponse)},
+		{"user@mail.com", "123456", errWrongPasswordEmail + "\n"},
+		{"user@usermail.com", "1234", errWrongPasswordEmail + "\n"},
+		{"user@usermail.com", "", errMissingPasswordOrEmail + "\n"},
+		{"", "123456", errMissingPasswordOrEmail + "\n"},
+		{"", "", errMissingPasswordOrEmail + "\n"},
+	}
+
+	for _, test := range tests {
+		rec := httptest.NewRecorder()
+		url := fmt.Sprintf("/auth/0.1/login?email=%v&password=%v", test.email, test.password)
+		req, _ := http.NewRequest("POST", url, nil)
+
+		env := Env{DB: &mockDB{}, Tokens: &mockTokens{}}
+		http.HandlerFunc(env.Login).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		if test.expected != obtained {
+			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
+		}
+	}
+}
+
+func TestToken(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.Tokens{AccessToken: "123"})
+	var tests = []struct {
+		refreshToken string
+		expected     string
+	}{
+		{"123", string(jsonResponse)},
+		{"", errMissingToken + "\n"},
+		{"12345", "Token is invalid." + "\n"},
+	}
+
+	for _, test := range tests {
+		rec := httptest.NewRecorder()
+		url := fmt.Sprintf("/auth/0.1/token?refreshToken=%v", test.refreshToken)
+		req, _ := http.NewRequest("POST", url, nil)
+
+		env := Env{DB: &mockDB{}, Tokens: &mockTokens{}}
+		http.HandlerFunc(env.Token).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		if test.expected != obtained {
+			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
+		}
+	}
+}
+
+func TestRefreshToken(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.Tokens{RefreshToken: "123"})
+	var tests = []struct {
+		refreshToken string
+		expected     string
+	}{
+		{"123", string(jsonResponse)},
+		{"", errMissingToken + "\n"},
+		{"12345", "Token is invalid." + "\n"},
+	}
+
+	for _, test := range tests {
+		rec := httptest.NewRecorder()
+		url := fmt.Sprintf("/auth/0.1/refresh?refreshToken=%v", test.refreshToken)
+		req, _ := http.NewRequest("POST", url, nil)
+
+		env := Env{DB: &mockDB{}, Tokens: &mockTokens{}}
+		http.HandlerFunc(env.RefreshToken).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		if test.expected != obtained {
+			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
+		}
+	}
+}
+
+func TestLogoutToken(t *testing.T) {
+	var tests = []struct {
+		refreshToken string
+		expected     string
+	}{
+		{"123", "Success"},
+		{"", errMissingToken + "\n"},
+		{"12345", "Token already invalid." + "\n"},
+	}
+
+	for _, test := range tests {
+		rec := httptest.NewRecorder()
+		url := fmt.Sprintf("/auth/0.1/logout?token=%v", test.refreshToken)
+		req, _ := http.NewRequest("POST", url, nil)
+
+		env := Env{DB: &mockDB{}, Tokens: &mockTokens{}}
+		http.HandlerFunc(env.LogoutToken).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		if test.expected != obtained {
+			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
+		}
+	}
+}
+
+/* Test helper functions */
 
 func TestWriteResponse(t *testing.T) {
 	response := models.DataOut{Device: devices}

@@ -239,7 +239,7 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Check if given password fits with stored hash inside the server
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err == bcrypt.ErrMismatchedHashAndPassword {
+	if err == bcrypt.ErrMismatchedHashAndPassword || err == bcrypt.ErrHashTooShort {
 		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
 		return
 	} else if err != nil {
@@ -285,6 +285,7 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	// Check the validity of the token
 	email, err := env.Tokens.CheckToken(refreshToken)
 	if err != nil {
+		// TODO: Throw error "token is invalid."
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
@@ -303,9 +304,9 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Refresh handles /auth/0.1/refresh. The user can get a new refresh token in exchange
+// RefreshToken handles /auth/0.1/refresh. The user can get a new refresh token in exchange
 // for a valid one. Before the new token gets issued the old one is blacklisted.
-func (env *Env) Refresh(w http.ResponseWriter, r *http.Request) {
+func (env *Env) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
 		http.Error(w, errMissingToken, http.StatusBadRequest)
