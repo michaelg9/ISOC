@@ -7,6 +7,12 @@ type DataOut struct {
 	Device []Device `xml:"device" json:"devices"`
 }
 
+// SessionData is the data which is available to the web page during one session
+type SessionData struct {
+	DataOut
+	User User `json:"user"`
+}
+
 // DeviceData contains all the tracked data of the device
 type DeviceData struct {
 	Battery []Battery `xml:"battery" json:"battery"`

@@ -24,6 +24,8 @@ const (
 	errNoAPIKey               = "No API key specified."
 	errNoSessionSet           = "No session set to log-out."
 	errMissingToken           = "No token given."
+	errTokenInvalid           = "Token is invalid."
+	errTokenAlreadyInvalid    = "Token already invalid."
 
 	hmacSecret = "secret"
 
@@ -127,11 +129,7 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 	// Make sure we don't send the password hash over the wire
 	user.PasswordHash = ""
 
-	// TODO: Move into own file
-	response := struct {
-		models.DataOut
-		User models.User `json:"user"`
-	}{
+	response := models.SessionData{
 		models.DataOut{Device: devices},
 		user,
 	}
@@ -218,6 +216,10 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // Login handles /auth/0.1/login. It returns a short-lived acces token and a long-lived refresh token.
 // With the refresh token it is possible to get a new access token via /auth/0.1/token.
 func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
+	// Set header values to prevent caching
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
 	password := r.FormValue("password")
@@ -239,7 +241,7 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 
 	// Check if given password fits with stored hash inside the server
 	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err == bcrypt.ErrMismatchedHashAndPassword {
+	if err == bcrypt.ErrMismatchedHashAndPassword || err == bcrypt.ErrHashTooShort {
 		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
 		return
 	} else if err != nil {
@@ -275,6 +277,10 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 // Token handles /auth/0.1/token. It returns a new access token if the user provided
 // a valid refresh token.
 func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
+	// Set header values to prevent caching
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	// Get the refresh token from the URI
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
@@ -285,11 +291,10 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	// Check the validity of the token
 	email, err := env.Tokens.CheckToken(refreshToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, errTokenInvalid, http.StatusUnauthorized)
 		return
 	}
 
-	// TODO: Check if email is actually saved
 	// Create a new access token for the given user
 	accessToken, err := env.Tokens.NewToken(models.User{Email: email}, accessTokenDelta)
 	if err != nil {
@@ -303,9 +308,13 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Refresh handles /auth/0.1/refresh. The user can get a new refresh token in exchange
+// RefreshToken handles /auth/0.1/refresh. The user can get a new refresh token in exchange
 // for a valid one. Before the new token gets issued the old one is blacklisted.
-func (env *Env) Refresh(w http.ResponseWriter, r *http.Request) {
+func (env *Env) RefreshToken(w http.ResponseWriter, r *http.Request) {
+	// Set header values to prevent caching
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Pragma", "no-cache")
+
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
 		http.Error(w, errMissingToken, http.StatusBadRequest)
@@ -314,13 +323,13 @@ func (env *Env) Refresh(w http.ResponseWriter, r *http.Request) {
 
 	email, err := env.Tokens.CheckToken(refreshToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
+		http.Error(w, errTokenInvalid, http.StatusUnauthorized)
 		return
 	}
 
 	err = env.Tokens.InvalidateToken(refreshToken)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, errTokenAlreadyInvalid, http.StatusInternalServerError)
 		return
 	}
 
@@ -346,7 +355,7 @@ func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 
 	err := env.Tokens.InvalidateToken(token)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, errTokenAlreadyInvalid, http.StatusInternalServerError)
 		return
 	}
 

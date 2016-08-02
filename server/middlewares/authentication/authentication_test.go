@@ -2,13 +2,13 @@ package authentication
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/michaelg9/ISOC/server/controllers"
 	"github.com/michaelg9/ISOC/server/models"
 	"github.com/urfave/negroni"
@@ -22,6 +22,8 @@ var users = []models.User{
 		APIKey:       "37e72ff927f511e688adb827ebf7e157",
 	},
 }
+
+/* mockDB implements the Datastore interface so we can use it to mock the DB */
 
 type mockDB struct{}
 
@@ -68,6 +70,30 @@ func (mdb *mockDB) CreateData(device models.DeviceStored, ptrToData interface{})
 	return nil
 }
 
+/* mockTokens implements the TokenControl interface so it can be used to mock the token back-end */
+
+type mockTokens struct{}
+
+func (mTkns *mockTokens) CheckToken(tokenString string) (email string, err error) {
+	if tokenString == "123" {
+		return users[0].Email, nil
+	}
+	return "", errors.New("Token is invalid.")
+}
+
+func (mTkns *mockTokens) NewToken(user models.User, duration time.Duration) (string, error) {
+	return "123", nil
+}
+
+func (mTkns *mockTokens) InvalidateToken(tokenString string) error {
+	if tokenString != "123" {
+		return errors.New("Token already invalid.")
+	}
+	return nil
+}
+
+/* Dummy handler */
+
 func helloHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Hello world!")
 }
@@ -108,16 +134,13 @@ func TestRequireBasicAuth(t *testing.T) {
 }
 
 func TestRequireTokenAuth(t *testing.T) {
-	tomorrow := time.Now().Add(time.Hour * time.Duration(24)).Unix()
-	yesterday := time.Now().AddDate(0, 0, -1).Unix()
 	var tests = []struct {
 		tokenAuth bool
 		token     string
 		expected  string
 	}{
-		{true, newToken("user@usermail.com", tomorrow), "Hello world!"},
-		{true, newToken("user@usermail.com", yesterday), "Unauthorized request.\n"},
-		{true, newToken("user@mail.com", tomorrow), "Unauthorized request.\n"},
+		{true, "123", "Hello world!"},
+		{true, "12345", "Unauthorized request.\n"},
 		{true, "", "Unauthorized request.\n"},
 		{false, "", "Unauthorized request.\n"},
 	}
@@ -129,8 +152,7 @@ func TestRequireTokenAuth(t *testing.T) {
 			req.Header.Set("Authorization", fmt.Sprintf("Bearer %v", test.token))
 		}
 
-		tokenstore := models.NewTokenstore()
-		env := MiddlewareEnv{&controllers.Env{DB: &mockDB{}, Tokens: tokenstore}}
+		env := MiddlewareEnv{&controllers.Env{DB: &mockDB{}, Tokens: &mockTokens{}}}
 		var handler http.Handler
 		handler = negroni.New(
 			negroni.HandlerFunc(env.RequireTokenAuth),
@@ -143,14 +165,4 @@ func TestRequireTokenAuth(t *testing.T) {
 			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
 		}
 	}
-}
-
-func newToken(email string, time int64) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": email,
-		"exp": time,
-	})
-
-	tokenString, _ := token.SignedString([]byte(hmacSecret))
-	return tokenString
 }

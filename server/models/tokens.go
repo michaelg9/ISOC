@@ -16,8 +16,8 @@ const (
 // Tokens is the struct for outputting the two types of tokens: a long-lived refresh token
 // and a short-lived access token.
 type Tokens struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	AccessToken  string `json:"accessToken,omitempty"`
+	RefreshToken string `json:"refreshToken,omitempty"`
 }
 
 // TokenControl is the interface for all functions related to tokens.
@@ -94,12 +94,12 @@ func (tkns *Tokenstore) InvalidateToken(tokenString string) error {
 
 	token, err := jwt.Parse(tokenString, keyFunc)
 	if err != nil {
-		return nil // Token already invalid
+		return errors.New("Token already invalid.")
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !(ok && token.Valid) {
-		return nil // Token already invalid
+		return errors.New("Token already invalid.")
 	}
 
 	remainingValidity := getTokenRemainingValidity(claims["exp"])

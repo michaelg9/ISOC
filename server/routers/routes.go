@@ -96,10 +96,31 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.UpdateUser },
 	},
 	Route{
-		"Login",
+		"LoginToken",
 		"POST",
 		"/auth/0.1/login",
 		"",
 		func(env controllers.Env) http.HandlerFunc { return env.Login },
+	},
+	Route{
+		"Token",
+		"POST",
+		"/auth/0.1/token",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Token },
+	},
+	Route{
+		"RefreshToken",
+		"POST",
+		"/auth/0.1/refresh",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.RefreshToken },
+	},
+	Route{
+		"LogoutToken",
+		"POST",
+		"/auth/0.1/logout",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.LogoutToken },
 	},
 }

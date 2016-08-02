@@ -35,9 +35,9 @@ func main() {
 
 func startDB() *models.DB {
 	// Get database access variables
-	host := os.Getenv("DB_HOST")
-	user := os.Getenv("DB_USER")
-	pwd := os.Getenv("DB_PWD")
+	host := os.Getenv("MYSQL_HOST")
+	user := os.Getenv("MYSQL_USER")
+	pwd := os.Getenv("MYSQL_PWD")
 	// Create DSN
 	dsn := fmt.Sprintf("%v:%v@tcp(%v:3306)/mobile_data?parseTime=true", user, pwd, host)
 	// Panics if there is an error with the connection

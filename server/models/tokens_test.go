@@ -66,11 +66,12 @@ func TestInvalidateToken(t *testing.T) {
 	untilYesterday := time.Hour * time.Duration(-24)
 
 	var tests = []struct {
-		duration               time.Duration
-		expectedErrForChecking string
+		duration                   time.Duration
+		expectedErrForInvalidation string
+		expectedErrForChecking     string
 	}{
-		{untilTomorrow, "Token is blacklisted."},
-		{untilYesterday, "Token is expired"},
+		{untilTomorrow, "", "Token is blacklisted."},
+		{untilYesterday, "Token already invalid.", "Token is expired"},
 	}
 
 	for _, test := range tests {
@@ -81,7 +82,9 @@ func TestInvalidateToken(t *testing.T) {
 
 		err = tokens.InvalidateToken(token)
 		if err != nil {
-			t.Errorf("\n...got error = %v", err)
+			if err.Error() != test.expectedErrForInvalidation {
+				t.Errorf("\n...expected = %v\n...obtained = %v", test.expectedErrForInvalidation, err)
+			}
 		}
 
 		_, err = tokens.CheckToken(token)
