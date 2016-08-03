@@ -33,7 +33,7 @@ func (env *Env) LoginPOST(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	// Check if parameters are non-empty
 	if email == "" || password == "" {
-		http.Error(w, errMissingPasswordOrEmail, http.StatusBadRequest)
+		http.Error(w, errNoPasswordOrEmail, http.StatusBadRequest)
 		return
 	}
 
