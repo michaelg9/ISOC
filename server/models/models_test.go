@@ -316,6 +316,17 @@ func TestGetUser(t *testing.T) {
 	checkEqual(t, expected, result)
 }
 
+func Test(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	device := Device{DeviceInfo: DeviceStored{ID: 1}}
+	expected := devices[0]
+	result, err := db.GetDevice(device)
+	checkErr(t, err)
+	checkEqual(t, expected, result)
+}
+
 func TestGetDevicesFromUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)

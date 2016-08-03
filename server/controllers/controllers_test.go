@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/michaelg9/ISOC/server/models"
 )
 
@@ -85,6 +87,13 @@ func (mdb *mockDB) DeleteUser(user models.User) error {
 	return nil
 }
 
+func (mdb *mockDB) GetDevice(device models.Device) (models.Device, error) {
+	if device.DeviceInfo.ID == 1 {
+		return devices[0], nil
+	}
+	return models.Device{}, nil
+}
+
 func (mdb *mockDB) GetDevicesFromUser(user models.User) ([]models.Device, error) {
 	return devices[:1], nil
 }
@@ -106,8 +115,11 @@ func (mdb *mockDB) DeleteDevice(device models.DeviceStored) error {
 }
 
 func (mdb *mockDB) GetData(device models.DeviceStored, ptrToData interface{}) error {
-	ptr, _ := ptrToData.(*interface{})
-	*ptr = batteryData
+	var getData = map[reflect.Type]interface{}{
+		reflect.TypeOf([]models.Battery{}): batteryData[:1],
+	}
+	v := reflect.ValueOf(ptrToData).Elem()
+	v.Set(reflect.ValueOf(getData[v.Type()]))
 	return nil
 }
 
@@ -300,6 +312,69 @@ func TestLogoutToken(t *testing.T) {
 	}
 }
 
+func TestUser(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.UserResponse{
+		User:    users[0],
+		Devices: devices,
+	})
+	var tests = []struct {
+		email    string
+		apiKey   string
+		expected string
+	}{
+		{users[0].Email, users[0].APIKey, string(jsonResponse)},
+		// TODO: Error cases
+	}
+
+	pattern := "/data/{email}"
+	env := Env{DB: &mockDB{}, Tokens: &mockTokens{}}
+	for _, test := range tests {
+		url := fmt.Sprintf("/data/%v?appid=%v", test.email, test.apiKey)
+		testControllerWithPattern(env.User, "GET", url, pattern, test.expected, t)
+	}
+}
+
+func TestDevice(t *testing.T) {
+	jsonResponse, _ := json.Marshal(devices[0])
+	var tests = []struct {
+		email    string
+		apiKey   string
+		deviceID int
+		expected string
+	}{
+		{users[0].Email, users[0].APIKey, deviceInfos[0].ID, string(jsonResponse)},
+		// TODO: Error cases
+	}
+
+	pattern := "/data/{email}/{device}"
+	env := Env{DB: &mockDB{}, Tokens: &mockTokens{}}
+	for _, test := range tests {
+		url := fmt.Sprintf("/data/%v/%v?appid=%v", test.email, test.deviceID, test.apiKey)
+		testControllerWithPattern(env.Device, "GET", url, pattern, test.expected, t)
+	}
+}
+
+func TestFeature(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.DeviceData{Battery: batteryData[:1]})
+	var tests = []struct {
+		email    string
+		apiKey   string
+		deviceID int
+		feature  string
+		expected string
+	}{
+		{users[0].Email, users[0].APIKey, deviceInfos[0].ID, "Battery", string(jsonResponse)},
+		// TODO: Error cases
+	}
+
+	pattern := "/data/{email}/{device}/{feature}"
+	env := Env{DB: &mockDB{}, Tokens: &mockTokens{}}
+	for _, test := range tests {
+		url := fmt.Sprintf("/data/%v/%v/%v?appid=%v", test.email, test.deviceID, test.feature, test.apiKey)
+		testControllerWithPattern(env.Feature, "GET", url, pattern, test.expected, t)
+	}
+}
+
 /* Test helper functions */
 
 func TestWriteResponse(t *testing.T) {
@@ -324,5 +399,21 @@ func TestWriteResponse(t *testing.T) {
 		if test.expected != obtained {
 			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
 		}
+	}
+}
+
+/* Helper functions */
+
+func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern, expected string, t *testing.T) {
+	rec := httptest.NewRecorder()
+	req, _ := http.NewRequest(method, url, nil)
+
+	r := mux.NewRouter()
+	r.HandleFunc(pattern, controller)
+	r.ServeHTTP(rec, req)
+
+	obtained := rec.Body.String()
+	if expected != obtained {
+		t.Errorf("\n...expected = %v\n...obtained = %v", expected, obtained)
 	}
 }

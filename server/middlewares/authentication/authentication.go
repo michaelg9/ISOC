@@ -1,6 +1,7 @@
 package authentication
 
 // TODO: Middleware for no caching
+// TODO: Middleware for api key
 
 import (
 	"net/http"

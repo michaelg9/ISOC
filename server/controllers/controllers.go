@@ -9,10 +9,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/michaelg9/ISOC/server/models"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -97,6 +100,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If decoding was successfull input the data into the database
+	// TODO: Use structs.Values(d.DeviceData) instead
 	for _, data := range d.DeviceData.GetContents() {
 		err := env.DB.CreateData(models.DeviceStored{ID: deviceID}, data)
 		if err != nil {
@@ -362,8 +366,132 @@ func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Success")
 }
 
+/*
+ TODO: /data
+*/
+
+// User handles /data/{email}. It gets all the devices and its data from
+// the user and information about the user.
+func (env *Env) User(w http.ResponseWriter, r *http.Request) {
+	email := mux.Vars(r)["email"]
+	key := r.FormValue("appid")
+	if key == "" || email == "" {
+		// TODO: Update error
+		http.Error(w, errNoAPIKey, http.StatusBadRequest)
+		return
+	}
+
+	// TODO: Check if error occurse if email and key mismatch
+	// Check if email is valid with API Key
+	user, err := env.DB.GetUser(models.User{Email: email, APIKey: key})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	devices, err := env.DB.GetDevicesFromUser(models.User{APIKey: key})
+	if err != nil {
+		// TODO: Error
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	response := models.UserResponse{
+		User:    user,
+		Devices: devices,
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Device handles /data/{email}/{device}. It gets all the info about the
+// specified device of the given user. Device should be the device ID (for now).
+func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	email := vars["email"]
+	device := vars["device"]
+	key := r.FormValue("appid")
+	if key == "" || email == "" || device == "" {
+		// TODO: Update error
+		http.Error(w, errNoAPIKey, http.StatusBadRequest)
+		return
+	}
+
+	deviceID, err := strconv.Atoi(device)
+	if err != nil {
+		// TODO: Update error
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if email is valid with API Key
+	_, err = env.DB.GetUser(models.User{Email: email, APIKey: key})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	deviceStruct := models.Device{DeviceInfo: models.DeviceStored{ID: deviceID}}
+	response, err := env.DB.GetDevice(deviceStruct)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Feature handles /data/{email}/{device}/{feature}. It gets all the saved data from the
+// specified feature from the given device of the user.
+func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	email := vars["email"]
+	device := vars["device"]
+	feature := vars["feature"]
+	key := r.FormValue("appid")
+	if key == "" || email == "" || device == "" || feature == "" {
+		// TODO: Update error
+		http.Error(w, errNoAPIKey, http.StatusBadRequest)
+		return
+	}
+
+	deviceID, err := strconv.Atoi(device)
+	if err != nil {
+		// TODO: Update error
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if email is valid with API Key
+	_, err = env.DB.GetUser(models.User{Email: email, APIKey: key})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	var response models.DeviceData
+	v := reflect.ValueOf(&response).Elem()
+	ptrToFeature := v.FieldByName(feature).Addr().Interface()
+	err = env.DB.GetData(models.DeviceStored{ID: deviceID}, ptrToFeature)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // writeResponse prints a given struct in the specified format to the response writer. If no
 // format is specified it will be JSON.
+// TODO: Add csv support
 func writeResponse(w http.ResponseWriter, format string, response interface{}) (err error) {
 	var out []byte
 	switch format {

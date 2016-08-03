@@ -1,6 +1,13 @@
 package models
 
-import "github.com/fatih/structs"
+// TODO: Rename deviceInfo to deviceAbout
+// TODO: Rename deviceData to trackedData
+
+import (
+	"reflect"
+
+	"github.com/fatih/structs"
+)
 
 // Device contains all stored information about one device
 type Device struct {
@@ -16,6 +23,49 @@ type DeviceStored struct {
 	Manufacturer string `json:"manufacturer" db:"manufacturer"`
 	Model        string `json:"model" db:"modelName"`
 	OS           string `json:"os" db:"osVersion"`
+}
+
+// DeviceData contains all the tracked data of the device
+type DeviceData struct {
+	Battery []Battery `xml:"battery,omitempty" json:"battery,omitempty"`
+}
+
+// GetContents returns a slice of pointers to all the data of the device in the struct
+// TODO: Check if this can be replaced with function from struct library
+func (deviceData *DeviceData) GetContents() []interface{} {
+	v := reflect.Indirect(reflect.ValueOf(deviceData))
+	contents := make([]interface{}, v.NumField())
+
+	for i := range contents {
+		contents[i] = v.Field(i).Addr().Interface()
+	}
+
+	return contents
+}
+
+// GetDevice gets a device and its tracked data by the Device ID.
+func (db *DB) GetDevice(device Device) (fullDevice Device, err error) {
+	getDeviceQuery := `SELECT id, imei, manufacturer, modelName, osVersion
+                	   FROM Device
+                	   WHERE id = :id;`
+	stmt, err := db.PrepareNamed(getDeviceQuery)
+	if err != nil {
+		return
+	}
+
+	err = stmt.Get(&fullDevice.DeviceInfo, device.DeviceInfo)
+	if err != nil {
+		return
+	}
+
+	for _, data := range fullDevice.Data.GetContents() {
+		err = db.GetData(device.DeviceInfo, data)
+		if err != nil {
+			return
+		}
+	}
+
+	return
 }
 
 // GetDevicesFromUser gets all the devices and the tracked data from the given user.
