@@ -9,23 +9,30 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/michaelg9/ISOC/server/models"
 
+	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
 )
 
 const (
-	errMissingPasswordOrEmail = "No email and/or password specified."
-	errWrongPasswordEmail     = "Wrong password/email combination."
-	errNoDeviceID             = "No device ID specified."
-	errNoAPIKey               = "No API key specified."
-	errNoSessionSet           = "No session set to log-out."
-	errMissingToken           = "No token given."
-	errTokenInvalid           = "Token is invalid."
-	errTokenAlreadyInvalid    = "Token already invalid."
+	errNoPasswordOrEmail   = "No email and/or password specified."
+	errWrongPasswordEmail  = "Wrong password/email combination."
+	errNoDeviceID          = "No device ID specified."
+	errNoAPIKey            = "No API key specified."
+	errWrongAPIKey         = "Wrong API key."
+	errNoSessionSet        = "No session set to log-out."
+	errNoToken             = "No token given."
+	errTokenInvalid        = "Token is invalid."
+	errTokenAlreadyInvalid = "Token already invalid."
+	errWrongUser           = "No such user."
+	errDeviceIDNotInt      = "The device value is not an int."
+	errWrongDevice         = "There is no device with this ID."
 
 	hmacSecret = "secret"
 
@@ -45,7 +52,7 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 	if email == "" || password == "" {
-		http.Error(w, errMissingPasswordOrEmail, http.StatusBadRequest)
+		http.Error(w, errNoPasswordOrEmail, http.StatusBadRequest)
 		return
 	}
 
@@ -225,7 +232,7 @@ func (env *Env) Login(w http.ResponseWriter, r *http.Request) {
 	password := r.FormValue("password")
 	// Check if parameters are non-empty
 	if email == "" || password == "" {
-		http.Error(w, errMissingPasswordOrEmail, http.StatusBadRequest)
+		http.Error(w, errNoPasswordOrEmail, http.StatusBadRequest)
 		return
 	}
 
@@ -284,7 +291,7 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	// Get the refresh token from the URI
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
-		http.Error(w, errMissingToken, http.StatusBadRequest)
+		http.Error(w, errNoToken, http.StatusBadRequest)
 		return
 	}
 
@@ -317,7 +324,7 @@ func (env *Env) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
-		http.Error(w, errMissingToken, http.StatusBadRequest)
+		http.Error(w, errNoToken, http.StatusBadRequest)
 		return
 	}
 
@@ -349,7 +356,7 @@ func (env *Env) RefreshToken(w http.ResponseWriter, r *http.Request) {
 func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	if token == "" {
-		http.Error(w, errMissingToken, http.StatusBadRequest)
+		http.Error(w, errNoToken, http.StatusBadRequest)
 		return
 	}
 
@@ -362,8 +369,143 @@ func (env *Env) LogoutToken(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Success")
 }
 
+/*
+ TODO: /data
+*/
+
+// User handles /data/{email}. It gets all the devices and its data from
+// the user and information about the user.
+func (env *Env) User(w http.ResponseWriter, r *http.Request) {
+	email := mux.Vars(r)["email"]
+
+	// Check if email is valid with API Key
+	user, err := env.DB.GetUser(models.User{Email: email})
+	if err == sql.ErrNoRows {
+		http.Error(w, errWrongUser, http.StatusInternalServerError)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if user specified the right API key
+	if user.APIKey != r.FormValue("appid") {
+		http.Error(w, errWrongAPIKey, http.StatusUnauthorized)
+		return
+	}
+
+	devices, err := env.DB.GetDevicesFromUser(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	response := models.UserResponse{
+		User:    user,
+		Devices: devices,
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Device handles /data/{email}/{device}. It gets all the info about the
+// specified device of the given user. Device should be the device ID (for now).
+func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	email := vars["email"]
+	device := vars["device"]
+
+	deviceID, err := strconv.Atoi(device)
+	if err != nil {
+		http.Error(w, errDeviceIDNotInt, http.StatusInternalServerError)
+		return
+	}
+
+	// Check if email is valid with API Key
+	user, err := env.DB.GetUser(models.User{Email: email})
+	if err == sql.ErrNoRows {
+		http.Error(w, errWrongUser, http.StatusInternalServerError)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if user specified the right API key
+	if user.APIKey != r.FormValue("appid") {
+		http.Error(w, errWrongAPIKey, http.StatusUnauthorized)
+		return
+	}
+
+	deviceStruct := models.Device{DeviceInfo: models.DeviceStored{ID: deviceID}}
+	response, err := env.DB.GetDevice(deviceStruct)
+	if err == sql.ErrNoRows {
+		http.Error(w, errWrongDevice, http.StatusInternalServerError)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// Feature handles /data/{email}/{device}/{feature}. It gets all the saved data from the
+// specified feature from the given device of the user.
+func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	email := vars["email"]
+	device := vars["device"]
+	feature := vars["feature"]
+
+	deviceID, err := strconv.Atoi(device)
+	if err != nil {
+		http.Error(w, errDeviceIDNotInt, http.StatusInternalServerError)
+		return
+	}
+
+	// Check if email is valid with API Key
+	user, err := env.DB.GetUser(models.User{Email: email})
+	if err == sql.ErrNoRows {
+		http.Error(w, errWrongUser, http.StatusInternalServerError)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if user specified the right API key
+	if user.APIKey != r.FormValue("appid") {
+		http.Error(w, errWrongAPIKey, http.StatusUnauthorized)
+		return
+	}
+
+	var response models.DeviceData
+	v := reflect.ValueOf(&response).Elem()
+	ptrToFeature := v.FieldByName(feature).Addr().Interface()
+	err = env.DB.GetData(models.DeviceStored{ID: deviceID}, ptrToFeature)
+	if err == sql.ErrNoRows {
+		http.Error(w, errWrongDevice, http.StatusInternalServerError)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // writeResponse prints a given struct in the specified format to the response writer. If no
 // format is specified it will be JSON.
+// TODO: Add csv support
 func writeResponse(w http.ResponseWriter, format string, response interface{}) (err error) {
 	var out []byte
 	switch format {

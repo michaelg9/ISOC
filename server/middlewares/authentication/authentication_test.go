@@ -46,6 +46,10 @@ func (mdb *mockDB) DeleteUser(user models.User) error {
 	return nil
 }
 
+func (mdb *mockDB) GetDevice(device models.Device) (models.Device, error) {
+	return models.Device{}, nil
+}
+
 func (mdb *mockDB) GetDevicesFromUser(user models.User) ([]models.Device, error) {
 	return []models.Device{}, nil
 }

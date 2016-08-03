@@ -2,6 +2,7 @@ package models
 
 // TODO: Test time input
 // TODO: Use assert package
+// TODO: Make mocks file with mock database
 
 import (
 	"database/sql"
@@ -306,12 +307,34 @@ func checkEqual(t *testing.T, expected, obtained interface{}) {
 }
 
 func TestGetUser(t *testing.T) {
+	var tests = []struct {
+		email    string
+		key      string
+		expected User
+	}{
+		{users[0].Email, "", users[0]},
+		{"", users[0].APIKey, users[0]},
+		{users[0].Email, users[0].APIKey, users[0]},
+		//{users[0].Email, "1234", User{}}, TODO: Resolve this
+	}
 	db := setup()
 	defer cleanUp(db)
 
-	user := User{Email: "user@usermail.com"}
-	expected := users[0]
-	result, err := db.GetUser(user)
+	for _, test := range tests {
+		user := User{Email: test.email, APIKey: test.key}
+		result, err := db.GetUser(user)
+		checkErr(t, err)
+		checkEqual(t, test.expected, result)
+	}
+}
+
+func Test(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	device := Device{DeviceInfo: DeviceStored{ID: 1}}
+	expected := devices[0]
+	result, err := db.GetDevice(device)
 	checkErr(t, err)
 	checkEqual(t, expected, result)
 }

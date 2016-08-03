@@ -1,5 +1,7 @@
 package models
 
+// TODO: Comments
+
 import (
 	"errors"
 	"reflect"

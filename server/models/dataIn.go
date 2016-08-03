@@ -1,5 +1,7 @@
 package models
 
+// TODO: Rename DataIn to Upload
+
 // DataIn is the XML struct for the data transfer
 // from client to server
 type DataIn struct {

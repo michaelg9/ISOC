@@ -1,5 +1,7 @@
 package models
 
+// TODO: Add scope to tokens so access tokens won't be used as refresh tokens and vice versa
+
 import (
 	"errors"
 	"fmt"

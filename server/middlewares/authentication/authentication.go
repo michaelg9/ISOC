@@ -1,7 +1,5 @@
 package authentication
 
-// TODO: Middleware for no caching
-
 import (
 	"net/http"
 	"strings"

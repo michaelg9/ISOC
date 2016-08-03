@@ -15,6 +15,7 @@ type Datastore interface {
 	CreateUser(user User) error
 	UpdateUser(user User) error
 	DeleteUser(user User) error
+	GetDevice(device Device) (fullDevice Device, err error)
 	GetDevicesFromUser(user User) ([]Device, error)
 	CreateDeviceForUser(user User, device DeviceStored) error
 	UpdateDevice(device DeviceStored) error
