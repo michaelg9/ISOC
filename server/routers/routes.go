@@ -116,4 +116,25 @@ var routes = Routes{
 		"",
 		func(env controllers.Env) http.HandlerFunc { return env.LogoutToken },
 	},
+	Route{
+		"UserData",
+		"GET",
+		"/data/{email}",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.User },
+	},
+	Route{
+		"UserData",
+		"GET",
+		"/data/{email}/{device}",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Device },
+	},
+	Route{
+		"UserData",
+		"GET",
+		"/data/{email}/{device}/{feature}",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.Feature },
+	},
 }

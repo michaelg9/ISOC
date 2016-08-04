@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="dashboardApp">
+<html lang="en" ng-app="dashboardApp" ng-controller="dashboardController">
 <head>
   <title>Monitor</title>
   <meta charset="utf-8">
@@ -60,22 +60,22 @@
     <div class="col-sm-9 col-sm-offset-3">
       <div class="row">
         <div class="col-sm-6">
-          <div class="well" ng-controller="deviceController">
+          <div class="well">
             <h4>Device</h4>
             <div class="table-responsive">
               <table class="table borderless">
                 <tbody>
                   <tr>
                     <td><b>Model:</b></td>
-                    <td><span ng-bind="deviceInfo.model"></span></td>
+                    <td>{{deviceInfo.model}}</td>
                   </tr>
                   <tr>
                     <td><b>Manufacturer:</b></td>
-                    <td><span ng-bind="deviceInfo.manufacturer"></span></td>
+                    <td>{{deviceInfo.manufacturer}}</td>
                   </tr>
                   <tr>
                     <td><b>Operating System:</b></td>
-                    <td><span ng-bind="deviceInfo.os"></span></td>
+                    <td>{{deviceInfo.os}}</td>
                   </tr>
                 </tbody>
               </table>
@@ -83,19 +83,19 @@
           </div>
         </div>
         <div class="col-sm-6">
-          <div class="well" ng-controller="userController">
+          <div class="well">
             <h4>My Details</h4>
             <div class="table-responsive">
               <table class="table borderless">
                 <tbody>
                   <tr>
                     <td><b>Email:</b></td>
-                    <td><span ng-bind="userInfo.email"></span></td>
+                    <td>{{userInfo.email}}</td>
                     <td><a href="" id="editEmail">Edit</a></td>
                   </tr>
                   <tr>
                     <td><b>API key:</b></td>
-                    <td><span ng-bind="userInfo.apiKey"></span></td>
+                    <td>{{userInfo.apiKey}}</td>
                     <td><a href="" id="updateAPIKey">Get new key</a></td>
                   </tr>
                 </tbody>
@@ -115,6 +115,7 @@
               </div>
             </div>
             <canvas id="batteryChart" width="400" height="400"></canvas>
+            <a href="../data/{{userInfo.email}}/{{deviceInfo.id}}/Battery?appid={{userInfo.apiKey}}" class="btn btn-info" role="button" download="Battery.json">Download JSON</a>
           </div>
         </div>
         <div class="col-sm-6">

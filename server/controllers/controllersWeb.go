@@ -5,7 +5,6 @@ package controllers
 import (
 	"database/sql"
 	"fmt"
-	"html/template"
 	"net/http"
 
 	"github.com/michaelg9/ISOC/server/models"
@@ -14,16 +13,12 @@ import (
 
 // Index handles /
 func (env *Env) Index(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/index.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	http.ServeFile(w, r, "views/index.html")
 }
 
 // LoginGET handles GET /login
 func (env *Env) LoginGET(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/login.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	http.ServeFile(w, r, "views/login.html")
 }
 
 // LoginPOST handles POST /login
@@ -103,18 +98,5 @@ func (env *Env) Logout(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard handles /dashboard
 func (env *Env) Dashboard(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/dashboard.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-// display takes a filepath to an HTML or template, passes the given
-// data to it and displays it
-func display(w http.ResponseWriter, filePath string, data interface{}) error {
-	t, err := template.ParseFiles(filePath)
-	if err != nil {
-		return err
-	}
-	t.Execute(w, data)
-	return nil
+	http.ServeFile(w, r, "views/dashboard.html")
 }

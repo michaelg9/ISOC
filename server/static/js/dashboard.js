@@ -6,15 +6,13 @@ var batteryChart;
 
 // Angular app
 var app = angular.module("dashboardApp", []);
-app.controller("deviceController", function($scope) {
+app.controller("dashboardController", function($scope) {
     $scope.deviceInfo = {};
-});
-app.controller("userController", function($scope) {
     $scope.userInfo = {};
 });
 
 function changeDeviceInfo(deviceInfo) {
-    var controllerElement = document.querySelector("[ng-controller=deviceController]");
+    var controllerElement = document.querySelector("[ng-controller=dashboardController]");
     var $scope = angular.element(controllerElement).scope();
     $scope.$apply(function() {
         $scope.deviceInfo = deviceInfo;
@@ -22,7 +20,7 @@ function changeDeviceInfo(deviceInfo) {
 }
 
 function changeUserInfo(userInfo) {
-    var controllerElement = document.querySelector("[ng-controller=userController]");
+    var controllerElement = document.querySelector("[ng-controller=dashboardController]");
     var $scope = angular.element(controllerElement).scope();
     $scope.$apply(function() {
         $scope.userInfo = userInfo;
@@ -46,7 +44,7 @@ var batteryData = $.get({
     url: retrieveDataURL
 }).done(function(data, textStatus, jqXHR) {
     var userData = JSON.parse(data);
-    changeDeviceInfo(userData.devices[0].deviceInfo);
+    changeDeviceInfo(userData.devices[0].aboutDevice);
     changeUserInfo(userData.user);
     createBatteryGraph(userData.devices[0].data.battery);
 });
