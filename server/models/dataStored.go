@@ -69,7 +69,7 @@ var getQueries = map[string]string{
 }
 
 // GetData gets the data from the given data type.
-func (db *DB) GetData(device DeviceStored, ptrToData interface{}) error {
+func (db *DB) GetData(aboutDevice AboutDevice, ptrToData interface{}) error {
 	value, err := getValueOfPtr(ptrToData)
 	if err != nil {
 		return err
@@ -84,11 +84,11 @@ func (db *DB) GetData(device DeviceStored, ptrToData interface{}) error {
 		return err
 	}
 
-	return stmt.Select(value.Addr().Interface(), device)
+	return stmt.Select(value.Addr().Interface(), aboutDevice)
 }
 
 // CreateData inserts the given data into the database.
-func (db *DB) CreateData(device DeviceStored, ptrToData interface{}) error {
+func (db *DB) CreateData(aboutDevice AboutDevice, ptrToData interface{}) error {
 	// Get the reflect value of the given data
 	value, err := getValueOfPtr(ptrToData)
 	if err != nil {
@@ -105,7 +105,7 @@ func (db *DB) CreateData(device DeviceStored, ptrToData interface{}) error {
 	for i := 0; i < value.Len(); i++ {
 		data := value.Index(i).Interface()
 		m := structs.Map(data)           // Transform the struct of the type into map[string]string
-		m["ID"] = device.ID              // Append the device ID to that map
+		m["ID"] = aboutDevice.ID         // Append the device ID to that map
 		_, err := db.NamedExec(query, m) // Insert the data
 		if err != nil {
 			return err

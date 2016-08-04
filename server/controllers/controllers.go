@@ -89,7 +89,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	decoder := xml.NewDecoder(r.Body)
 
 	// Decode the given XML from the request body into the struct defined in models
-	var d models.DataIn
+	var d models.Upload
 	if err := decoder.Decode(&d); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -104,8 +104,8 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If decoding was successfull input the data into the database
-	for _, data := range d.DeviceData.GetContents() {
-		err := env.DB.CreateData(models.DeviceStored{ID: deviceID}, data)
+	for _, data := range d.TrackedData.GetContents() {
+		err := env.DB.CreateData(models.AboutDevice{ID: deviceID}, data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -142,26 +142,6 @@ func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = writeResponse(w, "json", response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-// Download handles /data/0.1/q
-func (env *Env) Download(w http.ResponseWriter, r *http.Request) {
-	// Get the value of the parameter appid in the URI
-	key := r.FormValue("appid")
-	if key == "" {
-		http.Error(w, errNoAPIKey, http.StatusBadRequest)
-		return
-	}
-
-	devices, err := env.DB.GetDevicesFromUser(models.User{APIKey: key})
-	response := models.DataOut{
-		Device: devices,
-	}
-
-	err = writeResponse(w, r.FormValue("out"), response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -439,7 +419,7 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deviceStruct := models.Device{DeviceInfo: models.DeviceStored{ID: deviceID}}
+	deviceStruct := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
 	response, err := env.DB.GetDevice(deviceStruct)
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongDevice, http.StatusInternalServerError)
@@ -485,10 +465,10 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var response models.DeviceData
+	var response models.TrackedData
 	v := reflect.ValueOf(&response).Elem()
 	ptrToFeature := v.FieldByName(feature).Addr().Interface()
-	err = env.DB.GetData(models.DeviceStored{ID: deviceID}, ptrToFeature)
+	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, ptrToFeature)
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongDevice, http.StatusInternalServerError)
 		return

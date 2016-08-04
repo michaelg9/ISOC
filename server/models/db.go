@@ -17,11 +17,11 @@ type Datastore interface {
 	DeleteUser(user User) error
 	GetDevice(device Device) (fullDevice Device, err error)
 	GetDevicesFromUser(user User) ([]Device, error)
-	CreateDeviceForUser(user User, device DeviceStored) error
-	UpdateDevice(device DeviceStored) error
-	DeleteDevice(device DeviceStored) error
-	GetData(device DeviceStored, ptrToData interface{}) error
-	CreateData(device DeviceStored, ptrToData interface{}) error
+	CreateDeviceForUser(user User, aboutDevice AboutDevice) error
+	UpdateDevice(aboutDevice AboutDevice) error
+	DeleteDevice(aboutDevice AboutDevice) error
+	GetData(aboutDevice AboutDevice, ptrToData interface{}) error
+	CreateData(aboutDevice AboutDevice, ptrToData interface{}) error
 }
 
 // DB is the database struct

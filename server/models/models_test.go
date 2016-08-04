@@ -2,7 +2,6 @@ package models
 
 // TODO: Test time input
 // TODO: Use assert package
-// TODO: Make mocks file with mock database
 
 import (
 	"database/sql"
@@ -163,15 +162,15 @@ var users = []User{
 	},
 }
 
-var deviceInfos = []DeviceStored{
-	DeviceStored{
+var deviceInfos = []AboutDevice{
+	AboutDevice{
 		ID:           1,
 		IMEI:         "123456789012345",
 		Manufacturer: "Motorola",
 		Model:        "Moto X (2nd Generation)",
 		OS:           "Android 5.0",
 	},
-	DeviceStored{
+	AboutDevice{
 		ID:           2,
 		IMEI:         "12345678901234567",
 		Manufacturer: "One Plus",
@@ -182,8 +181,8 @@ var deviceInfos = []DeviceStored{
 
 var devices = []Device{
 	Device{
-		DeviceInfo: deviceInfos[0],
-		Data: DeviceData{
+		AboutDevice: deviceInfos[0],
+		Data: TrackedData{
 			Battery: batteryData[:1],
 		},
 	},
@@ -315,7 +314,7 @@ func TestGetUser(t *testing.T) {
 		{users[0].Email, "", users[0]},
 		{"", users[0].APIKey, users[0]},
 		{users[0].Email, users[0].APIKey, users[0]},
-		//{users[0].Email, "1234", User{}}, TODO: Resolve this
+		{users[0].Email, "1234", users[0]},
 	}
 	db := setup()
 	defer cleanUp(db)
@@ -328,11 +327,11 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
-func Test(t *testing.T) {
+func TestGetDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	device := Device{DeviceInfo: DeviceStored{ID: 1}}
+	device := Device{AboutDevice: AboutDevice{ID: 1}}
 	expected := devices[0]
 	result, err := db.GetDevice(device)
 	checkErr(t, err)
@@ -412,7 +411,7 @@ func TestCreateDeviceForUser(t *testing.T) {
 	checkErr(t, err)
 
 	oldDevice := deviceInfos[0]
-	expected := []DeviceStored{oldDevice, newDevice}
+	expected := []AboutDevice{oldDevice, newDevice}
 	result, err := db.getDeviceInfos(user)
 	checkErr(t, err)
 	checkEqual(t, expected, result)
@@ -480,7 +479,7 @@ func TestUpdateDevice(t *testing.T) {
 	err := db.UpdateDevice(device)
 	checkErr(t, err)
 
-	expected := []DeviceStored{device}
+	expected := []AboutDevice{device}
 	result, err := db.getDeviceInfos(users[0])
 	checkErr(t, err)
 	checkEqual(t, expected, result)

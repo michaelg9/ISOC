@@ -75,13 +75,6 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.Upload },
 	},
 	Route{
-		"Download",
-		"GET",
-		"/data/0.1/q",
-		"",
-		func(env controllers.Env) http.HandlerFunc { return env.Download },
-	},
-	Route{
 		"InternalDownload",
 		"GET",
 		"/data/0.1/user",
