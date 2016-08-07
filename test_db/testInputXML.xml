@@ -11,6 +11,7 @@
 		<model>LG-D855</model>
 		<androidver>6.0</androidver>
 		<lastReboot>2016-06-12 19:20:34</lastReboot>
+                <timeZone>GMT +01:00</timeZone>
                 <defaultBrowser>com.android.chrome</defaultBrowser>
     	</metadata>
 
@@ -23,8 +24,8 @@
                     >Monitor</installedapp>
                 <data active="true" time="2016-06-12 19:21:55" since="2016-06-02 19:21:55" rx="2" tx="3">wifi</data>
                 <action time="2016-06-12 19:21:55">boot</action>
-                <connection time="2016-06-12 19:20:34" local="192.168.01.144:2455" remote="8.8.8.8:445" 
-                    type="tcp" status="established">com.isoc.android.monitor</connection>
+                <connection time="2016-06-12 19:20:34" lip="192.168.01.144" lport="2455" rip="8.8.8.8" 
+                    rport="445" type="tcp" status="established">com.isoc.android.monitor</connection>
                 <wifiAP bssid="00:00:00:00:00:00" caps="[WPS][WPA-PSK-CCMP][WPA2-PSK-CCMP][ESS]" signal="5" 
                     frequency="2452">eduroam</wifiAP>
                 
@@ -35,6 +36,7 @@
 <!-- 
 Changes:
 07/08:
+<metadata> added timeZone attribute, since we're dealing with times.
 <runservice> removed uid attribute
 <installedapp> removed uid attribute
 <sms>: retrieves the sms log.
@@ -43,10 +45,12 @@ Changes:
     read indicates if the message was read (1) or not (0)
     the text is the replacement of the actual phone number
 <connection>: the text goes from "proc" to the package name, as long as the corresponding package 
-is registered in the installed apps database. If it's not, then the text will be
-"unknown". If the uid corresponds to multiple packages, they will appear next to each other
-separated by a /, like "com.google.android.gms/com.google.android.gsf". It means 
-that one of these packages owns that connection. Also, uid attribute is removed.
+    is registered in the installed apps database. If it's not, then the text will be
+    "unknown". If the uid corresponds to multiple packages, they will appear next to each other
+    separated by a /, like "com.google.android.gms/com.google.android.gsf". It means 
+    that one of these packages owns that connection. Also, uid attribute is removed.
+    Additionally, sockets are broken from [ip]:[port] to separate attributes,
+    for increased readability
 
 
 26/07:

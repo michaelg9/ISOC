@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.TimeZone;
 
 /**
  * Methods to produce and send the XML string.
@@ -241,11 +242,11 @@ public class XMLProduce {
 
         while (connections.moveToNext()) {
             Cursor listeners=db.query(Database.DatabaseSchema.InstalledPackages.TABLE_NAME,
-                    new String[]{Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_PACKAGE_NAME},
+                    new String[]{Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_LABEL},
                     Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_UID+"="+connections.getString(uidIndex), null, null, null, null);
             StringBuilder proc=new StringBuilder();
             if (listeners.moveToFirst()){
-                int nameIndex=listeners.getColumnIndex(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_PACKAGE_NAME);
+                int nameIndex=listeners.getColumnIndex(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_LABEL);
                 proc.append(listeners.getString(nameIndex));
                 while (listeners.moveToNext()) proc.append('/'+listeners.getString(nameIndex));
             }else proc.append("unknown");
@@ -261,19 +262,6 @@ public class XMLProduce {
         xmlString.append(result);
     }
 
-    private void getSockets2() {
-        String query = String.format("SELECT S.%s,S.%s,S.%s,S.%s,S.%s,S.%s,S.%s,%s FROM %s AS S JOIN %s AS R USING (%s) WHERE S.%s='FALSE'",
-                Database.DatabaseSchema.Sockets.COLUMN_NAME_DATE,Database.DatabaseSchema.Sockets.COLUMN_NAME_LIP,
-                Database.DatabaseSchema.Sockets.COLUMN_NAME_LPORT,Database.DatabaseSchema.Sockets.COLUMN_NAME_RIP,
-                Database.DatabaseSchema.Sockets.COLUMN_NAME_RPORT,Database.DatabaseSchema.Sockets.COLUMN_NAME_TYPE,
-                Database.DatabaseSchema.Sockets.COLUMN_NAME_STATUS,Database.DatabaseSchema.RunningServices.COLUMN_NAME_PACKAGE_NAME,
-                Database.DatabaseSchema.Sockets.TABLE_NAME, Database.DatabaseSchema.RunningServices.TABLE_NAME,
-                Database.DatabaseSchema.Sockets.COLUMN_NAME_UID, Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT);
-
-        Cursor cursor = db.rawQuery(query, null);
-        String result = cursorToXML(cursor, Database.DatabaseSchema.Sockets.TAG, Database.DatabaseSchema.RunningServices.COLUMN_NAME_PACKAGE_NAME);
-        xmlString.append(result);
-    }
 
     public String getXML() {
         xmlString.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<data>\n"
@@ -323,6 +311,7 @@ public class XMLProduce {
             data.add(new String[]{"model", Build.MODEL});
             data.add(new String[]{"androidVer", Build.VERSION.RELEASE});
             data.add(new String[]{"lastReboot", TimeCapture.getUpDate()});
+            data.add(new String[]{"timeZone",  TimeZone.getDefault().getDisplayName(false,TimeZone.SHORT)});
         }
 
         private void getDefaultBrowser(){

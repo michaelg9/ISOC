@@ -15,7 +15,6 @@ import android.widget.Button;
 
 /**
  * TO DO:
- * CONNECTIONS UID!!
  * LOCATION
  * TIMEZONE
  * BROWSER HISTORY?
@@ -24,7 +23,9 @@ import android.widget.Button;
  * SENDING AUTOMATICALLY
  * String resources
  * ----------
+ * BUGS:
  * Deprecated connecivity onreceive method, implement type?
+ * Matching sockets to specific app.
  * ------
  */
 public class MainFragment extends Fragment {
