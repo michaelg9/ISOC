@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="timer_def">5</integer>
+    <integer name="timer_min_def">1</integer>
+    <integer name="timer_max_def">60</integer>
+    <integer name="sent_def">24</integer>
+
+</resources>

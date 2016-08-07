@@ -1,26 +1,28 @@
 package com.isoc.android.monitor;
 
 import android.content.ContentValues;
-import android.content.Context;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Created by me on 19/07/16.
+ * Captures active sockets by reading /net/proc/tcp tcp6 udp udp6 raw raw6
+ * TO DO: Match uid to running service or installed app?
+ * BUG: Shared uids produce uncertainty over which app initiated the connection... It's only vendor / system apps though that share uids...
  */
 public class SocketsCapture {
+    //pattern for an IPv4 and v6 address in hexadecimal
     private static String socket4 = "\\p{XDigit}{8}:\\p{XDigit}{4}";
     private static String socket6 = "\\p{XDigit}{32}:\\p{XDigit}{4}";
+    //pattern to match syntax in these files
     //                                    sl :      local          remote       status        tx_queue:rx_queue           tr:tm->when                 retrnsmt           uid
     private static String Connection4 = "\\d+: " + socket4 + " " + socket4 + " \\p{XDigit}{2} \\p{XDigit}*:\\p{XDigit}* \\p{XDigit}{2}:\\p{XDigit}{8} \\p{XDigit}{8}\\s+\\d+";
     private static String Connection6 = "\\d+: " + socket6 + " " + socket6 + " \\p{XDigit}{2} \\p{XDigit}*:\\p{XDigit}* \\p{XDigit}{2}:\\p{XDigit}{8} \\p{XDigit}{8}\\s+\\d+";
 
-    public static void getSockets(Context context,SQLiteDatabase db) {
+    public static void getSockets(SQLiteDatabase db) {
         String time = TimeCapture.getTime();
-        String[] types={"tcp","udp","raw","tcp6","udp6","raw6"};
+        String[] types={"tcp","udp","raw","tcp6","udp6","raw6"}; //the names of the interesting files
         for (String type :types) {
             String content = NetworkCapture.readStatsFromFile("/proc/net/"+type);
             Matcher m;
@@ -43,30 +45,8 @@ public class SocketsCapture {
         }
     }
 
-    public static String getSocketsXML(SQLiteDatabase db){
-        Cursor cursor = db.query(Database.DatabaseSchema.Sockets.TABLE_NAME,null,null,null,null,null,null);
-        StringBuilder sb=new StringBuilder();
-        int dateIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_DATE);
-        int lipIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_LIP);
-        int lportIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_LPORT);
-        int ripIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_RIP);
-        int rportIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_RPORT);
-        int typeIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_TYPE);
-        int statusIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_STATUS);
-        int uidIndex = cursor.getColumnIndex(Database.DatabaseSchema.Sockets.COLUMN_NAME_UID);
-
-        while (cursor.moveToNext()) {
-            sb.append("<connection time=\"" + cursor.getString(dateIndex) + "\" local=\"" + cursor.getString(lipIndex)+':'+
-                    cursor.getString(lportIndex)+"\" remote=\""+cursor.getString(ripIndex)+':'+
-                            cursor.getString(rportIndex)+"\" type=\""+cursor.getString(typeIndex)+"\" status=\""+
-                    cursor.getString(statusIndex)+"\" uid=\""+cursor.getString(uidIndex)+"\">" +
-                    "proc" + "</connection>\n");
-        }
-        cursor.close();
-        return sb.toString();
-    }
-
     private abstract static class Socket {
+        //class representing an IPv6/v4 socket. Must be extended to implement formatIP
         private String localIP;
         private String localPort;
         private String remoteIP;
@@ -74,8 +54,8 @@ public class SocketsCapture {
         private String uid;
         private String status;
 
+        //all the possible socket states,taken from linux source code
         private enum states {
-            //taken from linux source code
             UNKNOWN(0),
             ESTABLISHED(1),
             SYN_SENT(2),
@@ -131,8 +111,8 @@ public class SocketsCapture {
         }
 
         private void setLocalSocket(String[] lSocket) {
-            localIP = formatIP(convertFromEndian(lSocket[0]));
-            localPort = Integer.toString(Integer.parseInt(lSocket[1], 16));
+            localIP = formatIP(convertFromEndian(lSocket[0])); //must reverse the bytes first, then format appropriately
+            localPort = Integer.toString(Integer.parseInt(lSocket[1], 16)); //convert from hexadecimal
         }
 
         public abstract String formatIP(String[] localIP);
@@ -142,26 +122,19 @@ public class SocketsCapture {
             remotePort = Integer.toString(Integer.parseInt(rSocket[1], 16));
         }
 
+
         private String[] convertFromEndian(String s) {
+            //reverts the bytes into their appropriate position
+            //take substring of length 8
             String[] result = new String[s.length() / 2];
-            String[] tokens = splitEqually(s, 8);
-            for (int i = 0; i < tokens.length; i++) {
-                String[] parts = splitEqually(tokens[i], 2);
-                int j = 0;
-                for (int k = 3; k >= 0; k--) {
-                    result[i * 4 + j] = parts[k];
+            for (int i = 0; i < s.length(); i+=8) {
+                String part=s.substring(i,i+8);
+                int j=0;
+                for (int k = 6; k >= 0; k-=2) {
+                    //append 2 character strings in reverse order
+                    result[i/2+j] = part.substring(k,k+2);
                     j++;
                 }
-            }
-            return result;
-        }
-
-        private String[] splitEqually(String s, int num) {
-            int length = s.length();
-            if ((length % num) != 0) return null;
-            String[] result = new String[length / num];
-            for (int k = 0; k <= length - num; k += num) {
-                result[k / num] = s.substring(k, k + num);
             }
             return result;
         }
@@ -177,6 +150,7 @@ public class SocketsCapture {
             super(entry);
         }
 
+        //must convert to decimal and append dot
         public String formatIP(String[] localIP) {
             StringBuilder result = new StringBuilder().append(Integer.decode("0x" + localIP[0]));
             for (int i = 1; i < localIP.length; i++) {
@@ -191,10 +165,11 @@ public class SocketsCapture {
             super(entry);
         }
 
+        // just append a dot
         public String formatIP(String[] localIP) {
             StringBuilder result = new StringBuilder(localIP[0] + localIP[1]);
             for (int i = 2; i < localIP.length; i += 2) {
-                result.append(':' + localIP[i] + localIP[i + 1]);
+                result.append('.' + localIP[i] + localIP[i + 1]);
             }
             return result.toString();
         }

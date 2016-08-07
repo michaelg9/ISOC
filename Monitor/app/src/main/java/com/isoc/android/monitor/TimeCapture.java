@@ -29,7 +29,9 @@ public class TimeCapture {
         return getTime(defaultTimeFormat,seconds);
     }
 
+    //uptime in unix time format
     protected static long getUpTime(){return (System.currentTimeMillis()-SystemClock.elapsedRealtime());}
 
+    //uptime as a date
     protected static String getUpDate(){return getTime((System.currentTimeMillis()-SystemClock.elapsedRealtime()));}
 }

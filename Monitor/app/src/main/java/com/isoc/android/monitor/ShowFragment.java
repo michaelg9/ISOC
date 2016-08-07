@@ -2,7 +2,8 @@ package com.isoc.android.monitor;
 
 
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -11,7 +12,7 @@ import android.widget.TextView;
 
 
 /**
- * A simple {@link Fragment} subclass.
+ * A fragment used to show the result string
  */
 public class ShowFragment extends android.app.Fragment {
 
@@ -33,7 +34,9 @@ public class ShowFragment extends android.app.Fragment {
         TextView textView=(TextView) view.findViewById(R.id.frag_show_text);
         textView.setText(getArguments().getString("results"));
         textView.setMovementMethod(new ScrollingMovementMethod());
-
+        Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
+        toolbar.setTitle("Show");
+        if (((AppCompatActivity)getActivity()).getSupportActionBar()!=null) ((AppCompatActivity)getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         return view;
     }
 

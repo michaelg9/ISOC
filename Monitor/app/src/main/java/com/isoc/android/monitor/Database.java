@@ -1,12 +1,13 @@
 package com.isoc.android.monitor;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.provider.BaseColumns;
 
 /**
- * Created by me on 11/07/16.
+ * Contains the DB schema and the openhelper object that handles the db
  */
 public class Database extends SQLiteOpenHelper {
 
@@ -25,11 +26,13 @@ public class Database extends SQLiteOpenHelper {
         db.execSQL(DatabaseSchema.Actions.SQL_CREATE_TABLE);
         db.execSQL(DatabaseSchema.Sockets.SQL_CREATE_TABLE);
         db.execSQL(DatabaseSchema.WifiAP.SQL_CREATE_TABLE);
+        db.execSQL(DatabaseSchema.SMSLog.SQL_CREATE_TABLE);
     }
 
     @Override
     public void onOpen(SQLiteDatabase db) {
         super.onOpen(db);
+        db.execSQL("PRAGMA foreign_keys = ON"); //enabling foreign key constraints
     }
 
     @Override
@@ -38,10 +41,23 @@ public class Database extends SQLiteOpenHelper {
         onCreate(db);
     }
 
+    public final static class DatabaseControls{
+        public static void markSend(String[] tables,SQLiteDatabase db){
+            ContentValues values=new ContentValues();
+            values.put(Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT,true);
+            for (String table : tables) {
+                db.update(table, values, DatabaseSchema.GLOBAL_COLUMN_NAME_SENT + "='TRUE'", null);
+            }
+        }
+
+    }
+
     public final static class DatabaseSchema {
         public final static String dbName = "Statistics.db";
         public final static String SQL_DELETE_DB = "DROP DATABASE " + dbName;
+        public static final String GLOBAL_COLUMN_NAME_SENT="sent";
 
+        //to avoid instantiating
         private DatabaseSchema() {}
 
         public static abstract class InstalledPackages implements BaseColumns {
@@ -54,11 +70,12 @@ public class Database extends SQLiteOpenHelper {
             public static final String COLUMN_NAME_LABEL = "label";
 
             public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
-                    _ID + " INTEGER," +
-                    COLUMN_NAME_PACKAGE_NAME + " TEXT PRIMARY KEY," +
-                    COLUMN_NAME_INSTALLED_DATE + " INTEGER," +
+                    _ID + " INTEGER PRIMARY KEY," +
+                    COLUMN_NAME_PACKAGE_NAME + " TEXT UNIQUE," + //package names are unique
+                    COLUMN_NAME_INSTALLED_DATE + " TEXT," +
                     COLUMN_NAME_VERSION + " TEXT," +
                     COLUMN_NAME_UID + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_LABEL + " TEXT);";}
 
         public static abstract class RunningServices implements BaseColumns {
@@ -77,8 +94,28 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_SINCE + " TEXT," +
                     COLUMN_NAME_TIME + " TEXT," +
                     COLUMN_NAME_UID + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_RX + " TEXT," +
-                    COLUMN_NAME_TX + " TEXT);";
+                    COLUMN_NAME_TX + " TEXT);"; //no foreign key because user has the option to monitor services and not installed packages
+        }
+
+        public static abstract class SMSLog implements BaseColumns {
+            public final static String TABLE_NAME = "SMSLog";
+            public final static String TAG = "sms";
+            public final static String COLUMN_NAME_NUMBER = "number";
+            public static final String COLUMN_NAME_TYPE = "folder";
+            public static final String COLUMN_NAME_READ = "read";
+            public static final String COLUMN_NAME_DATE = "time";
+
+            public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
+                    _ID + " INTEGER PRIMARY KEY," +
+                    COLUMN_NAME_NUMBER + " TEXT," +
+                    COLUMN_NAME_TYPE + " TEXT," +
+                    COLUMN_NAME_READ + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    COLUMN_NAME_DATE + " TEXT UNIQUE," +
+                    //every number should exist in the Replacement table
+                    "FOREIGN KEY ("+COLUMN_NAME_NUMBER+") REFERENCES "+CallLogNumberReplacements.TABLE_NAME+"("+CallLogNumberReplacements.COLUMN_NAME_NUMBER+"));";
         }
 
         public static abstract class CallLog implements BaseColumns {
@@ -87,7 +124,7 @@ public class Database extends SQLiteOpenHelper {
             public final static String COLUMN_NAME_NUMBER = "number";
             public static final String COLUMN_NAME_TYPE = "type";
             public static final String COLUMN_NAME_DURATION = "duration";
-            public static final String COLUMN_NAME_DATE = "date";
+            public static final String COLUMN_NAME_DATE = "time";
             public static final String COLUMN_NAME_SAVED = "saved";
 
             public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
@@ -95,19 +132,21 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_NUMBER + " TEXT," +
                     COLUMN_NAME_TYPE + " TEXT," +
                     COLUMN_NAME_DURATION + " TEXT," +
-                    COLUMN_NAME_DATE + " INTEGER UNIQUE," +
-                    COLUMN_NAME_SAVED + " TEXT);";
+                    COLUMN_NAME_DATE + " TEXT UNIQUE," +
+                    COLUMN_NAME_SAVED + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    //every number should exist in the Replacement table
+                    "FOREIGN KEY ("+COLUMN_NAME_NUMBER+") REFERENCES "+CallLogNumberReplacements.TABLE_NAME+"("+CallLogNumberReplacements.COLUMN_NAME_NUMBER+"));";
         }
 
         //keeps the replacement number for each phone number in the call log
-        public static abstract class CallLogNumberReplacements implements BaseColumns{
+        public static abstract class CallLogNumberReplacements implements BaseColumns {
             public final static String TABLE_NAME = "CallLogNumberReplacements";
             public final static String COLUMN_NAME_NUMBER = "number";
 
             public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
                     _ID + " INTEGER PRIMARY KEY," +
-                    COLUMN_NAME_NUMBER + " TEXT UNIQUE, "+
-                    "FOREIGN KEY ("+COLUMN_NAME_NUMBER+") REFERENCES "+CallLog.TABLE_NAME+"("+CallLog.COLUMN_NAME_NUMBER+"));";
+                    COLUMN_NAME_NUMBER + " TEXT UNIQUE NOT NULL); ";
         }
 
         public static abstract class Battery implements BaseColumns {
@@ -123,6 +162,7 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_TIME+ " TEXT UNIQUE," +
                     COLUMN_NAME_CHARGING + " TEXT," +
                     COLUMN_NAME_TEMP + " REAL," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_LEVEL + " INTEGER);";
         }
 
@@ -134,8 +174,10 @@ public class Database extends SQLiteOpenHelper {
             public static final String COLUMN_NAME_TYPE = "type";
             public static final String COLUMN_NAME_SINCE = "since";
             public static final String COLUMN_NAME_TIME = "time";
+            //current rx/tx stores the number of bytes since last reboot (found in /sys/class/net/[intf]/statistics/..)--reset to 0 on reboot
             public static final String COLUMN_NAME_CURRENT_RX = "crx";
             public static final String COLUMN_NAME_CURRENT_TX = "ctx";
+            //totals store the number of bytes since we started monitoring. This way, current values survive reboots
             public static final String COLUMN_NAME_TOTAL_RX = "trx";
             public static final String COLUMN_NAME_TOTAL_TX = "ttx";
 
@@ -145,6 +187,7 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_TYPE + " TEXT NOT NULL," +
                     COLUMN_NAME_TIME + " TEXT UNIQUE," +
                     COLUMN_NAME_SINCE + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_CURRENT_RX + " INTEGER DEFAULT 0," +
                     COLUMN_NAME_CURRENT_TX + " INTEGER DEFAULT 0," +
                     COLUMN_NAME_TOTAL_RX + " INTEGER DEFAULT 0," +
@@ -161,7 +204,6 @@ public class Database extends SQLiteOpenHelper {
             public static final String COLUMN_NAME_SIGNAL = "signal";
             public static final String COLUMN_NAME_FREQ = "frequency";
 
-
             public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
                     _ID + " INTEGER PRIMARY KEY," +
                     COLUMN_NAME_SSID + " TEXT," +
@@ -169,30 +211,31 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_CAPABILITIES + " TEXT," +
                     COLUMN_NAME_SEEN + " TEXT," +
                     COLUMN_NAME_SIGNAL + " INTEGER," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_FREQ + " INTEGER);";
         }
         public static abstract class Actions implements BaseColumns {
             public final static String TABLE_NAME = "Actions";
             public final static String TAG = "action";
             public final static String COLUMN_NAME_ACTION = "action";
-            public final static String COLUMN_NAME_DATE = "date";
+            public final static String COLUMN_NAME_DATE = "time";
             public final static String ACTION_BOOT="boot";
             public final static String ACTION_SHUTDOWN="shutdown";
-            public final static String ACTION_REBOOT="reboot";
             public final static String ACTION_AIRPLANE_ON="airplaneOn";
             public final static String ACTION_AIRPLANE_OFF="airplaneOff";
 
             public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
                     _ID + " INTEGER PRIMARY KEY," +
                     COLUMN_NAME_ACTION + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_DATE + " TEXT);";
         }
 
-
         public static abstract class Sockets implements BaseColumns {
             public final static String TABLE_NAME = "Sockets";
+            public final static String TAG = "connection";
             public final static String COLUMN_NAME_TYPE = "type";
-            public final static String COLUMN_NAME_DATE = "date";
+            public final static String COLUMN_NAME_DATE = "time";
             public final static String COLUMN_NAME_UID = "uid";
             public final static String COLUMN_NAME_STATUS = "status";
             public final static String COLUMN_NAME_LIP = "lip";
@@ -209,6 +252,7 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_LPORT + " TEXT," +
                     COLUMN_NAME_RIP + " TEXT," +
                     COLUMN_NAME_RPORT + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_DATE + " TEXT);";
         }
     }

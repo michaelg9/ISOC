@@ -1,22 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <SwitchPreference
-        android:key="monitoring"
+        android:key="@string/monitoring_key"
         android:defaultValue="false"
         android:title="Monitoring"
-        android:summary="atm you need to untick everything..."/>
+        android:summaryOn="Recording device data"
+        android:summaryOff="Not recording device data"/>
 
     <EditTextPreference
-        android:key="server_url"
+        android:key="@string/server_url"
         android:defaultValue="http://104.155.40.104:3000/app/0.1/upload"
         android:title="Server URL"/>
+
+    <com.isoc.android.monitor.NumberPreference
+        android:key="@string/capture_interval"
+        android:title="Service Interval"
+        android:dialogTitle="Select number of minutes"
+        app:max="60"
+        app:min="1"
+        app:time="minutes"
+        android:defaultValue="@integer/timer_def"/>
+
+    <com.isoc.android.monitor.NumberPreference
+        android:key="@string/sent_interval"
+        android:title="Send Interval"
+        android:dialogTitle="Select number of hours"
+        app:max="24"
+        app:min="1"
+        app:time="hours"
+        android:defaultValue="@integer/timer_def"/>
 
     <PreferenceCategory android:title="Monitoring">
         <ListPreference
             android:dependency="monitoring"
             android:defaultValue="none"
-            android:key="inst_pack"
+            android:key="@string/installed_packages_key"
             android:title="Installed Packages"
             android:summary="%s"
             android:entries="@array/entries_package_types"
@@ -25,30 +46,30 @@
         <CheckBoxPreference
             android:dependency="monitoring"
             android:defaultValue="false"
-            android:key="run_service"
+            android:key="@string/running_services_key"
             android:title="Running Services"
             android:summary="Background Services"/>
 
         <CheckBoxPreference
             android:dependency="monitoring"
-            android:key="battery"
+            android:key="@string/battery_key"
             android:defaultValue="false"
             android:title="Battery"/>
 
         <CheckBoxPreference
             android:dependency="monitoring"
-            android:key="connectivity"
+            android:key="@string/connectivity_key"
             android:defaultValue="false"
             android:title="Connectivity"/>
 
         <CheckBoxPreference
             android:dependency="monitoring"
-            android:key="calls"
+            android:key="@string/calls_key"
             android:defaultValue="false"
             android:title="Call Log"/>
 
         <CheckBoxPreference
-            android:key="sockets"
+            android:key="@string/sockets_key"
             android:dependency="monitoring"
             android:defaultValue="false"
             android:title="Sockets"
@@ -56,29 +77,23 @@
 
         <CheckBoxPreference
             android:dependency="monitoring"
-            android:key="actions"
+            android:key="@string/actions_key"
             android:defaultValue="false"
             android:title="Actions"
             android:summary="Shutdown, Boot, Airplane Mode"/>
 
         <CheckBoxPreference
             android:dependency="monitoring"
-            android:key="wifiScan"
+            android:key="@string/wifi_APs_key"
             android:defaultValue="false"
             android:title="Wifi APs"
             android:summary="Scan results"/>
 
-        <!--PreferenceScreen android:title="Actions"
-            android:enabled="false">
-            <CheckBoxPreference
-                android:key="airplane"
-                android:defaultValue="true"
-                android:title="Airplane Mode"/>
-            <CheckBoxPreference
-                android:key="power"
-                android:defaultValue="true"
-                android:title="Power Actions"
-                android:summary="Power On/Off, Reboot"/>
-        </PreferenceScreen!-->
+        <CheckBoxPreference
+            android:dependency="monitoring"
+            android:key="@string/sms_key"
+            android:defaultValue="false"
+            android:title="SMS"/>
+
     </PreferenceCategory>
 </PreferenceScreen>

@@ -5,8 +5,11 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.util.Log;
-
+/*
+Triggered by connectivity changes
+BUG: some devices echo the same broadcast intent for a few seconds after the first trigger. Some are caught by the unique date field
+    but not always....Throttle them?
+ */
 public class NetworkReceiver extends BroadcastReceiver {
     public NetworkReceiver() {
     }

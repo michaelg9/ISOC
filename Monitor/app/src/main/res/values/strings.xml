@@ -1,6 +1,19 @@
 <resources>
     <string name="app_name">Monitor</string>
     <string name="action_settings">Settings</string>
-
-
+    <string name="installed_packages_key">inst_pack</string>
+    <string name="running_services_key">run_service</string>
+    <string name="battery_key">battery</string>
+    <string name="connectivity_key">connectivity</string>
+    <string name="calls_key">calls</string>
+    <string name="sockets_key">sockets</string>
+    <string name="actions_key">actions</string>
+    <string name="wifi_APs_key">wifiScan</string>
+    <string name="sms_key">sms</string>
+    <string name="shared_values_filename">com.isoc.android.monitor.values</string>
+    <string name="monitoring_key">monitoring</string>
+    <string name="server_url">server_url</string>
+    <string name="capture_interval">capture_interval</string>
+    <string name="sent_interval">sent_interval</string>
+    <string name="sent_action">com.isoc.android.monitor.send</string>
 </resources>

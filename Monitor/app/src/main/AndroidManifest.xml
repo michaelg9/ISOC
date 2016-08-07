@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="com.android.browser.permission.READ_HISTORY_BOOKMARKS" />
 
     <application
@@ -37,7 +38,6 @@
             android:enabled="false"
             android:exported="true">
             <intent-filter>
-                <action android:name="ACTION_DEVICE_IDLE_MODE_CHANGED"/>
                 <action android:name="android.intent.action.ACTION_POWER_CONNECTED" />
                 <action android:name="android.intent.action.ACTION_POWER_DISCONNECTED" />
                 <action android:name="android.intent.action.BATTERY_LOW" />
@@ -59,14 +59,14 @@
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.ACTION_SHUTDOWN" />
+                <action android:name="android.intent.action.QUICKBOOT_POWEROFF"/>
                 <action android:name="android.intent.action.REBOOT" />
                 <action android:name="android.intent.action.AIRPLANE_MODE" />
             </intent-filter>
         </receiver>
         <receiver
             android:name=".ServiceReceiver"
-            android:enabled="true"
-            android:exported="true"/>
+            android:enabled="true"/>
     </application>
 
 </manifest>

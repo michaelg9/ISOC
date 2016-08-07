@@ -4,19 +4,18 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.BatteryManager;
 
 /**
- * Created by maik on 1/7/2016.
- * Capture battery statistics
+ * Captures battery details when any of these actions are broadcasted: plugged, unplugged,
+ * battery low and battery recovers from low. Not captured on intervals
  */
 public class BatteryCapture {
 
     public static void getBatteryStats(Context context) {
         IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-        Intent battery = context.getApplicationContext().registerReceiver(null, iFilter);
+        Intent battery = context.getApplicationContext().registerReceiver(null, iFilter); //capturing a sticky broadcast doesn't need a receiver
         if (battery==null) return;
         ContentValues values=new ContentValues();
         String charging;
@@ -35,7 +34,7 @@ public class BatteryCapture {
                 break;
             default:
                 charging="unknown";
-                        break;
+                break;
         }
         values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_TEMP,((float) battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1))/10);
         values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_CHARGING,charging);
@@ -44,16 +43,6 @@ public class BatteryCapture {
         SQLiteDatabase db= new Database(context).getWritableDatabase();
         db.insert(Database.DatabaseSchema.Battery.TABLE_NAME,null,values);
         db.close();
-    }
-
-
-    protected static String getBatteryXML(SQLiteDatabase db) {
-        String[] projection=new String[]{Database.DatabaseSchema.Battery.COLUMN_NAME_LEVEL,
-                Database.DatabaseSchema.Battery.COLUMN_NAME_TIME,
-                Database.DatabaseSchema.Battery.COLUMN_NAME_CHARGING,
-                Database.DatabaseSchema.Battery.COLUMN_NAME_TEMP};
-        Cursor cursor = db.query(Database.DatabaseSchema.Battery.TABLE_NAME,projection,null,null,null,null,null);
-        return XMLProduce.tableToXML(cursor,Database.DatabaseSchema.Battery.TAG,Database.DatabaseSchema.Battery.COLUMN_NAME_LEVEL);
     }
 
 }
