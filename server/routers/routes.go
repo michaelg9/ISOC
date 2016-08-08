@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	basicAuth   = "Basic"
 	sessionAuth = "Session"
 	tokenAuth   = "Token"
 )
