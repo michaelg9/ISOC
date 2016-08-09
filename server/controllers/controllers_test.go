@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/michaelg9/ISOC/server/mocks"
 	"github.com/michaelg9/ISOC/server/models"
+	"github.com/stretchr/testify/assert"
 )
 
 /* Test controller functions */
@@ -32,7 +33,7 @@ func TestSignUp(t *testing.T) {
 	}
 }
 
-func TestLogin(t *testing.T) {
+func TestTokenLogin(t *testing.T) {
 	jsonResponse, _ := json.Marshal(models.Tokens{AccessToken: "123", RefreshToken: "123"})
 	var tests = []struct {
 		email    string
@@ -50,7 +51,7 @@ func TestLogin(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/auth/0.1/login?email=%v&password=%v", test.email, test.password)
-		testController(env.Login, "POST", url, test.expected, t)
+		testController(env.TokenLogin, "POST", url, test.expected, t)
 	}
 }
 
@@ -90,7 +91,7 @@ func TestRefreshToken(t *testing.T) {
 	}
 }
 
-func TestLogoutToken(t *testing.T) {
+func TestTokenLogout(t *testing.T) {
 	var tests = []struct {
 		refreshToken string
 		expected     string
@@ -103,7 +104,7 @@ func TestLogoutToken(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/auth/0.1/logout?token=%v", test.refreshToken)
-		testController(env.LogoutToken, "POST", url, test.expected, t)
+		testController(env.TokenLogout, "POST", url, test.expected, t)
 	}
 }
 
@@ -198,9 +199,7 @@ func TestWriteResponse(t *testing.T) {
 		rec := httptest.NewRecorder()
 		_ = writeResponse(rec, test.format, test.response)
 		obtained := rec.Body.String()
-		if test.expected != obtained {
-			t.Errorf("\n...expected = %v\n...obtained = %v", test.expected, obtained)
-		}
+		assert.Equal(t, test.expected, obtained)
 	}
 }
 
@@ -213,9 +212,7 @@ func testController(controller http.HandlerFunc, method, url, expected string, t
 	http.HandlerFunc(controller).ServeHTTP(rec, req)
 
 	obtained := rec.Body.String()
-	if expected != obtained {
-		t.Errorf("\n...expected = %v\n...obtained = %v", expected, obtained)
-	}
+	assert.Equal(t, expected, obtained)
 }
 
 func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern, expected string, t *testing.T) {
@@ -227,9 +224,7 @@ func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern
 	r.ServeHTTP(rec, req)
 
 	obtained := rec.Body.String()
-	if expected != obtained {
-		t.Errorf("\n...expected = %v\n...obtained = %v", expected, obtained)
-	}
+	assert.Equal(t, expected, obtained)
 }
 
 func newEnv() Env {

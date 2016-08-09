@@ -19,12 +19,6 @@ func NewRouter(env controllers.Env) *mux.Router {
 
 		// Get the stored handler function for the route
 		switch route.Authentication {
-		case basicAuth:
-			middlewareEnv := &authentication.MiddlewareEnv{&env}
-			handler = negroni.New(
-				negroni.HandlerFunc(middlewareEnv.RequireBasicAuth),
-				negroni.Wrap(route.HandlerFunc(env)),
-			)
 		case sessionAuth:
 			middlewareEnv := &authentication.MiddlewareEnv{&env}
 			handler = negroni.New(

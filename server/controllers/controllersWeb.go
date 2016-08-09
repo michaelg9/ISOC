@@ -1,7 +1,5 @@
 package controllers
 
-// TODO: Better names for functions
-
 import (
 	"database/sql"
 	"fmt"
@@ -16,13 +14,13 @@ func (env *Env) Index(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "views/index.html")
 }
 
-// LoginGET handles GET /login
-func (env *Env) LoginGET(w http.ResponseWriter, r *http.Request) {
+// LoginPage handles GET /login
+func (env *Env) LoginPage(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "views/login.html")
 }
 
-// LoginPOST handles POST /login
-func (env *Env) LoginPOST(w http.ResponseWriter, r *http.Request) {
+// SessionLogin handles POST /login
+func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
 	password := r.FormValue("password")
@@ -68,8 +66,8 @@ func (env *Env) LoginPOST(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Success")
 }
 
-// Logout handles /logout
-func (env *Env) Logout(w http.ResponseWriter, r *http.Request) {
+// SessionLogout handles /logout
+func (env *Env) SessionLogout(w http.ResponseWriter, r *http.Request) {
 	// Get the current log-in session of the user
 	session, err := env.SessionStore.Get(r, "log-in")
 	if err != nil {
