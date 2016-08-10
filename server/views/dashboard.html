@@ -115,7 +115,10 @@
               </div>
             </div>
             <canvas id="batteryChart" width="400" height="400"></canvas>
+            <!--
             <a href="../data/{{userInfo.email}}/{{deviceInfo.id}}/Battery?appid={{userInfo.apiKey}}" class="btn btn-info" role="button" download="Battery.json">Download JSON</a>
+            -->
+            <a class="btn btn-info" role="button" ng-click="saveBatteryJSON()">Download JSON</a>
           </div>
         </div>
         <div class="col-sm-6">

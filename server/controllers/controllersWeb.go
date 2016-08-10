@@ -57,13 +57,26 @@ func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refreshToken, err := env.Tokens.NewToken(user, refreshTolkenDelta)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session.Values["refreshToken"] = refreshToken
 	session.Values["email"] = email
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "Success")
+	accessToken, err := env.Tokens.NewToken(user, accessTokenDelta)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeResponse(w, "json", models.Tokens{AccessToken: accessToken})
 }
 
 // SessionLogout handles /logout
@@ -81,6 +94,18 @@ func (env *Env) SessionLogout(w http.ResponseWriter, r *http.Request) {
 	// If email not set redirect to login page
 	if !found || email == "" {
 		http.Error(w, errNoSessionSet, http.StatusUnauthorized)
+		return
+	}
+
+	token, found := session.Values["refreshToken"]
+	tokenString, ok := token.(string)
+	if !found || tokenString == "" || !ok {
+		http.Error(w, errNoToken, http.StatusInternalServerError)
+		return
+	}
+
+	if err = env.Tokens.InvalidateToken(tokenString); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 

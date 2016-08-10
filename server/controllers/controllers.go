@@ -205,19 +205,12 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 func (env *Env) User(w http.ResponseWriter, r *http.Request) {
 	email := mux.Vars(r)["email"]
 
-	// Check if email is valid with API Key
 	user, err := env.DB.GetUser(models.User{Email: email})
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongUser, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Check if user specified the right API key
-	if user.APIKey != r.FormValue("appid") {
-		http.Error(w, errWrongAPIKey, http.StatusUnauthorized)
 		return
 	}
 
@@ -250,8 +243,7 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if email is valid with API Key
-	user, err := env.DB.GetUser(models.User{Email: email})
+	_, err = env.DB.GetUser(models.User{Email: email})
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongUser, http.StatusInternalServerError)
 		return
@@ -260,12 +252,7 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if user specified the right API key
-	if user.APIKey != r.FormValue("appid") {
-		http.Error(w, errWrongAPIKey, http.StatusUnauthorized)
-		return
-	}
-
+	// TODO: Check if device belongs to user
 	deviceStruct := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
 	response, err := env.DB.GetDevice(deviceStruct)
 	if err == sql.ErrNoRows {
@@ -296,19 +283,12 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if email is valid with API Key
-	user, err := env.DB.GetUser(models.User{Email: email})
+	_, err = env.DB.GetUser(models.User{Email: email})
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongUser, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Check if user specified the right API key
-	if user.APIKey != r.FormValue("appid") {
-		http.Error(w, errWrongAPIKey, http.StatusUnauthorized)
 		return
 	}
 
@@ -337,8 +317,10 @@ func writeResponse(w http.ResponseWriter, format string, response interface{}) (
 	var out []byte
 	switch format {
 	case "", "json":
+		w.Header().Set("Content-Type", "application/json")
 		out, err = json.Marshal(response)
 	case "xml":
+		w.Header().Set("Content-Type", "application/xml")
 		out, err = xml.Marshal(response)
 	default:
 		err = errors.New("Output type not supported.")

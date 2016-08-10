@@ -37,7 +37,7 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 	email, found := session.Values["email"]
 	// If email not set redirect to login page
 	if !found || email == "" {
-		http.Redirect(w, r, "/login", http.StatusUnauthorized)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
@@ -52,13 +52,13 @@ func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Reques
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		http.Error(w, errNotAuthorized, http.StatusBadRequest)
 		return
 	}
 
 	authHeaderParts := strings.Split(authHeader, " ")
 	if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
-		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		http.Error(w, errNotAuthorized, http.StatusBadRequest)
 		return
 	}
 

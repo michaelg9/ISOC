@@ -83,23 +83,21 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	// Get the refresh token from the URI
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
-		/*
-			// See if there is a valid refresh token in the cookie store
-			email, err = refreshTokenInCookie(env, w, r)
-			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
-				return
-			}
-		*/
-		http.Error(w, errNoToken, http.StatusBadRequest)
-		return
-	}
-
-	// Check the validity of the token
-	email, err = env.Tokens.CheckToken(refreshToken)
-	if err != nil {
-		http.Error(w, errTokenInvalid, http.StatusUnauthorized)
-		return
+		// See if there is a valid refresh token in the cookie store
+		email, err = refreshTokenInCookie(env, w, r)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		//http.Error(w, errNoToken, http.StatusBadRequest)
+		//return
+	} else {
+		// Check the validity of the token
+		email, err = env.Tokens.CheckToken(refreshToken)
+		if err != nil {
+			http.Error(w, errTokenInvalid, http.StatusUnauthorized)
+			return
+		}
 	}
 
 	// Create a new access token for the given user

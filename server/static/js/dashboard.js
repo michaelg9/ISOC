@@ -3,12 +3,53 @@ var updateUserURL = "../update/user?";
 var batteryChart;
 
 // TODO: Look into global variables and JS code structure
+// TODO: Move from jquery to angular
 
 // Angular app
 var app = angular.module("dashboardApp", []);
-app.controller("dashboardController", function($scope) {
-    $scope.deviceInfo = {};
-    $scope.userInfo = {};
+app.factory("userService", function($http) {
+    return {
+        getUser: function() {
+            return $http.get("../data/" + sessionStorage.email, {
+                headers: {"Authorization": "Bearer " + sessionStorage.accessToken}
+            });
+        }
+    };
+});
+
+app.factory("downloadService", function($http) {
+    return {
+        getFeatureJSON: function(deviceID, feature) {
+            return $http.get("../data/" + sessionStorage.email + "/" + deviceID + "/" + feature, {
+                headers: {"Authorization": "Bearer " + sessionStorage.accessToken},
+                responseType: "arraybuffer"
+            });
+        }
+    };
+});
+
+app.controller("dashboardController", function($scope, userService, downloadService) {
+    userService.getUser().then(function(response) {
+        $scope.user = response.data;
+        $scope.deviceInfo = $scope.user.devices[0].aboutDevice;
+        $scope.userInfo = $scope.user.user;
+        createBatteryGraph($scope.user.devices[0].data.battery);
+    });
+    $scope.saveBatteryJSON = function() {
+        var controllerElement = document.querySelector("[ng-controller=dashboardController]");
+        var scope = angular.element(controllerElement).scope();
+        var fileName = "battery.json";
+        var a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        downloadService.getFeatureJSON(scope.deviceInfo.id, "Battery").then(function (result) {
+            var file = new Blob([result.data], {type: "application/json"});
+            var fileURL = window.URL.createObjectURL(file);
+            a.href = fileURL;
+            a.download = fileName;
+            a.click();
+        });
+    };
 });
 
 function changeDeviceInfo(deviceInfo) {
@@ -28,7 +69,7 @@ function changeUserInfo(userInfo) {
 }
 
 function updateUserInfo() {
-    var data = $.get({
+    $.get({
         url: retrieveDataURL
     }).done(function(data, textStatus, jqXHR) {
         var userData = JSON.parse(data);
@@ -38,16 +79,16 @@ function updateUserInfo() {
     });
 }
 
-
-// AJAX call to server
-var batteryData = $.get({
-    url: retrieveDataURL
-}).done(function(data, textStatus, jqXHR) {
-    var userData = JSON.parse(data);
-    changeDeviceInfo(userData.devices[0].aboutDevice);
-    changeUserInfo(userData.user);
-    createBatteryGraph(userData.devices[0].data.battery);
-});
+function updateAccessToken() {
+    var tokenUrl = "../auth/0.1/token";
+    $.post({
+        url: tokenUrl
+    }).done(function(data, text, jqXHR) {
+        sessionStorage.accessToken = data.accessToken;
+    }).fail(function(data, textStatus, jqXHR) {
+        console.error(textStatus);
+    });
+}
 
 function createBatteryGraph(batteryData) {
     // Sort data according to time so it gets displayed properly

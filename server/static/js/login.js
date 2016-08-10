@@ -9,9 +9,9 @@ $(document).ready(function(){
             url: loginURL,
             data: loginParams
         }).done(function(data, textStatus, jqXHR) {
-            if (data == "Success") {
-                window.location = "../dashboard";
-            }
+            sessionStorage.email = email;
+            sessionStorage.accessToken = data.accessToken;
+            window.location = "../dashboard";
         }).fail(function(data, textStatus, jqXHR) {
             $("#alert-wrong-password").html('<div class="alert alert-danger">Wrong password or email.</div>');
             return false;
