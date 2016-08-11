@@ -1,7 +1,6 @@
 package models
 
 // User is the struct of the stored user data
-// TODO: Check if we really don't send the specified data
 type User struct {
 	ID           int    `db:"uid" json:"-"`
 	Email        string `db:"email" json:"email"`

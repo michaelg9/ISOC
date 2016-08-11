@@ -13,27 +13,41 @@ app.factory("userService", function($http) {
             return $http.get("../data/" + sessionStorage.email, {
                 headers: {"Authorization": "Bearer " + sessionStorage.accessToken}
             });
+        },
+        saveUser: function($scope) {
+            return function(response) {
+                $scope.user = response.data;
+                $scope.deviceInfo = $scope.user.devices[0].aboutDevice;
+                $scope.userInfo = $scope.user.user;
+                console.log($scope.userInfo);
+                createBatteryGraph($scope.user.devices[0].data.battery);
+            };
         }
     };
 });
 
 app.factory("downloadService", function($http) {
     return {
-        getFeatureJSON: function(deviceID, feature) {
-            return $http.get("../data/" + sessionStorage.email + "/" + deviceID + "/" + feature, {
+        getFeature: function(deviceID, feature, type) {
+            return $http.get("../data/" + sessionStorage.email + "/" + deviceID + "/" + feature + "?out=" + type, {
                 headers: {"Authorization": "Bearer " + sessionStorage.accessToken},
                 responseType: "arraybuffer"
             });
+        },
+        getAccessToken: function() {
+            return $http.post("../auth/0.1/token");
         }
     };
 });
 
 app.controller("dashboardController", function($scope, userService, downloadService) {
-    userService.getUser().then(function(response) {
-        $scope.user = response.data;
-        $scope.deviceInfo = $scope.user.devices[0].aboutDevice;
-        $scope.userInfo = $scope.user.user;
-        createBatteryGraph($scope.user.devices[0].data.battery);
+    userService.getUser().then(userService.saveUser($scope)).catch(function(response) {
+        if (response.status == 403) {
+            downloadService.getAccessToken().then(function(response) {
+                sessionStorage.accessToken = response.data.accessToken;
+                userService.getUser().then(userService.saveUser($scope));
+            });
+        }
     });
     $scope.saveBatteryJSON = function() {
         var controllerElement = document.querySelector("[ng-controller=dashboardController]");
@@ -42,7 +56,7 @@ app.controller("dashboardController", function($scope, userService, downloadServ
         var a = document.createElement("a");
         document.body.appendChild(a);
         a.style = "display: none";
-        downloadService.getFeatureJSON(scope.deviceInfo.id, "Battery").then(function (result) {
+        downloadService.getFeature(scope.deviceInfo.id, "Battery", "json").then(function (result) {
             var file = new Blob([result.data], {type: "application/json"});
             var fileURL = window.URL.createObjectURL(file);
             a.href = fileURL;
@@ -76,17 +90,6 @@ function updateUserInfo() {
         changeUserInfo(userData.user);
     }).fail(function (data, textStatus, jqXHR) {
         console.error(data);
-    });
-}
-
-function updateAccessToken() {
-    var tokenUrl = "../auth/0.1/token";
-    $.post({
-        url: tokenUrl
-    }).done(function(data, text, jqXHR) {
-        sessionStorage.accessToken = data.accessToken;
-    }).fail(function(data, textStatus, jqXHR) {
-        console.error(textStatus);
     });
 }
 
