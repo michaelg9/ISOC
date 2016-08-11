@@ -12,6 +12,7 @@ var Users = []models.User{
 		Email:        "user@usermail.com",
 		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK", // Passord: 123456
 		APIKey:       "37e72ff927f511e688adb827ebf7e157",
+		Admin:        true,
 	},
 	models.User{
 		ID:     2,

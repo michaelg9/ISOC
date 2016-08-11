@@ -6,11 +6,12 @@ type User struct {
 	Email        string `db:"email" json:"email"`
 	PasswordHash string `db:"passwordHash" json:"-"`
 	APIKey       string `db:"apiKey" json:"apiKey"`
+	Admin        bool   `db:"admin" json:"admin"`
 }
 
 // GetUser gets a user with the specified email
 func (db *DB) GetUser(user User) (fullUser User, err error) {
-	getUserQuery := `SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey FROM User
+	getUserQuery := `SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey, admin FROM User
 		             WHERE email = :email OR apiKey = :apiKey;`
 	stmt, err := db.PrepareNamed(getUserQuery)
 	if err != nil {
@@ -23,7 +24,7 @@ func (db *DB) GetUser(user User) (fullUser User, err error) {
 
 // CreateUser creates a new user from the given struct
 func (db *DB) CreateUser(user User) error {
-	insertUserQuery := `INSERT INTO User (email, passwordHash) VALUES (:email, :passwordHash);`
+	insertUserQuery := `INSERT INTO User (email, passwordHash, admin) VALUES (:email, :passwordHash, :admin);`
 	_, err := db.NamedExec(insertUserQuery, user)
 	return err
 }
@@ -34,6 +35,7 @@ func (db *DB) UpdateUser(user User) error {
 		"Email":        `UPDATE User SET email = :email WHERE uid = :uid;`,
 		"PasswordHash": `UPDATE User SET passwordHash = :passwordHash WHERE uid = :uid;`,
 		"APIKey":       `UPDATE User SET apiKey = REPLACE(UUID(), '-','') WHERE uid = :uid;`,
+		// "Admin":        `UPDATE User SET admin = :admin WHERE uid = :uid`, Doesn't work because of boolean
 	}
 
 	return db.update(queries, user)

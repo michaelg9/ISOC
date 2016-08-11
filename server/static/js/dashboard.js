@@ -19,7 +19,6 @@ app.factory("userService", function($http) {
                 $scope.user = response.data;
                 $scope.deviceInfo = $scope.user.devices[0].aboutDevice;
                 $scope.userInfo = $scope.user.user;
-                console.log($scope.userInfo);
                 createBatteryGraph($scope.user.devices[0].data.battery);
             };
         }

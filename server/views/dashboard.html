@@ -39,6 +39,9 @@
     <div class="collapse navbar-collapse" id="myNavbar">
       <ul class="nav navbar-nav">
         <li class="active"><a href="">Dashboard</a></li>
+        <div ng-if="userInfo.admin">
+          <li><a href="">Admin</a></li>
+        </div>
         <li><a href="" class="logout">Log out</a></li>
       </ul>
     </div>
@@ -52,6 +55,7 @@
       <h2>Monitor</h2>
       <ul class="nav nav-pills nav-stacked">
         <li class="active"><a href="">Dashboard</a></li>
+        <li ng-if="userInfo.admin"><a href="">Admin</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul><br>
     </div>
