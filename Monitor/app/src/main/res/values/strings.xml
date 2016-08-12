@@ -16,4 +16,5 @@
     <string name="capture_interval">capture_interval</string>
     <string name="sent_interval">sent_interval</string>
     <string name="sent_action">com.isoc.android.monitor.send</string>
+    <string name="text_register"><u>Register for an account!</u></string>
 </resources>

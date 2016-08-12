@@ -1,37 +1,38 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.isoc.android.monitor.MainFragment"
-    style="@style/AppTheme">
+    style="@style/AppTheme"
+    android:orientation="vertical">
+
+
+    <ImageView
+        android:src="@mipmap/ic_launcher"
+        android:layout_width="match_parent"
+        android:layout_height="226dp"
+        android:id="@+id/imageView"
+        android:layout_gravity="center_horizontal|top" />
 
     <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Show Results"
-        android:id="@+id/buttonShow"
-        android:layout_marginTop="96dp"
-        android:layout_gravity="center_vertical"
-        android:layout_centerHorizontal="true" />
+        android:id="@+id/buttonShow" />
 
     <Button
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Send"
-        android:id="@+id/buttonSend"
-        android:layout_below="@+id/buttonShow"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="101dp" />
-
-    <Button
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Delete Database"
         android:id="@+id/delete_db"
-        android:layout_marginTop="57dp"
-        android:layout_below="@+id/buttonSend"
-        android:layout_centerHorizontal="true" />
+        android:layout_gravity="end" />
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Send"
+        android:id="@+id/buttonSend"
+        android:layout_gravity="center_horizontal" />
 
 
-
-</RelativeLayout>
+</LinearLayout>

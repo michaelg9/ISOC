@@ -19,15 +19,16 @@ import android.widget.Button;
  * TIMEZONE
  * BROWSER HISTORY?
  * CELL TOWER CHANGE
- * SYSTEM APPS REPORTING OLD INSTALLED DATE
  * SENDING AUTOMATICALLY
  * String resources
  * ----------
  * BUGS:
  * Deprecated connecivity onreceive method, implement type?
  * Matching sockets to specific app.
+ * SYSTEM APPS REPORTING OLD INSTALLED DATE
  * ------
  */
+
 public class MainFragment extends Fragment {
 
     public MainFragment() {
