@@ -2,7 +2,6 @@ package mocks
 
 import (
 	"errors"
-	"time"
 
 	"github.com/michaelg9/ISOC/server/models"
 )
@@ -10,20 +9,31 @@ import (
 // MockTokens implements the TokenControl interface so it can be used to mock the token back-end
 type MockTokens struct{}
 
-func (mTkns *MockTokens) CheckToken(tokenString string) (email string, err error) {
-	if tokenString == JWT {
-		return "user@usermail.com", nil
+func (mTkns *MockTokens) CheckAccessToken(tokenString string) (models.User, error) {
+	if tokenString == AccessToken {
+		return models.User{ID: Users[0].ID, Admin: Users[0].Admin}, nil
 	}
-	return "", errors.New("Token is invalid.")
+	return models.User{}, errors.New("Token is invalid.")
 }
 
-func (mTkns *MockTokens) NewToken(user models.User, duration time.Duration) (string, error) {
-	return JWT, nil
+func (mTkns *MockTokens) CheckRefreshToken(tokenString string) (models.User, error) {
+	if tokenString == RefreshToken {
+		return models.User{ID: Users[0].ID, Admin: Users[0].Admin}, nil
+	}
+	return models.User{}, errors.New("Token is invalid.")
+}
+
+func (mTkns *MockTokens) NewAccessToken(user models.User) (string, error) {
+	return AccessToken, nil
+}
+
+func (mTkns *MockTokens) NewRefreshToken(user models.User) (string, error) {
+	return RefreshToken, nil
 }
 
 func (mTkns *MockTokens) InvalidateToken(tokenString string) error {
-	if tokenString != JWT {
-		return errors.New("Token already invalid.")
+	if !(tokenString == RefreshToken || tokenString == AccessToken) {
+		return errors.New("Token is invalid.")
 	}
 	return nil
 }

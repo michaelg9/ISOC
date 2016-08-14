@@ -3,7 +3,7 @@ var updateUserURL = "../update/user?";
 var batteryChart;
 
 // TODO: Look into global variables and JS code structure
-// TODO: Move from jquery to angular
+// TODO: Use jQuery instead of Angular
 
 // Angular app
 var app = angular.module("dashboardApp", []);

@@ -24,8 +24,8 @@ func TestRequireTokenAuth(t *testing.T) {
 		token     string
 		expected  string
 	}{
-		{true, mocks.JWT, "Hello world!"},
-		{true, "12345", "Unauthorized request.\n"},
+		{true, mocks.AccessToken, "Hello world!"},
+		{true, "12345678", "Unauthorized request.\n"},
 		{true, "", "Unauthorized request.\n"},
 		{false, "", "Unauthorized request.\n"},
 	}

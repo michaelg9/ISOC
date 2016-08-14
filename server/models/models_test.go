@@ -300,20 +300,21 @@ func cleanUp(db *DB) {
 
 func TestGetUser(t *testing.T) {
 	var tests = []struct {
+		id       int
 		email    string
 		key      string
 		expected User
 	}{
-		{users[0].Email, "", users[0]},
-		{"", users[0].APIKey, users[0]},
-		{users[0].Email, users[0].APIKey, users[0]},
-		{users[0].Email, "1234", users[0]},
+		{0, users[0].Email, "", users[0]},
+		{1, "", users[0].APIKey, users[0]},
+		{1, users[0].Email, users[0].APIKey, users[0]},
+		{0, users[0].Email, "1234", users[0]},
 	}
 	db := setup()
 	defer cleanUp(db)
 
 	for _, test := range tests {
-		user := User{Email: test.email, APIKey: test.key}
+		user := User{ID: test.id, Email: test.email, APIKey: test.key}
 		result, err := db.GetUser(user)
 		assert.Empty(t, err)
 		assert.Equal(t, test.expected, result)

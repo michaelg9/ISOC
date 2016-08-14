@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
-	"time"
 
 	"github.com/michaelg9/ISOC/server/models"
 
@@ -32,12 +31,10 @@ const (
 	errTokenAlreadyInvalid = "Token already invalid."
 	errWrongUser           = "No such user."
 	errDeviceIDNotInt      = "The device value is not an int."
+	errUserIDNotInt        = "The user value is not an int."
 	errWrongDevice         = "There is no device with this ID."
 
 	hmacSecret = "secret"
-
-	accessTokenDelta   = time.Minute * time.Duration(10) // Ten minutes
-	refreshTolkenDelta = time.Hour * time.Duration(168)  // One week
 )
 
 // Env contains the environment information
@@ -115,39 +112,8 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Success")
 }
 
-// InternalDownload handles /data/0.1/user and is only accessible when a user is logged in
-func (env *Env) InternalDownload(w http.ResponseWriter, r *http.Request) {
-	// Because of the middleware we know that these values exist
-	session, _ := env.SessionStore.Get(r, "log-in")
-	email := session.Values["email"]
-
-	devices, err := env.DB.GetDevicesFromUser(models.User{Email: email.(string)})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	user, err := env.DB.GetUser(models.User{Email: email.(string)})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Make sure we don't send the password hash over the wire
-	user.PasswordHash = ""
-
-	response := models.SessionData{
-		models.DataOut{Device: devices},
-		user,
-	}
-
-	err = writeResponse(w, "json", response)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
 // UpdateUser handles /update/user
+// TODO: Use Token Auth
 func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// Because of the middleware we know that these values exist
 	session, _ := env.SessionStore.Get(r, "log-in")
@@ -200,12 +166,19 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Success")
 }
 
-// User handles /data/{email}. It gets all the devices and its data from
+// User handles /data/{user}. It gets all the devices and its data from
 // the user and information about the user.
+// TODO: Check if userID fits with token
 func (env *Env) User(w http.ResponseWriter, r *http.Request) {
-	email := mux.Vars(r)["email"]
+	userIDString := mux.Vars(r)["user"]
 
-	user, err := env.DB.GetUser(models.User{Email: email})
+	userID, err := strconv.Atoi(userIDString)
+	if err != nil {
+		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
+		return
+	}
+
+	user, err := env.DB.GetUser(models.User{ID: userID})
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongUser, http.StatusInternalServerError)
 		return
@@ -230,12 +203,18 @@ func (env *Env) User(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Device handles /data/{email}/{device}. It gets all the info about the
+// Device handles /data/{user}/{device}. It gets all the info about the
 // specified device of the given user. Device should be the device ID (for now).
 func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	email := vars["email"]
+	user := vars["user"]
 	device := vars["device"]
+
+	userID, err := strconv.Atoi(user)
+	if err != nil {
+		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
+		return
+	}
 
 	deviceID, err := strconv.Atoi(device)
 	if err != nil {
@@ -243,7 +222,7 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = env.DB.GetUser(models.User{Email: email})
+	_, err = env.DB.GetUser(models.User{ID: userID})
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongUser, http.StatusInternalServerError)
 		return
@@ -269,13 +248,19 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Feature handles /data/{email}/{device}/{feature}. It gets all the saved data from the
+// Feature handles /data/{user}/{device}/{feature}. It gets all the saved data from the
 // specified feature from the given device of the user.
 func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	email := vars["email"]
+	user := vars["user"]
 	device := vars["device"]
 	feature := vars["feature"]
+
+	userID, err := strconv.Atoi(user)
+	if err != nil {
+		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
+		return
+	}
 
 	deviceID, err := strconv.Atoi(device)
 	if err != nil {
@@ -283,7 +268,7 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = env.DB.GetUser(models.User{Email: email})
+	_, err = env.DB.GetUser(models.User{ID: userID})
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongUser, http.StatusInternalServerError)
 		return
@@ -292,6 +277,7 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// TODO: Refactor into new function and add comments
 	var response models.TrackedData
 	v := reflect.ValueOf(&response).Elem()
 	ptrToFeature := v.FieldByName(feature).Addr().Interface()

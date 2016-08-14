@@ -2,7 +2,8 @@
 
 <data>
     	<metadata>
-        	<imei>123</imei>
+        <device>1</device>
+        <imei>123</imei>
 		<datanettype>LTE</datanettype>
 		<country>gb</country>
 		<network>O2 - UK</network>
@@ -18,20 +19,23 @@
         	<battery time="2016-06-12 19:20:34" charging="false" temp="32.5">51</battery>
         	<call time="18-05-16 20:00:00" type="Outgoing" duration="50" name="John">0123456789</call>
 		<runservice uid="123" uptime="234" rx="23" tx="23">com.isoc.monitor</runservice>
-		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3" 
+		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3"
                     uid="2323">Monitor</installedapp>
                 <data active="true" time="2016-06-12 19:21:55" since="2016-06-02 19:21:55" rx="2" tx="3">wifi</data>
-                
+
                 <action time="2016-06-12 19:21:55">boot</action>
-                <connection time="2016-06-12 19:20:34" local="192.168.01.144:2455" remote="8.8.8.8:445" 
+                <connection time="2016-06-12 19:20:34" local="192.168.01.144:2455" remote="8.8.8.8:445"
                     type="tcp" status="established" uid="180">proc</connection>
 
-                                
+
 	</device-data>
 </data>
 
-<!-- 
+<!--
 Changes:
+
+14/08:
+Added <device> tag in metadata. This is the device ID that the server uses to identify the device (for now).
 
 21/07:
 Added <defaultBrowser> tag in metadata. This is the default package name (not label) that android uses to open webpages.
@@ -55,7 +59,7 @@ Added temperature attribute to battery
 Removed the datastate tag from metadata. I realised that this is already covered with <data> and
     it's also variable so I shouldn't put it in metadata in the first place
 
-Battery: Logged each time you plug it into a power source, when the battery reaches LOW and 
+Battery: Logged each time you plug it into a power source, when the battery reaches LOW and
     after it recovers from LOW
 
 06/07:
@@ -64,13 +68,13 @@ Metadata:
 	datanettype: the mobile data network available: "unknown" "gprs","edge","umts","cdma","evdo0",
             "evdoA","1xrtt","hsdpa","hsupa","hspa","iden","evdoB","lte","ehrpd","hspap"
 	datastate: mobile data state: disconnected/connecting/connected/suspended
-	network: the network operator's name that the phone is connected to 
-        carrier:  the sim operator's name. Can be different from <network> when the carrier is actually 
+	network: the network operator's name that the phone is connected to
+        carrier:  the sim operator's name. Can be different from <network> when the carrier is actually
             using another operator's network (e.g. giffgaff) or when roaming I guess
-	uptime: seconds since device booted 
+	uptime: seconds since device booted
 
 runservice:
-	uid: user-id: id given by os to each installed application. However, a few apps may share the same the same uid though, 
+	uid: user-id: id given by os to each installed application. However, a few apps may share the same the same uid though,
             only if they are signed with the same key though (e.g. LG apps).
 	uptime: seconds since the service started running
 	rx: received bytes (from any intf) by this uid since device boot. -1 if this feature is unsupported
@@ -79,11 +83,11 @@ runservice:
 
 
 data: Network data statistics
-    
+
 	active: true if the respective interface is currently active
         time: time when the statistic was collected
-        since: last time that we can capture info about this device. **For now it's until last reboot. I plan to 
-            make them survive reboot soon 
+        since: last time that we can capture info about this device. **For now it's until last reboot. I plan to
+            make them survive reboot soon
         rx: bytes received with this intf since the <since> date
 	tx: bytes transmitted with this intf since the <since> date
 	the text is either wifi or mobile.
@@ -92,7 +96,7 @@ installedapp: Installed applications.
 	name: the official name of the package, unique.
         installed: date of first install  **some apps report a really old date, I'll find out why soon....
         uid as before.
-        the text is the label of the package, not unique but more user-friendly (the name shown under the app's icon). if 
+        the text is the label of the package, not unique but more user-friendly (the name shown under the app's icon). if
             it doesn't have one, this will be the same as name attribute
 
 

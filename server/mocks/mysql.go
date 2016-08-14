@@ -11,7 +11,10 @@ import (
 type MockDB struct{}
 
 func (mdb *MockDB) GetUser(user models.User) (models.User, error) {
-	if user.Email == Users[0].Email {
+	sameEmail := user.Email == Users[0].Email
+	sameID := user.ID == Users[0].ID
+	sameAPIKey := user.APIKey == Users[0].APIKey
+	if sameEmail || sameID || sameAPIKey {
 		return Users[0], nil
 	}
 	return models.User{}, sql.ErrNoRows

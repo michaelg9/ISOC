@@ -34,7 +34,7 @@ func TestSignUp(t *testing.T) {
 }
 
 func TestTokenLogin(t *testing.T) {
-	jsonResponse, _ := json.Marshal(models.Tokens{AccessToken: "123", RefreshToken: "123"})
+	jsonResponse, _ := json.Marshal(models.Tokens{AccessToken: mocks.AccessToken, RefreshToken: mocks.RefreshToken})
 	var tests = []struct {
 		email    string
 		password string
@@ -56,13 +56,13 @@ func TestTokenLogin(t *testing.T) {
 }
 
 func TestToken(t *testing.T) {
-	jsonResponse, _ := json.Marshal(models.Tokens{AccessToken: "123"})
+	jsonResponse, _ := json.Marshal(models.Tokens{AccessToken: mocks.AccessToken})
 	var tests = []struct {
 		refreshToken string
 		expected     string
 	}{
-		{mocks.JWT, string(jsonResponse)},
-		//{"", errNoToken + "\n"},
+		{mocks.RefreshToken, string(jsonResponse)},
+		//{"", errNoToken + "\n"}, left out because we have no mock session
 		{"12345", errTokenInvalid + "\n"},
 	}
 
@@ -74,12 +74,12 @@ func TestToken(t *testing.T) {
 }
 
 func TestRefreshToken(t *testing.T) {
-	jsonResponse, _ := json.Marshal(models.Tokens{RefreshToken: "123"})
+	jsonResponse, _ := json.Marshal(models.Tokens{RefreshToken: mocks.RefreshToken})
 	var tests = []struct {
 		refreshToken string
 		expected     string
 	}{
-		{"123", string(jsonResponse)},
+		{mocks.RefreshToken, string(jsonResponse)},
 		{"", errNoToken + "\n"},
 		{"12345", errTokenInvalid + "\n"},
 	}
@@ -114,17 +114,17 @@ func TestUser(t *testing.T) {
 		Devices: mocks.Devices,
 	})
 	var tests = []struct {
-		email    string
+		id       int
 		expected string
 	}{
-		{mocks.Users[0].Email, string(jsonResponse)},
-		{"user@mail.com", errWrongUser + "\n"},
+		{mocks.Users[0].ID, string(jsonResponse)},
+		{42, errWrongUser + "\n"},
 	}
 
-	pattern := "/data/{email}"
+	pattern := "/data/{user}"
 	env := newEnv()
 	for _, test := range tests {
-		url := fmt.Sprintf("/data/%v", test.email)
+		url := fmt.Sprintf("/data/%v", test.id)
 		testControllerWithPattern(env.User, "GET", url, pattern, test.expected, t)
 	}
 }
@@ -132,20 +132,20 @@ func TestUser(t *testing.T) {
 func TestDevice(t *testing.T) {
 	jsonResponse, _ := json.Marshal(mocks.Devices[0])
 	var tests = []struct {
-		email    string
+		id       int
 		deviceID interface{}
 		expected string
 	}{
-		{mocks.Users[0].Email, mocks.AboutDevices[0].ID, string(jsonResponse)},
-		{"user@mail.com", mocks.AboutDevices[0].ID, errWrongUser + "\n"},
-		{mocks.Users[0].Email, "hello", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0].Email, "25", errWrongDevice + "\n"},
+		{mocks.Users[0].ID, mocks.AboutDevices[0].ID, string(jsonResponse)},
+		{42, mocks.AboutDevices[0].ID, errWrongUser + "\n"},
+		{mocks.Users[0].ID, "hello", errDeviceIDNotInt + "\n"},
+		{mocks.Users[0].ID, 25, errWrongDevice + "\n"},
 	}
 
-	pattern := "/data/{email}/{device}"
+	pattern := "/data/{user}/{device}"
 	env := newEnv()
 	for _, test := range tests {
-		url := fmt.Sprintf("/data/%v/%v", test.email, test.deviceID)
+		url := fmt.Sprintf("/data/%v/%v", test.id, test.deviceID)
 		testControllerWithPattern(env.Device, "GET", url, pattern, test.expected, t)
 	}
 }
@@ -153,21 +153,21 @@ func TestDevice(t *testing.T) {
 func TestFeature(t *testing.T) {
 	jsonResponse, _ := json.Marshal(models.TrackedData{Battery: mocks.BatteryData[:1]})
 	var tests = []struct {
-		email    string
+		id       int
 		deviceID interface{}
 		feature  string
 		expected string
 	}{
-		{mocks.Users[0].Email, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
-		{"user@mail.com", mocks.AboutDevices[0].ID, "Battery", errWrongUser + "\n"},
-		{mocks.Users[0].Email, "hello", "Battery", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0].Email, "25", "Battery", errWrongDevice + "\n"},
+		{mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
+		{42, mocks.AboutDevices[0].ID, "Battery", errWrongUser + "\n"},
+		{mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt + "\n"},
+		{mocks.Users[0].ID, "25", "Battery", errWrongDevice + "\n"},
 	}
 
-	pattern := "/data/{email}/{device}/{feature}"
+	pattern := "/data/{user}/{device}/{feature}"
 	env := newEnv()
 	for _, test := range tests {
-		url := fmt.Sprintf("/data/%v/%v/%v", test.email, test.deviceID, test.feature)
+		url := fmt.Sprintf("/data/%v/%v/%v", test.id, test.deviceID, test.feature)
 		testControllerWithPattern(env.Feature, "GET", url, pattern, test.expected, t)
 	}
 }

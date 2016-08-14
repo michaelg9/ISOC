@@ -57,7 +57,7 @@ func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := env.Tokens.NewToken(user, refreshTolkenDelta)
+	refreshToken, err := env.Tokens.NewRefreshToken(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -70,7 +70,7 @@ func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := env.Tokens.NewToken(user, accessTokenDelta)
+	accessToken, err := env.Tokens.NewAccessToken(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -88,7 +88,6 @@ func (env *Env) SessionLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// NOTE: Is this checking necessary?
 	// Check if the email is set
 	email, found := session.Values["email"]
 	// If email not set redirect to login page

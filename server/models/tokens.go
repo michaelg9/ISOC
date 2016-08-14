@@ -1,7 +1,5 @@
 package models
 
-// TODO: Add scope to tokens so access tokens won't be used as refresh tokens and vice versa
-
 import (
 	"errors"
 	"fmt"
@@ -11,8 +9,23 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+var (
+	errWrongRole    = errors.New("Wrong token role.")
+	errNoRoleClaim  = errors.New("Claims do not contain role.")
+	errNoAdminClaim = errors.New("Claims do not contain admin.")
+	errNoSubClaim   = errors.New("Claims do not contain sub.")
+	errBlacklisted  = errors.New("Token is blacklisted.")
+	errInvalid      = errors.New("Token is invalid.")
+)
+
 const (
-	hmacSecret = "secret"
+	maxIdleConns = 3
+	hmacSecret   = "secret"
+
+	accessTokenRole   = "access"
+	accessTokenDelta  = time.Minute * time.Duration(10) // Ten minutes
+	refreshTokenRole  = "refresh"
+	refreshTokenDelta = time.Hour * time.Duration(168) // One week
 )
 
 // Tokens is the struct for outputting the two types of tokens: a long-lived refresh token
@@ -24,8 +37,10 @@ type Tokens struct {
 
 // TokenControl is the interface for all functions related to tokens.
 type TokenControl interface {
-	CheckToken(token string) (email string, err error)
-	NewToken(user User, duration time.Duration) (string, error)
+	CheckAccessToken(token string) (user User, err error)
+	CheckRefreshToken(token string) (user User, err error)
+	NewAccessToken(user User) (string, error)
+	NewRefreshToken(user User) (string, error)
 	InvalidateToken(tokenString string) error
 }
 
@@ -47,45 +62,32 @@ func NewTokenstore(server string, dbNR int) *Tokenstore {
 		}
 		// TODO: Specify redis password
 		return c, nil
-	}, 3) // 3 is the max number of idle connections
+	}, maxIdleConns)
 	return &Tokenstore{pool}
 }
 
-// CheckToken checks if the given token is valid.
-func (tkns *Tokenstore) CheckToken(tokenString string) (email string, err error) {
-	if isInvalidated(tkns.Pool, tokenString) {
-		err = errors.New("Token is blacklisted.")
-		return
-	}
-
-	token, err := jwt.Parse(tokenString, keyFunc)
-	if err != nil {
-		return
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !(ok && token.Valid) {
-		err = errors.New("Token is invalid.")
-		return
-	}
-
-	email, ok = claims["sub"].(string)
-	if !ok || email == "" {
-		err = errors.New("Claims do not contain user email.")
-		return
-	}
-
-	return
+// CheckAccessToken validates the given access token. It returns an error if the
+// given token is expired, does not contain the claims "sub", "admin" and "role", or
+// when the role is something other than an access token.
+func (tkns *Tokenstore) CheckAccessToken(token string) (User, error) {
+	return tkns.checkToken(token, accessTokenRole)
 }
 
-// NewToken generates a new token for the given user and valid for the given duration.
-func (tkns *Tokenstore) NewToken(user User, duration time.Duration) (string, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.Email,
-		"exp": time.Now().Add(duration).Unix(), // Sets expiration time one day from now
-	})
+// CheckRefreshToken validates the given access token. It returns an error if the
+// given token is expired, blacklisted , does not contain the claims "sub", "admin"
+// and "role", or  when the role is something other than an refresh token.
+func (tkns *Tokenstore) CheckRefreshToken(token string) (User, error) {
+	return tkns.checkToken(token, refreshTokenRole)
+}
 
-	return token.SignedString([]byte(hmacSecret))
+// NewAccessToken generates a new access token for the given user.
+func (tkns *Tokenstore) NewAccessToken(user User) (string, error) {
+	return newToken(user, accessTokenDelta, accessTokenRole)
+}
+
+// NewRefreshToken generates a new access token for the given user.
+func (tkns *Tokenstore) NewRefreshToken(user User) (string, error) {
+	return newToken(user, refreshTokenDelta, refreshTokenRole)
 }
 
 // InvalidateToken stores to given token in Redis to blacklist it.
@@ -96,12 +98,12 @@ func (tkns *Tokenstore) InvalidateToken(tokenString string) error {
 
 	token, err := jwt.Parse(tokenString, keyFunc)
 	if err != nil {
-		return errors.New("Token already invalid.")
+		return errInvalid
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !(ok && token.Valid) {
-		return errors.New("Token already invalid.")
+		return errInvalid
 	}
 
 	remainingValidity := getTokenRemainingValidity(claims["exp"])
@@ -114,13 +116,69 @@ func (tkns *Tokenstore) InvalidateToken(tokenString string) error {
 	return err
 }
 
+// checkToken checks if the given token is valid.
+func (tkns *Tokenstore) checkToken(tokenString, tokenRole string) (user User, err error) {
+	if isInvalidated(tkns.Pool, tokenString) {
+		err = errBlacklisted
+		return
+	}
+
+	token, err := jwt.Parse(tokenString, keyFunc)
+	if err != nil {
+		return
+	}
+
+	claims, ok := token.Claims.(jwt.MapClaims)
+	if !(ok && token.Valid) {
+		err = errInvalid
+		return
+	}
+
+	role, ok := claims["role"].(string)
+	if !ok || role == "" {
+		err = errNoRoleClaim
+		return
+	} else if role != tokenRole {
+		err = errWrongRole
+		return
+	}
+
+	// ID will be interpreted as float. We get an error
+	// if we try to do claims["sub"].(int).
+	id, ok := claims["sub"].(float64)
+	if !ok || id == 0 {
+		err = errNoSubClaim
+		return
+	}
+
+	admin, ok := claims["admin"].(bool)
+	if !ok {
+		err = errNoAdminClaim
+		return
+	}
+
+	user = User{ID: int(id), Admin: admin}
+	return
+}
+
+// newToken generates a new token for the given user and valid for the given duration.
+func newToken(user User, duration time.Duration, role string) (string, error) {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub":   user.ID,
+		"exp":   time.Now().Add(duration).Unix(),
+		"admin": user.Admin,
+		"role":  role, // Role of the token, either "access" or "refresh"
+	})
+
+	return token.SignedString([]byte(hmacSecret))
+}
+
 func isInvalidated(pool *redis.Pool, tokenString string) bool {
 	c := pool.Get()
 	redisToken, _ := c.Do("GET", tokenString)
 	return redisToken != nil
 }
 
-// Function from brainattica
 func getTokenRemainingValidity(timestamp interface{}) int {
 	// TODO: Add offset
 	if validity, ok := timestamp.(float64); ok {
@@ -133,6 +191,7 @@ func getTokenRemainingValidity(timestamp interface{}) int {
 	return 0
 }
 
+// TODO: Add description
 func keyFunc(token *jwt.Token) (interface{}, error) {
 	// Check if token was signed with the right signing method
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

@@ -1,9 +1,14 @@
 package models
 
+// TODO: Tests for exported functions
+
 import (
+	"errors"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 const testDBNR = 1
@@ -24,36 +29,37 @@ func cleanUpRedis(tokens *Tokenstore) {
 	tokens.Close()
 }
 
-func TestTokenGeneration(t *testing.T) {
+func TestNewToken(t *testing.T) {
 	tokens := setupRedis()
 	defer cleanUpRedis(tokens)
 
 	untilTomorrow := time.Hour * time.Duration(24)
 	untilYesterday := time.Hour * time.Duration(-24)
+	testRole := "testRole"
 	var tests = []struct {
-		email                  string
-		duration               time.Duration
-		expectedErrForChecking string
+		id          int
+		admin       bool
+		duration    time.Duration
+		role        string
+		expectedErr error
 	}{
-		{"user@usermail.com", untilTomorrow, ""},
-		{"user@usermail.com", untilYesterday, "Token is expired"},
-		{"", untilTomorrow, "Claims do not contain user email."},
+		{1, true, untilTomorrow, testRole, nil},
+		{1, false, untilTomorrow, testRole, nil},
+		{1, true, untilYesterday, testRole, errors.New("Token is expired")},
+		{0, true, untilTomorrow, testRole, errNoSubClaim},
+		{1, true, untilTomorrow, "wrongRole", errWrongRole},
 	}
 
 	for _, test := range tests {
-		token, err := tokens.NewToken(User{Email: test.email}, test.duration)
-		if err != nil {
-			t.Errorf("\n...got error = %v", err)
-		}
+		user := User{ID: test.id, Admin: test.admin}
+		token, err := newToken(user, test.duration, test.role)
+		assert.Empty(t, err)
 
-		email, err := tokens.CheckToken(token)
-		if err != nil {
-			if err.Error() != test.expectedErrForChecking {
-				t.Errorf("\n...expected = %v\n...obtained = %v", test.expectedErrForChecking, err)
-			}
-		}
-		if email != test.email && test.expectedErrForChecking == "" {
-			t.Errorf("\n...expected = %v\n...obtained = %v", test.email, email)
+		result, err := tokens.checkToken(token, testRole)
+		if test.expectedErr != nil {
+			assert.EqualError(t, test.expectedErr, err.Error())
+		} else if assert.NoError(t, err) {
+			assert.Equal(t, user, result)
 		}
 	}
 }
@@ -64,34 +70,34 @@ func TestInvalidateToken(t *testing.T) {
 
 	untilTomorrow := time.Hour * time.Duration(24)
 	untilYesterday := time.Hour * time.Duration(-24)
+	testUser := User{ID: 1, Admin: true}
+	testRole := "testRole"
 
 	var tests = []struct {
 		duration                   time.Duration
-		expectedErrForInvalidation string
-		expectedErrForChecking     string
+		expectedErrForInvalidation error
+		expectedErrForChecking     error
 	}{
-		{untilTomorrow, "", "Token is blacklisted."},
-		{untilYesterday, "Token already invalid.", "Token is expired"},
+		{untilTomorrow, nil, errBlacklisted},
+		{untilYesterday, errInvalid, errors.New("Token is expired")},
 	}
 
 	for _, test := range tests {
-		token, err := tokens.NewToken(User{Email: "user@usermail.com"}, test.duration)
-		if err != nil {
-			t.Errorf("\n...got error = %v", err)
-		}
+		token, err := newToken(testUser, test.duration, testRole)
+		assert.Empty(t, err)
 
 		err = tokens.InvalidateToken(token)
-		if err != nil {
-			if err.Error() != test.expectedErrForInvalidation {
-				t.Errorf("\n...expected = %v\n...obtained = %v", test.expectedErrForInvalidation, err)
-			}
+		if test.expectedErrForInvalidation != nil {
+			assert.EqualError(t, test.expectedErrForInvalidation, err.Error())
+		} else {
+			assert.NoError(t, err)
 		}
 
-		_, err = tokens.CheckToken(token)
-		if err != nil {
-			if err.Error() != test.expectedErrForChecking {
-				t.Errorf("\n...expected = %v\n...obtained = %v", test.expectedErrForChecking, err)
-			}
+		_, err = tokens.checkToken(token, testRole)
+		if test.expectedErrForChecking != nil {
+			assert.EqualError(t, test.expectedErrForChecking, err.Error())
+		} else {
+			assert.NoError(t, err)
 		}
 	}
 }

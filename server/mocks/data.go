@@ -3,7 +3,10 @@ package mocks
 import "github.com/michaelg9/ISOC/server/models"
 
 // JWT is a sample JWT.
-var JWT = "123"
+var (
+	AccessToken  = "123"
+	RefreshToken = "1234"
+)
 
 // Users is a slice of sample Users.
 var Users = []models.User{

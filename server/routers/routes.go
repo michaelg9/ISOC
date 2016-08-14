@@ -74,13 +74,6 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.Upload },
 	},
 	Route{
-		"InternalDownload",
-		"GET",
-		"/data/0.1/user",
-		sessionAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.InternalDownload },
-	},
-	Route{
 		"UpdateUser",
 		"POST",
 		"/update/user",
@@ -118,21 +111,21 @@ var routes = Routes{
 	Route{
 		"UserData",
 		"GET",
-		"/data/{email}",
+		"/data/{user}",
 		tokenAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.User },
 	},
 	Route{
 		"Device",
 		"GET",
-		"/data/{email}/{device}",
+		"/data/{user}/{device}",
 		tokenAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.Device },
 	},
 	Route{
 		"Feature",
 		"GET",
-		"/data/{email}/{device}/{feature}",
+		"/data/{user}/{device}/{feature}",
 		tokenAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.Feature },
 	},

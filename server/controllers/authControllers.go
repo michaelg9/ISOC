@@ -47,14 +47,14 @@ func (env *Env) TokenLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create short-lived acces token
-	accessToken, err := env.Tokens.NewToken(user, accessTokenDelta)
+	accessToken, err := env.Tokens.NewAccessToken(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	// Create long-lived refresh token
-	refreshToken, err := env.Tokens.NewToken(user, refreshTolkenDelta)
+	refreshToken, err := env.Tokens.NewRefreshToken(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -78,22 +78,20 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 
-	var email string
+	var user models.User
 	var err error
 	// Get the refresh token from the URI
 	refreshToken := r.FormValue("refreshToken")
 	if refreshToken == "" {
 		// See if there is a valid refresh token in the cookie store
-		email, err = refreshTokenInCookie(env, w, r)
+		user, err = refreshTokenInCookie(env, w, r)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		//http.Error(w, errNoToken, http.StatusBadRequest)
-		//return
 	} else {
 		// Check the validity of the token
-		email, err = env.Tokens.CheckToken(refreshToken)
+		user, err = env.Tokens.CheckRefreshToken(refreshToken)
 		if err != nil {
 			http.Error(w, errTokenInvalid, http.StatusUnauthorized)
 			return
@@ -101,7 +99,7 @@ func (env *Env) Token(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create a new access token for the given user
-	accessToken, err := env.Tokens.NewToken(models.User{Email: email}, accessTokenDelta)
+	accessToken, err := env.Tokens.NewAccessToken(user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -120,31 +118,19 @@ func (env *Env) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 
-	refreshToken := r.FormValue("refreshToken")
-	if refreshToken == "" {
+	oldRefreshToken := r.FormValue("refreshToken")
+	if oldRefreshToken == "" {
 		http.Error(w, errNoToken, http.StatusBadRequest)
 		return
 	}
 
-	email, err := env.Tokens.CheckToken(refreshToken)
-	if err != nil {
-		http.Error(w, errTokenInvalid, http.StatusUnauthorized)
-		return
-	}
-
-	err = env.Tokens.InvalidateToken(refreshToken)
-	if err != nil {
-		http.Error(w, errTokenAlreadyInvalid, http.StatusInternalServerError)
-		return
-	}
-
-	newRefreshToken, err := env.Tokens.NewToken(models.User{Email: email}, refreshTolkenDelta)
+	_, refreshToken, err := newRefreshToken(env, oldRefreshToken)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	err = writeResponse(w, "json", models.Tokens{RefreshToken: newRefreshToken})
+	err = writeResponse(w, "json", models.Tokens{RefreshToken: refreshToken})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -168,37 +154,50 @@ func (env *Env) TokenLogout(w http.ResponseWriter, r *http.Request) {
 }
 
 // refreshTokenInCookie checks if there is a valid refresh token in
-func refreshTokenInCookie(env *Env, w http.ResponseWriter, r *http.Request) (email string, err error) {
+func refreshTokenInCookie(env *Env, w http.ResponseWriter, r *http.Request) (user models.User, err error) {
 	session, err := env.SessionStore.Get(r, "log-in")
 	if err != nil {
 		return
 	}
 
-	refreshToken, found := session.Values["refreshToken"]
-	tokenString, ok := refreshToken.(string)
+	// Get refresh token saved inside cookies
+	oldRefreshToken, found := session.Values["refreshToken"]
+	oldRefreshTokenString, ok := oldRefreshToken.(string)
 	if !(found && ok) {
 		err = errors.New("No refresh token found")
 		return
 	}
 
-	email, err = env.Tokens.CheckToken(tokenString)
+	user, refreshToken, err := newRefreshToken(env, oldRefreshTokenString)
 	if err != nil {
 		return
 	}
 
-	newRefreshToken, err := env.Tokens.NewToken(models.User{Email: email}, refreshTolkenDelta)
+	// Update refresh token so the user does not get logged out when the old token would have expired
+	session.Values["refreshToken"] = refreshToken
+	if err = session.Save(r, w); err != nil {
+		return
+	}
+
+	return
+}
+
+// newRefreshToken returns a new refresh token in exchange for a new old one which will be invalidated.
+func newRefreshToken(env *Env, oldRefreshToken string) (user models.User, refreshToken string, err error) {
+	// Check if old token is valid
+	user, err = env.Tokens.CheckRefreshToken(oldRefreshToken)
 	if err != nil {
 		return
 	}
 
 	// Invalidate old token
-	if err = env.Tokens.InvalidateToken(tokenString); err != nil {
+	if err = env.Tokens.InvalidateToken(oldRefreshToken); err != nil {
 		return
 	}
 
-	// Update refresh token so the user does not get logged out when the old token would have expired
-	session.Values["refreshToken"] = newRefreshToken
-	if err = session.Save(r, w); err != nil {
+	// Create new refresh token
+	refreshToken, err = env.Tokens.NewRefreshToken(user)
+	if err != nil {
 		return
 	}
 

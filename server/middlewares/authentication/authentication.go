@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/michaelg9/ISOC/server/controllers"
-	"github.com/michaelg9/ISOC/server/models"
 )
 
 const (
@@ -63,14 +62,14 @@ func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Reques
 	}
 
 	tokenString := authHeaderParts[1]
-	email, err := env.Tokens.CheckToken(tokenString)
+	user, err := env.Tokens.CheckAccessToken(tokenString)
 	if err != nil {
 		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return
 	}
 
 	// Check if user is registered in database
-	_, err = env.DB.GetUser(models.User{Email: email})
+	_, err = env.DB.GetUser(user)
 	if err != nil {
 		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return
