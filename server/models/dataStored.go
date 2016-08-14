@@ -1,7 +1,5 @@
 package models
 
-// TODO: Comments
-
 import (
 	"errors"
 	"reflect"
@@ -47,6 +45,8 @@ type Runservice struct {
 	End     string `xml:"end,attr" db:"end"`
 }
 
+// typeName maps the type of a slice of data to a key. The key can be used
+// to retrieve queries from the createQueries and getQueries maps.
 var typeName = map[reflect.Type]string{
 	reflect.TypeOf([]Battery{}):    "Battery",
 	reflect.TypeOf([]Call{}):       "Call",
@@ -54,6 +54,7 @@ var typeName = map[reflect.Type]string{
 	reflect.TypeOf([]Runservice{}): "Runservice",
 }
 
+// createQueries maps the keys for the feature types to INSERT queries.
 var createQueries = map[string]string{
 	"Battery":    `INSERT INTO BatteryStatus (timestamp, batteryPercentage, device) VALUES (:Time, :Value, :ID);`,
 	"Call":       `INSERT INTO ` + "`" + `Call` + "`" + ` (callType, start, end, contact, device) VALUES (:Type, :Start, :End, :Contact, :ID);`,
@@ -61,6 +62,7 @@ var createQueries = map[string]string{
 	"Runservice": `INSERT INTO Runservice (appName, rx, tx, start, end, device) VALUES (:AppName, :RX, :TX, :Start, :End, :ID);`,
 }
 
+// getQueries maps the key for the feature types to SELECT queries.
 var getQueries = map[string]string{
 	"Battery":    `SELECT timestamp, batteryPercentage FROM BatteryStatus WHERE device = :id;`,
 	"Call":       `SELECT callType, start, end, contact FROM ` + "`" + `Call` + "`" + ` WHERE device = :id;`,
@@ -69,11 +71,14 @@ var getQueries = map[string]string{
 }
 
 // GetData gets the data from the given data type.
-func (db *DB) GetData(device DeviceStored, ptrToData interface{}) error {
+func (db *DB) GetData(aboutDevice AboutDevice, ptrToData interface{}) error {
+	// Get the reflect.Value to which the pointer points
 	value, err := getValueOfPtr(ptrToData)
 	if err != nil {
 		return err
 	}
+
+	// Retrieve the SELECT query for the given feature type
 	query, ok := getQueries[typeName[value.Type()]]
 	if !ok {
 		return errors.New(errDataNotStored)
@@ -84,18 +89,19 @@ func (db *DB) GetData(device DeviceStored, ptrToData interface{}) error {
 		return err
 	}
 
-	return stmt.Select(value.Addr().Interface(), device)
+	// Query the database and return result
+	return stmt.Select(ptrToData, aboutDevice)
 }
 
 // CreateData inserts the given data into the database.
-func (db *DB) CreateData(device DeviceStored, ptrToData interface{}) error {
-	// Get the reflect value of the given data
+func (db *DB) CreateData(aboutDevice AboutDevice, ptrToData interface{}) error {
+	// Get the reflect.Value to which the pointer points
 	value, err := getValueOfPtr(ptrToData)
 	if err != nil {
 		return err
 	}
 
-	// Get the right query for that type of data
+	// Retrieve the INSERT query for the given feature type
 	query, ok := createQueries[typeName[value.Type()]]
 	if !ok {
 		return errors.New(errDataNotStored)
@@ -105,7 +111,7 @@ func (db *DB) CreateData(device DeviceStored, ptrToData interface{}) error {
 	for i := 0; i < value.Len(); i++ {
 		data := value.Index(i).Interface()
 		m := structs.Map(data)           // Transform the struct of the type into map[string]string
-		m["ID"] = device.ID              // Append the device ID to that map
+		m["ID"] = aboutDevice.ID         // Append the device ID to that map
 		_, err := db.NamedExec(query, m) // Insert the data
 		if err != nil {
 			return err

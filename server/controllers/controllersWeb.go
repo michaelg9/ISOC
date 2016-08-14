@@ -1,11 +1,8 @@
 package controllers
 
-// TODO: Better names for functions
-
 import (
 	"database/sql"
 	"fmt"
-	"html/template"
 	"net/http"
 
 	"github.com/michaelg9/ISOC/server/models"
@@ -14,20 +11,16 @@ import (
 
 // Index handles /
 func (env *Env) Index(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/index.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+	http.ServeFile(w, r, "views/index.html")
 }
 
-// LoginGET handles GET /login
-func (env *Env) LoginGET(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/login.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
+// LoginPage handles GET /login
+func (env *Env) LoginPage(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "views/login.html")
 }
 
-// LoginPOST handles POST /login
-func (env *Env) LoginPOST(w http.ResponseWriter, r *http.Request) {
+// SessionLogin handles POST /login
+func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
 	password := r.FormValue("password")
@@ -64,17 +57,30 @@ func (env *Env) LoginPOST(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	refreshToken, err := env.Tokens.NewRefreshToken(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session.Values["refreshToken"] = refreshToken
 	session.Values["email"] = email
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "Success")
+	accessToken, err := env.Tokens.NewAccessToken(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeResponse(w, "json", models.Tokens{AccessToken: accessToken})
 }
 
-// Logout handles /logout
-func (env *Env) Logout(w http.ResponseWriter, r *http.Request) {
+// SessionLogout handles /logout
+func (env *Env) SessionLogout(w http.ResponseWriter, r *http.Request) {
 	// Get the current log-in session of the user
 	session, err := env.SessionStore.Get(r, "log-in")
 	if err != nil {
@@ -82,12 +88,23 @@ func (env *Env) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// NOTE: Is this checking necessary?
 	// Check if the email is set
 	email, found := session.Values["email"]
 	// If email not set redirect to login page
 	if !found || email == "" {
 		http.Error(w, errNoSessionSet, http.StatusUnauthorized)
+		return
+	}
+
+	token, found := session.Values["refreshToken"]
+	tokenString, ok := token.(string)
+	if !found || tokenString == "" || !ok {
+		http.Error(w, errNoToken, http.StatusInternalServerError)
+		return
+	}
+
+	if err = env.Tokens.InvalidateToken(tokenString); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -103,18 +120,5 @@ func (env *Env) Logout(w http.ResponseWriter, r *http.Request) {
 
 // Dashboard handles /dashboard
 func (env *Env) Dashboard(w http.ResponseWriter, r *http.Request) {
-	if err := display(w, "views/dashboard.html", ""); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
-}
-
-// display takes a filepath to an HTML or template, passes the given
-// data to it and displays it
-func display(w http.ResponseWriter, filePath string, data interface{}) error {
-	t, err := template.ParseFiles(filePath)
-	if err != nil {
-		return err
-	}
-	t.Execute(w, data)
-	return nil
+	http.ServeFile(w, r, "views/dashboard.html")
 }

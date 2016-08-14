@@ -2,6 +2,8 @@ version: '2'
 services:
   go-server:
     build: ./server
+    # Uncomment when on GCE
+    # command: gin -a 8080 -b .gin-bin run
     ports:
      - "3000:3000"
     # Comment this out if deploying on GCE
@@ -22,6 +24,9 @@ services:
      - PORT=8080
   mysql:
     build: ./test_db
+    ports:
+      - "3306:3306"
+  # Comment out test-db when on GCE
   mysql-test:
     image: mysql:latest
     ports:

@@ -5,9 +5,6 @@ import (
 	"strings"
 
 	"github.com/michaelg9/ISOC/server/controllers"
-	"github.com/michaelg9/ISOC/server/models"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -19,32 +16,6 @@ const (
 // MiddlewareEnv embeds the controllers.Env struct so that we can write functions on it.
 type MiddlewareEnv struct {
 	*controllers.Env
-}
-
-// RequireBasicAuth is the middleware for routes that require HTTP Basic authentication.
-func (env *MiddlewareEnv) RequireBasicAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	email, password, ok := r.BasicAuth()
-	if !ok || email == "" || password == "" {
-		http.Error(w, errNotAuthorized, http.StatusUnauthorized)
-		return
-	}
-
-	// Check if user is registered in database
-	user, err := env.DB.GetUser(models.User{Email: email})
-	if err != nil {
-		http.Error(w, errNotAuthorized, http.StatusForbidden)
-		return
-	}
-
-	// Check if given password fits with stored hash inside the server
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err != nil {
-		http.Error(w, errNotAuthorized, http.StatusForbidden)
-		return
-	}
-
-	// User is authorised and can proceed
-	next(w, r)
 }
 
 // RequireSessionAuth is the middleware for routes that require a session to be set with an email.
@@ -65,7 +36,7 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 	email, found := session.Values["email"]
 	// If email not set redirect to login page
 	if !found || email == "" {
-		http.Redirect(w, r, "/login", http.StatusUnauthorized)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 
@@ -80,25 +51,25 @@ func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Reques
 
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
-		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		http.Error(w, errNotAuthorized, http.StatusBadRequest)
 		return
 	}
 
 	authHeaderParts := strings.Split(authHeader, " ")
 	if len(authHeaderParts) != 2 || strings.ToLower(authHeaderParts[0]) != "bearer" {
-		http.Error(w, errNotAuthorized, http.StatusForbidden)
+		http.Error(w, errNotAuthorized, http.StatusBadRequest)
 		return
 	}
 
 	tokenString := authHeaderParts[1]
-	email, err := env.Tokens.CheckToken(tokenString)
+	user, err := env.Tokens.CheckAccessToken(tokenString)
 	if err != nil {
 		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return
 	}
 
 	// Check if user is registered in database
-	_, err = env.DB.GetUser(models.User{Email: email})
+	_, err = env.DB.GetUser(user)
 	if err != nil {
 		http.Error(w, errNotAuthorized, http.StatusForbidden)
 		return

@@ -7,7 +7,6 @@ import (
 )
 
 const (
-	basicAuth   = "Basic"
 	sessionAuth = "Session"
 	tokenAuth   = "Token"
 )
@@ -37,7 +36,7 @@ var routes = Routes{
 		"GET",
 		"/login",
 		"",
-		func(env controllers.Env) http.HandlerFunc { return env.LoginGET },
+		func(env controllers.Env) http.HandlerFunc { return env.LoginPage },
 	},
 	Route{
 		"Dashboard",
@@ -47,18 +46,18 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.Dashboard },
 	},
 	Route{
-		"Login",
+		"SessionLogin",
 		"POST",
 		"/login",
 		"",
-		func(env controllers.Env) http.HandlerFunc { return env.LoginPOST },
+		func(env controllers.Env) http.HandlerFunc { return env.SessionLogin },
 	},
 	Route{
-		"Logout",
+		"SessionLogout",
 		"POST",
 		"/logout",
 		"",
-		func(env controllers.Env) http.HandlerFunc { return env.Logout },
+		func(env controllers.Env) http.HandlerFunc { return env.SessionLogout },
 	},
 	Route{
 		"SignUp",
@@ -75,20 +74,6 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.Upload },
 	},
 	Route{
-		"Download",
-		"GET",
-		"/data/0.1/q",
-		"",
-		func(env controllers.Env) http.HandlerFunc { return env.Download },
-	},
-	Route{
-		"InternalDownload",
-		"GET",
-		"/data/0.1/user",
-		sessionAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.InternalDownload },
-	},
-	Route{
 		"UpdateUser",
 		"POST",
 		"/update/user",
@@ -96,11 +81,11 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.UpdateUser },
 	},
 	Route{
-		"LoginToken",
+		"TokenLogin",
 		"POST",
 		"/auth/0.1/login",
 		"",
-		func(env controllers.Env) http.HandlerFunc { return env.Login },
+		func(env controllers.Env) http.HandlerFunc { return env.TokenLogin },
 	},
 	Route{
 		"Token",
@@ -117,10 +102,31 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.RefreshToken },
 	},
 	Route{
-		"LogoutToken",
+		"TokenLogout",
 		"POST",
 		"/auth/0.1/logout",
 		"",
-		func(env controllers.Env) http.HandlerFunc { return env.LogoutToken },
+		func(env controllers.Env) http.HandlerFunc { return env.TokenLogout },
+	},
+	Route{
+		"UserData",
+		"GET",
+		"/data/{user}",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.User },
+	},
+	Route{
+		"Device",
+		"GET",
+		"/data/{user}/{device}",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.Device },
+	},
+	Route{
+		"Feature",
+		"GET",
+		"/data/{user}/{device}/{feature}",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.Feature },
 	},
 }

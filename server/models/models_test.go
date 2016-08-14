@@ -1,8 +1,7 @@
 package models
 
 // TODO: Test time input
-// TODO: Use assert package
-// TODO: Make mocks file with mock database
+// TODO: Write table test
 
 import (
 	"database/sql"
@@ -11,6 +10,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -28,6 +28,7 @@ CREATE TABLE User (
   email varchar(20) NOT NULL,
   passwordHash char(64) NOT NULL,
   apiKey varchar(32) DEFAULT NULL,
+  admin tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (uid),
   UNIQUE KEY email (email),
   UNIQUE KEY apiKey (apiKey)
@@ -100,7 +101,7 @@ CREATE TABLE Runservice (
 /* Database data */
 
 var insertionUser = `
-INSERT INTO User VALUES (1,'user@usermail.com','$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK','37e72ff927f511e688adb827ebf7e157');
+INSERT INTO User VALUES (1,'user@usermail.com','$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK','37e72ff927f511e688adb827ebf7e157', TRUE);
 `
 
 var insertionDevice = `
@@ -149,29 +150,32 @@ var destroyRunservice = `
 DROP TABLE Runservice;
 `
 
+// TODO: User mocks
 var users = []User{
 	User{
 		ID:           1,
 		Email:        "user@usermail.com",
 		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
 		APIKey:       "37e72ff927f511e688adb827ebf7e157",
+		Admin:        true,
 	},
 	User{
 		ID:     2,
 		Email:  "user@mail.com",
 		APIKey: "",
+		Admin:  true,
 	},
 }
 
-var deviceInfos = []DeviceStored{
-	DeviceStored{
+var deviceInfos = []AboutDevice{
+	AboutDevice{
 		ID:           1,
 		IMEI:         "123456789012345",
 		Manufacturer: "Motorola",
 		Model:        "Moto X (2nd Generation)",
 		OS:           "Android 5.0",
 	},
-	DeviceStored{
+	AboutDevice{
 		ID:           2,
 		IMEI:         "12345678901234567",
 		Manufacturer: "One Plus",
@@ -182,8 +186,8 @@ var deviceInfos = []DeviceStored{
 
 var devices = []Device{
 	Device{
-		DeviceInfo: deviceInfos[0],
-		Data: DeviceData{
+		AboutDevice: deviceInfos[0],
+		Data: TrackedData{
 			Battery: batteryData[:1],
 		},
 	},
@@ -294,49 +298,38 @@ func cleanUp(db *DB) {
 	tx.Commit()
 }
 
-func checkErr(t *testing.T, err error) {
-	if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	}
-}
-
-func checkEqual(t *testing.T, expected, obtained interface{}) {
-	if !reflect.DeepEqual(expected, obtained) {
-		t.Errorf("\n...expected = %v\n...obtained = %v", expected, obtained)
-	}
-}
-
 func TestGetUser(t *testing.T) {
 	var tests = []struct {
+		id       int
 		email    string
 		key      string
 		expected User
 	}{
-		{users[0].Email, "", users[0]},
-		{"", users[0].APIKey, users[0]},
-		{users[0].Email, users[0].APIKey, users[0]},
-		//{users[0].Email, "1234", User{}}, TODO: Resolve this
+		{0, users[0].Email, "", users[0]},
+		{1, "", users[0].APIKey, users[0]},
+		{1, users[0].Email, users[0].APIKey, users[0]},
+		{0, users[0].Email, "1234", users[0]},
 	}
 	db := setup()
 	defer cleanUp(db)
 
 	for _, test := range tests {
-		user := User{Email: test.email, APIKey: test.key}
+		user := User{ID: test.id, Email: test.email, APIKey: test.key}
 		result, err := db.GetUser(user)
-		checkErr(t, err)
-		checkEqual(t, test.expected, result)
+		assert.Empty(t, err)
+		assert.Equal(t, test.expected, result)
 	}
 }
 
-func Test(t *testing.T) {
+func TestGetDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	device := Device{DeviceInfo: DeviceStored{ID: 1}}
+	device := Device{AboutDevice: AboutDevice{ID: 1}}
 	expected := devices[0]
 	result, err := db.GetDevice(device)
-	checkErr(t, err)
-	checkEqual(t, expected, result)
+	assert.Empty(t, err)
+	assert.Equal(t, expected, result)
 }
 
 func TestGetDevicesFromUser(t *testing.T) {
@@ -347,8 +340,8 @@ func TestGetDevicesFromUser(t *testing.T) {
 	expected := devices
 
 	result, err := db.GetDevicesFromUser(user)
-	checkErr(t, err)
-	checkEqual(t, expected, result)
+	assert.Empty(t, err)
+	assert.Equal(t, expected, result)
 }
 
 func TestGetDeviceInfos(t *testing.T) {
@@ -359,8 +352,8 @@ func TestGetDeviceInfos(t *testing.T) {
 	expected := deviceInfos[:1]
 
 	result, err := db.getDeviceInfos(user)
-	checkErr(t, err)
-	checkEqual(t, expected, result)
+	assert.Empty(t, err)
+	assert.Equal(t, expected, result)
 }
 
 func TestGetData(t *testing.T) {
@@ -380,9 +373,9 @@ func TestGetData(t *testing.T) {
 	device := deviceInfos[0]
 	for _, test := range tests {
 		err := db.GetData(device, test.ptrToResult)
-		checkErr(t, err)
+		assert.Empty(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
-		checkEqual(t, test.expected, result)
+		assert.Equal(t, test.expected, result)
 	}
 }
 
@@ -394,11 +387,11 @@ func TestCreateUser(t *testing.T) {
 	pwd, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 	newUser.PasswordHash = string(pwd)
 	err := db.CreateUser(newUser)
-	checkErr(t, err)
+	assert.Empty(t, err)
 
 	result, err := db.GetUser(newUser)
-	checkErr(t, err)
-	checkEqual(t, newUser, result)
+	assert.Empty(t, err)
+	assert.Equal(t, newUser, result)
 }
 
 func TestCreateDeviceForUser(t *testing.T) {
@@ -409,13 +402,13 @@ func TestCreateDeviceForUser(t *testing.T) {
 	newDevice := deviceInfos[1]
 
 	err := db.CreateDeviceForUser(user, newDevice)
-	checkErr(t, err)
+	assert.Empty(t, err)
 
 	oldDevice := deviceInfos[0]
-	expected := []DeviceStored{oldDevice, newDevice}
+	expected := []AboutDevice{oldDevice, newDevice}
 	result, err := db.getDeviceInfos(user)
-	checkErr(t, err)
-	checkEqual(t, expected, result)
+	assert.Empty(t, err)
+	assert.Equal(t, expected, result)
 }
 
 func TestCreateData(t *testing.T) {
@@ -441,12 +434,12 @@ func TestCreateData(t *testing.T) {
 	device := deviceInfos[0]
 	for _, test := range tests {
 		err := db.CreateData(device, test.toInsert)
-		checkErr(t, err)
+		assert.Empty(t, err)
 
 		err = db.GetData(device, test.ptrToResult)
-		checkErr(t, err)
+		assert.Empty(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
-		checkEqual(t, test.expected, result)
+		assert.Equal(t, test.expected, result)
 	}
 }
 
@@ -457,16 +450,17 @@ func TestUpdateUser(t *testing.T) {
 	user := users[0]
 	user.Email = "user2@mail.com"
 	pwd, err := bcrypt.GenerateFromPassword([]byte("12345"), bcrypt.DefaultCost)
-	checkErr(t, err)
+	assert.Empty(t, err)
 	user.PasswordHash = string(pwd)
 	user.APIKey = "1"
+	// user.Admin = false
 	err = db.UpdateUser(user)
-	checkErr(t, err)
+	assert.Empty(t, err)
 
 	result, err := db.GetUser(user)
 	user.APIKey = result.APIKey
-	checkErr(t, err)
-	checkEqual(t, user, result)
+	assert.Empty(t, err)
+	assert.Equal(t, user, result)
 }
 
 func TestUpdateDevice(t *testing.T) {
@@ -478,12 +472,12 @@ func TestUpdateDevice(t *testing.T) {
 	device.Model = "iPhone 6"
 	device.OS = "iOS 10"
 	err := db.UpdateDevice(device)
-	checkErr(t, err)
+	assert.Empty(t, err)
 
-	expected := []DeviceStored{device}
+	expected := []AboutDevice{device}
 	result, err := db.getDeviceInfos(users[0])
-	checkErr(t, err)
-	checkEqual(t, expected, result)
+	assert.Empty(t, err)
+	assert.Equal(t, expected, result)
 }
 
 func TestDeleteUser(t *testing.T) {
@@ -492,11 +486,11 @@ func TestDeleteUser(t *testing.T) {
 
 	user := users[0]
 	err := db.DeleteUser(user)
-	checkErr(t, err)
+	assert.Empty(t, err)
 
 	expectedErr := sql.ErrNoRows
 	_, err = db.GetUser(user)
-	checkEqual(t, expectedErr, err)
+	assert.Equal(t, expectedErr, err)
 }
 
 func TestDeleteDevice(t *testing.T) {
@@ -505,12 +499,9 @@ func TestDeleteDevice(t *testing.T) {
 
 	device := deviceInfos[0]
 	err := db.DeleteDevice(device)
-	checkErr(t, err)
+	assert.Empty(t, err)
 
 	result, err := db.getDeviceInfos(User{Email: "user@usermail.com"})
-	if err == nil && len(result) != 0 {
-		t.Errorf("\n...expected error but got = %v", result)
-	} else if err != nil {
-		t.Errorf("\n...error = %v", err.Error())
-	}
+	assert.Empty(t, err)
+	assert.Empty(t, result)
 }

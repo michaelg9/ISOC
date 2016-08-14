@@ -2,7 +2,8 @@
 
 <data>
     	<metadata>
-        	<imei>123</imei>
+        <device>1</device>
+        <imei>123</imei>
 		<datanettype>LTE</datanettype>
 		<country>gb</country>
 		<network>O2 - UK</network>
@@ -18,23 +19,26 @@
     	<device-data>
         	<battery time="2016-06-12 19:20:34" charging="AC" temp="32.5">51</battery>
         	<call time="18-05-16 20:00:00" type="Outgoing" duration="50" saved="true">1</call>
-		<runservice since="2016-06-12 19:20:34" time="2016-06-12 19:20:34" 
+		<runservice since="2016-06-12 19:20:34" time="2016-06-12 19:20:34"
                     rx="23" tx="23">com.isoc.monitor</runservice>
-		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3" 
+		<installedapp name="com.isoc.monitor" installed="2016-06-12 19:21:55" version="2.3"
                     >Monitor</installedapp>
                 <data active="true" time="2016-06-12 19:21:55" since="2016-06-02 19:21:55" rx="2" tx="3">wifi</data>
                 <action time="2016-06-12 19:21:55">boot</action>
-                <connection time="2016-06-12 19:20:34" lip="192.168.01.144" lport="2455" rip="8.8.8.8" 
+                <connection time="2016-06-12 19:20:34" lip="192.168.01.144" lport="2455" rip="8.8.8.8"
                     rport="445" type="tcp" status="established">com.isoc.android.monitor</connection>
-                <wifiAP bssid="00:00:00:00:00:00" caps="[WPS][WPA-PSK-CCMP][WPA2-PSK-CCMP][ESS]" signal="5" 
+                <wifiAP bssid="00:00:00:00:00:00" caps="[WPS][WPA-PSK-CCMP][WPA2-PSK-CCMP][ESS]" signal="5"
                     frequency="2452">eduroam</wifiAP>
-                
+
                 <sms time="2016-06-12 19:21:55" folder="inbox" read="true">1</sms>
 	</device-data>
 </data>
 
-<!-- 
+<!--
 Changes:
+14/08:
+Added <device> tag in metadata. This is the device ID that the server uses to identify the device (for now).
+
 07/08:
 <metadata> added timeZone attribute, since we're dealing with times.
 <runservice> removed uid attribute
@@ -44,10 +48,10 @@ Changes:
     folder is one of all,inbox,sent,draft,outbox,failed,queued,unknown
     read indicates if the message was read (1) or not (0)
     the text is the replacement of the actual phone number
-<connection>: the text goes from "proc" to the package name, as long as the corresponding package 
+<connection>: the text goes from "proc" to the package name, as long as the corresponding package
     is registered in the installed apps database. If it's not, then the text will be
     "unknown". If the uid corresponds to multiple packages, they will appear next to each other
-    separated by a /, like "com.google.android.gms/com.google.android.gsf". It means 
+    separated by a /, like "com.google.android.gms/com.google.android.gsf". It means
     that one of these packages owns that connection. Also, uid attribute is removed.
     Additionally, sockets are broken from [ip]:[port] to separate attributes,
     for increased readability
@@ -62,13 +66,11 @@ Changes:
 <runservice>: uptime removed. since attribute indicates when the service started, time attribute indicates the time of capture.
 <call>: name attribute replaced by boolean saved attribute, which records if the number is registered as a contact. Additionally,
         the text of the tag that used to be the number dialled now is replaced by an arbitrary number
-<battery>: charging value goes from boolean to one of: ac (when on a power socket), wireless (wireless charging source), usb, 
-        no (on battery), 
+<battery>: charging value goes from boolean to one of: ac (when on a power socket), wireless (wireless charging source), usb,
+        no (on battery),
         unknown(shouldnt appear under normal circumstances)
 <wifiAP>: lists the APs that were found in the last wifi scan. caps are the capabilities of the AP, each in a seperate pair of brackets.
         signal is a number (worst)0-10(best). frequency is in MHz. The text is the SSID of the AP
-
-
 
 21/07:
 Added <defaultBrowser> tag in metadata. This is the default package name (not label) that android uses to open webpages.
@@ -92,7 +94,7 @@ Added temperature attribute to battery
 Removed the datastate tag from metadata. I realised that this is already covered with <data> and
     it's also variable so I shouldn't put it in metadata in the first place
 
-Battery: Logged each time you plug it into a power source, when the battery reaches LOW and 
+Battery: Logged each time you plug it into a power source, when the battery reaches LOW and
     after it recovers from LOW
 
 06/07:
@@ -101,13 +103,13 @@ Metadata:
 	datanettype: the mobile data network available: "unknown" "gprs","edge","umts","cdma","evdo0",
             "evdoA","1xrtt","hsdpa","hsupa","hspa","iden","evdoB","lte","ehrpd","hspap"
 	datastate: mobile data state: disconnected/connecting/connected/suspended
-	network: the network operator's name that the phone is connected to 
-        carrier:  the sim operator's name. Can be different from <network> when the carrier is actually 
+	network: the network operator's name that the phone is connected to
+        carrier:  the sim operator's name. Can be different from <network> when the carrier is actually
             using another operator's network (e.g. giffgaff) or when roaming I guess
-	uptime: seconds since device booted 
+	uptime: seconds since device booted
 
 runservice:
-	uid: user-id: id given by os to each installed application. However, a few apps may share the same the same uid though, 
+	uid: user-id: id given by os to each installed application. However, a few apps may share the same the same uid though,
             only if they are signed with the same key though (e.g. LG apps).
 	uptime: seconds since the service started running
 	rx: received bytes (from any intf) by this uid since device boot. -1 if this feature is unsupported
@@ -116,11 +118,11 @@ runservice:
 
 
 data: Network data statistics
-    
+
 	active: true if the respective interface is currently active
         time: time when the statistic was collected
-        since: last time that we can capture info about this device. **For now it's until last reboot. I plan to 
-            make them survive reboot soon 
+        since: last time that we can capture info about this device. **For now it's until last reboot. I plan to
+            make them survive reboot soon
         rx: bytes received with this intf since the <since> date
 	tx: bytes transmitted with this intf since the <since> date
 	the text is either wifi or mobile.
@@ -129,7 +131,7 @@ installedapp: Installed applications.
 	name: the official name of the package, unique.
         installed: date of first install  **some apps report a really old date, I'll find out why soon....
         uid as before.
-        the text is the label of the package, not unique but more user-friendly (the name shown under the app's icon). if 
+        the text is the label of the package, not unique but more user-friendly (the name shown under the app's icon). if
             it doesn't have one, this will be the same as name attribute
 
 

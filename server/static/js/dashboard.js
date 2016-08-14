@@ -3,18 +3,70 @@ var updateUserURL = "../update/user?";
 var batteryChart;
 
 // TODO: Look into global variables and JS code structure
+// TODO: Use jQuery instead of Angular
 
 // Angular app
 var app = angular.module("dashboardApp", []);
-app.controller("deviceController", function($scope) {
-    $scope.deviceInfo = {};
+app.factory("userService", function($http) {
+    return {
+        getUser: function() {
+            return $http.get("../data/" + sessionStorage.email, {
+                headers: {"Authorization": "Bearer " + sessionStorage.accessToken}
+            });
+        },
+        saveUser: function($scope) {
+            return function(response) {
+                $scope.user = response.data;
+                $scope.deviceInfo = $scope.user.devices[0].aboutDevice;
+                $scope.userInfo = $scope.user.user;
+                createBatteryGraph($scope.user.devices[0].data.battery);
+            };
+        }
+    };
 });
-app.controller("userController", function($scope) {
-    $scope.userInfo = {};
+
+app.factory("downloadService", function($http) {
+    return {
+        getFeature: function(deviceID, feature, type) {
+            return $http.get("../data/" + sessionStorage.email + "/" + deviceID + "/" + feature + "?out=" + type, {
+                headers: {"Authorization": "Bearer " + sessionStorage.accessToken},
+                responseType: "arraybuffer"
+            });
+        },
+        getAccessToken: function() {
+            return $http.post("../auth/0.1/token");
+        }
+    };
+});
+
+app.controller("dashboardController", function($scope, userService, downloadService) {
+    userService.getUser().then(userService.saveUser($scope)).catch(function(response) {
+        if (response.status == 403) {
+            downloadService.getAccessToken().then(function(response) {
+                sessionStorage.accessToken = response.data.accessToken;
+                userService.getUser().then(userService.saveUser($scope));
+            });
+        }
+    });
+    $scope.saveBatteryJSON = function() {
+        var controllerElement = document.querySelector("[ng-controller=dashboardController]");
+        var scope = angular.element(controllerElement).scope();
+        var fileName = "battery.json";
+        var a = document.createElement("a");
+        document.body.appendChild(a);
+        a.style = "display: none";
+        downloadService.getFeature(scope.deviceInfo.id, "Battery", "json").then(function (result) {
+            var file = new Blob([result.data], {type: "application/json"});
+            var fileURL = window.URL.createObjectURL(file);
+            a.href = fileURL;
+            a.download = fileName;
+            a.click();
+        });
+    };
 });
 
 function changeDeviceInfo(deviceInfo) {
-    var controllerElement = document.querySelector("[ng-controller=deviceController]");
+    var controllerElement = document.querySelector("[ng-controller=dashboardController]");
     var $scope = angular.element(controllerElement).scope();
     $scope.$apply(function() {
         $scope.deviceInfo = deviceInfo;
@@ -22,7 +74,7 @@ function changeDeviceInfo(deviceInfo) {
 }
 
 function changeUserInfo(userInfo) {
-    var controllerElement = document.querySelector("[ng-controller=userController]");
+    var controllerElement = document.querySelector("[ng-controller=dashboardController]");
     var $scope = angular.element(controllerElement).scope();
     $scope.$apply(function() {
         $scope.userInfo = userInfo;
@@ -30,7 +82,7 @@ function changeUserInfo(userInfo) {
 }
 
 function updateUserInfo() {
-    var data = $.get({
+    $.get({
         url: retrieveDataURL
     }).done(function(data, textStatus, jqXHR) {
         var userData = JSON.parse(data);
@@ -39,17 +91,6 @@ function updateUserInfo() {
         console.error(data);
     });
 }
-
-
-// AJAX call to server
-var batteryData = $.get({
-    url: retrieveDataURL
-}).done(function(data, textStatus, jqXHR) {
-    var userData = JSON.parse(data);
-    changeDeviceInfo(userData.devices[0].deviceInfo);
-    changeUserInfo(userData.user);
-    createBatteryGraph(userData.devices[0].data.battery);
-});
 
 function createBatteryGraph(batteryData) {
     // Sort data according to time so it gets displayed properly
