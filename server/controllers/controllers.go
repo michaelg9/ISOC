@@ -264,12 +264,7 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: Refactor into new function and add comments
-	var response models.TrackedData
-	v := reflect.ValueOf(&response).Elem()
-	f := vars["feature"]
-	ptrToFeature := v.FieldByName(f).Addr().Interface()
-	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, ptrToFeature)
+	response, err := getFeatureResponse(env, vars["feature"], deviceID)
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongFeature, http.StatusInternalServerError)
 		return
@@ -282,6 +277,17 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+func getFeatureResponse(env *Env, feature string, deviceID int) (response models.TrackedData, err error) {
+	// Get the reflect value of the field with the name of the feature
+	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)
+	// Get a pointer to the feature value
+	featurePtr := featureValue.Addr().Interface()
+
+	// Get the feature data from the specified device and save it to the response struct
+	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, featurePtr)
+	return
 }
 
 // writeResponse prints a given struct in the specified format to the response writer. If no
