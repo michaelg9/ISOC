@@ -137,9 +137,9 @@ func TestDevice(t *testing.T) {
 		expected string
 	}{
 		{mocks.Users[0].ID, mocks.AboutDevices[0].ID, string(jsonResponse)},
-		{42, mocks.AboutDevices[0].ID, errWrongUser + "\n"},
+		{42, mocks.AboutDevices[0].ID, errWrongDeviceOrUser + "\n"},
 		{mocks.Users[0].ID, "hello", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0].ID, 25, errWrongDevice + "\n"},
+		{mocks.Users[0].ID, 25, errWrongDeviceOrUser + "\n"},
 	}
 
 	pattern := "/data/{user}/{device}"
@@ -159,9 +159,9 @@ func TestFeature(t *testing.T) {
 		expected string
 	}{
 		{mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
-		{42, mocks.AboutDevices[0].ID, "Battery", errWrongUser + "\n"},
+		{42, mocks.AboutDevices[0].ID, "Battery", errWrongDeviceOrUser + "\n"},
 		{mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0].ID, "25", "Battery", errWrongDevice + "\n"},
+		{mocks.Users[0].ID, 25, "Battery", errWrongDeviceOrUser + "\n"},
 	}
 
 	pattern := "/data/{user}/{device}/{feature}"

@@ -1,7 +1,5 @@
 package controllers
 
-// TODO: Change routing with v1..
-
 import (
 	"database/sql"
 	"encoding/json"
@@ -32,7 +30,8 @@ const (
 	errWrongUser           = "No such user."
 	errDeviceIDNotInt      = "The device value is not an int."
 	errUserIDNotInt        = "The user value is not an int."
-	errWrongDevice         = "There is no device with this ID."
+	errWrongFeature        = "This device has no data for this feature."
+	errWrongDeviceOrUser   = "The given user ID/device ID combination is not valid."
 
 	hmacSecret = "secret"
 )
@@ -170,9 +169,9 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // the user and information about the user.
 // TODO: Check if userID fits with token
 func (env *Env) User(w http.ResponseWriter, r *http.Request) {
-	userIDString := mux.Vars(r)["user"]
+	vars := mux.Vars(r)
 
-	userID, err := strconv.Atoi(userIDString)
+	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
 		return
@@ -192,6 +191,7 @@ func (env *Env) User(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	response := models.UserResponse{
 		User:    user,
 		Devices: devices,
@@ -207,35 +207,23 @@ func (env *Env) User(w http.ResponseWriter, r *http.Request) {
 // specified device of the given user. Device should be the device ID (for now).
 func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	user := vars["user"]
-	device := vars["device"]
 
-	userID, err := strconv.Atoi(user)
+	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	deviceID, err := strconv.Atoi(device)
+	deviceID, err := strconv.Atoi(vars["device"])
 	if err != nil {
 		http.Error(w, errDeviceIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = env.DB.GetUser(models.User{ID: userID})
+	device := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
+	response, err := env.DB.GetDeviceFromUser(models.User{ID: userID}, device)
 	if err == sql.ErrNoRows {
-		http.Error(w, errWrongUser, http.StatusInternalServerError)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// TODO: Check if device belongs to user
-	deviceStruct := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
-	response, err := env.DB.GetDevice(deviceStruct)
-	if err == sql.ErrNoRows {
-		http.Error(w, errWrongDevice, http.StatusInternalServerError)
+		http.Error(w, errWrongDeviceOrUser, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -252,25 +240,24 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 // specified feature from the given device of the user.
 func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	user := vars["user"]
-	device := vars["device"]
-	feature := vars["feature"]
 
-	userID, err := strconv.Atoi(user)
+	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	deviceID, err := strconv.Atoi(device)
+	deviceID, err := strconv.Atoi(vars["device"])
 	if err != nil {
 		http.Error(w, errDeviceIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = env.DB.GetUser(models.User{ID: userID})
+	// Check if device ID is registered with users
+	deviceStruct := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
+	_, err = env.DB.GetDeviceFromUser(models.User{ID: userID}, deviceStruct)
 	if err == sql.ErrNoRows {
-		http.Error(w, errWrongUser, http.StatusInternalServerError)
+		http.Error(w, errWrongDeviceOrUser, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -280,10 +267,11 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 	// TODO: Refactor into new function and add comments
 	var response models.TrackedData
 	v := reflect.ValueOf(&response).Elem()
-	ptrToFeature := v.FieldByName(feature).Addr().Interface()
+	f := vars["feature"]
+	ptrToFeature := v.FieldByName(f).Addr().Interface()
 	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, ptrToFeature)
 	if err == sql.ErrNoRows {
-		http.Error(w, errWrongDevice, http.StatusInternalServerError)
+		http.Error(w, errWrongFeature, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)

@@ -40,17 +40,21 @@ func (deviceData *TrackedData) GetContents() []interface{} {
 	return contents
 }
 
-// GetDevice gets a device and its tracked data by the Device ID.
-func (db *DB) GetDevice(device Device) (fullDevice Device, err error) {
+// GetDeviceFromUser gets a device and its tracked data by the Device ID and the user ID.
+func (db *DB) GetDeviceFromUser(user User, device Device) (fullDevice Device, err error) {
 	getDeviceQuery := `SELECT id, imei, manufacturer, modelName, osVersion
                 	   FROM Device
-                	   WHERE id = :id;`
+                	   WHERE id = :ID AND user = :userID;`
 	stmt, err := db.PrepareNamed(getDeviceQuery)
 	if err != nil {
 		return
 	}
 
-	err = stmt.Get(&fullDevice.AboutDevice, device.AboutDevice)
+	// Transform aboutDevice struct to map to add user ID
+	args := structs.Map(device.AboutDevice)
+	args["userID"] = user.ID
+
+	err = stmt.Get(&fullDevice.AboutDevice, args)
 	if err != nil {
 		return
 	}
@@ -67,7 +71,7 @@ func (db *DB) GetDevice(device Device) (fullDevice Device, err error) {
 
 // GetDevicesFromUser gets all the devices and the tracked data from the given user.
 func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
-	// Query the database for the data which belongs to the API key
+	// Query the database for the data which belongs to the user
 	devicesInfo, err := db.getDeviceInfos(user)
 	if err != nil {
 		return
@@ -98,7 +102,7 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 func (db *DB) getDeviceInfos(user User) (devices []AboutDevice, err error) {
 	getDevicesQuery := `SELECT id, imei, manufacturer, modelName, osVersion
                 	   FROM Device, User
-                	   WHERE (email = :email OR apiKey = :apiKey) AND uid = user;`
+                	   WHERE (uid = :uid OR apiKey = :apiKey) AND User.uid = Device.user;`
 	stmt, err := db.PrepareNamed(getDevicesQuery)
 	if err != nil {
 		return
