@@ -39,9 +39,7 @@
     <div class="collapse navbar-collapse" id="myNavbar">
       <ul class="nav navbar-nav">
         <li class="active"><a href="">Dashboard</a></li>
-        <div ng-if="userInfo.admin">
-          <li><a href="">Admin</a></li>
-        </div>
+        <li ng-if="userInfo.admin"><a href="/dashboard/admin">Admin</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul>
     </div>
@@ -55,7 +53,7 @@
       <h2>Monitor</h2>
       <ul class="nav nav-pills nav-stacked">
         <li class="active"><a href="">Dashboard</a></li>
-        <li ng-if="userInfo.admin"><a href="">Admin</a></li>
+        <li ng-if="userInfo.admin"><a href="/dashboard/admin">Admin</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul><br>
     </div>
@@ -119,9 +117,6 @@
               </div>
             </div>
             <canvas id="batteryChart" width="400" height="400"></canvas>
-            <!--
-            <a href="../data/{{userInfo.email}}/{{deviceInfo.id}}/Battery?appid={{userInfo.apiKey}}" class="btn btn-info" role="button" download="Battery.json">Download JSON</a>
-            -->
             <a class="btn btn-info" role="button" ng-click="saveBatteryJSON()">Download JSON</a>
           </div>
         </div>

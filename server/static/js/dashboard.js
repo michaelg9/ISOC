@@ -10,7 +10,7 @@ var app = angular.module("dashboardApp", []);
 app.factory("userService", function($http) {
     return {
         getUser: function() {
-            return $http.get("../data/" + sessionStorage.email, {
+            return $http.get("../data/" + sessionStorage.userID, {
                 headers: {"Authorization": "Bearer " + sessionStorage.accessToken}
             });
         },
@@ -28,7 +28,7 @@ app.factory("userService", function($http) {
 app.factory("downloadService", function($http) {
     return {
         getFeature: function(deviceID, feature, type) {
-            return $http.get("../data/" + sessionStorage.email + "/" + deviceID + "/" + feature + "?out=" + type, {
+            return $http.get("../data/" + sessionStorage.userID + "/" + deviceID + "/" + feature + "?out=" + type, {
                 headers: {"Authorization": "Bearer " + sessionStorage.accessToken},
                 responseType: "arraybuffer"
             });

@@ -9,7 +9,7 @@ $(document).ready(function(){
             url: loginURL,
             data: loginParams
         }).done(function(data, textStatus, jqXHR) {
-            sessionStorage.email = email;
+            sessionStorage.userID = data.id;
             sessionStorage.accessToken = data.accessToken;
             window.location = "../dashboard";
         }).fail(function(data, textStatus, jqXHR) {

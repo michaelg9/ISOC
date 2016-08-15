@@ -10,6 +10,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+/* Handlers for token authentication */
+
 // TokenLogin handles /auth/0.1/login. It returns a short-lived acces token and a long-lived refresh token.
 // With the refresh token it is possible to get a new access token via /auth/0.1/token.
 func (env *Env) TokenLogin(w http.ResponseWriter, r *http.Request) {
@@ -151,6 +153,107 @@ func (env *Env) TokenLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, "Success")
+}
+
+/* Handlers for web session */
+
+// SessionLogin handles POST /login
+func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
+	// Get the parameter values for email and password from the URI
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	// Check if parameters are non-empty
+	if email == "" || password == "" {
+		http.Error(w, errNoPasswordOrEmail, http.StatusBadRequest)
+		return
+	}
+
+	// Get the userdata from the specified email
+	user, err := env.DB.GetUser(models.User{Email: email})
+	if err == sql.ErrNoRows {
+		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if given password fits with stored hash inside the server
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword {
+		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set session for given user
+	session, err := env.SessionStore.Get(r, "log-in")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	refreshToken, err := env.Tokens.NewRefreshToken(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	session.Values["refreshToken"] = refreshToken
+	session.Values["email"] = email
+	if err := session.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	accessToken, err := env.Tokens.NewAccessToken(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	writeResponse(w, "json", models.LoginResponse{AccessToken: accessToken, ID: user.ID})
+}
+
+// SessionLogout handles /logout
+func (env *Env) SessionLogout(w http.ResponseWriter, r *http.Request) {
+	// Get the current log-in session of the user
+	session, err := env.SessionStore.Get(r, "log-in")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if the email is set
+	email, found := session.Values["email"]
+	// If email not set redirect to login page
+	if !found || email == "" {
+		http.Error(w, errNoSessionSet, http.StatusUnauthorized)
+		return
+	}
+
+	token, found := session.Values["refreshToken"]
+	tokenString, ok := token.(string)
+	if !found || tokenString == "" || !ok {
+		http.Error(w, errNoToken, http.StatusInternalServerError)
+		return
+	}
+
+	if err = env.Tokens.InvalidateToken(tokenString); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Set MaxAge to -1 to delete the session
+	session.Options.MaxAge = -1
+	if err := session.Save(r, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "Success")
 }
 
 // refreshTokenInCookie checks if there is a valid refresh token in

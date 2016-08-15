@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Monitor</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Dependencies for JQuery -->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
+  <!-- Dependencies for Bootstrap -->
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <!-- Own JavaScript -->
+  <!-- <script src="static/js/admin.js"></script> -->
+  <!-- Own CSS -->
+  <link rel="stylesheet" href="/static/style/dashboard.css">
+</head>
+<body>
+<!-- Collapsed Navbar -->
+<nav class="navbar navbar-inverse visible-xs">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="#">Monitor</a>
+    </div>
+    <div class="collapse navbar-collapse" id="myNavbar">
+      <ul class="nav navbar-nav">
+        <li><a href="">Dashboard</a></li>
+        <li class="active"><a href="">Admin</a></li>
+        <li><a href="" class="logout">Log out</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- Main content -->
+<div class="container-fluid">
+  <div class="row content">
+    <div class="col-sm-3 sidenav hidden-xs">
+      <h2>Monitor</h2>
+      <ul class="nav nav-pills nav-stacked">
+        <li><a href="/dashboard">Dashboard</a></li>
+        <li class="active"><a href="/dashboard/admin">Admin</a></li>
+        <li><a href="" class="logout">Log out</a></li>
+      </ul><br>
+    </div>
+    <div class="col-sm-9 col-sm-offset-3">
+      <div>
+        <div class="pull-right">
+            <a class="btn btn-info">Download JSON</a>
+            <a class="btn btn-info">Download XML</a>
+        </div>
+        <h2>Battery</h2>
+      </div>
+      <hr/>
+      <div>
+        <div class="pull-right">
+          <a class="btn btn-info">Download JSON</a>
+          <a class="btn btn-info">Download XML</a>
+        </div>
+        <h2>Something</h2>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

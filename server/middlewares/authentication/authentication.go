@@ -19,6 +19,7 @@ type MiddlewareEnv struct {
 }
 
 // RequireSessionAuth is the middleware for routes that require a session to be set with an email.
+// TODO: Check if refresh token is valid
 func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// Set header values to prevent caching
 	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
