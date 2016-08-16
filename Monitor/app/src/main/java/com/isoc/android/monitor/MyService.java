@@ -30,7 +30,6 @@ public class MyService extends IntentService {
             XMLProduce p=new XMLProduce(this);
             p.new XMLSend(p.getXML()).sendXML();
             ServiceControls.scheduleSend(this);
-
         }else {
             SQLiteDatabase db = new Database(getApplicationContext()).getWritableDatabase();
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);

@@ -21,6 +21,7 @@ import android.widget.Button;
  * CELL TOWER CHANGE
  * SENDING AUTOMATICALLY
  * String resources
+ * capture accounts
  * ----------
  * BUGS:
  * Deprecated connecivity onreceive method, implement type?

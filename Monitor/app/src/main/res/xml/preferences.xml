@@ -12,7 +12,7 @@
 
     <EditTextPreference
         android:key="@string/server_url"
-        android:defaultValue="http://104.155.40.104:3000/app/0.1/upload"
+        android:defaultValue="http://104.155.40.104:3000"
         android:title="Server URL"/>
 
     <com.isoc.android.monitor.NumberPreference

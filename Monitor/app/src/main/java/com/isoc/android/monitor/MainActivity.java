@@ -1,14 +1,15 @@
 package com.isoc.android.monitor;
 
+import android.accounts.AccountManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 //empty activity that holds the active fragment
 
 public class MainActivity extends AppCompatActivity {
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -16,12 +17,25 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
         if (findViewById(R.id.fragment_container) != null) {
             if (savedInstanceState != null) {
                 return;
             }
-            //Main fragment is shown on launch
+            //Main fragment is shown on launch (after registering, if necessary)
             getFragmentManager().beginTransaction().add(R.id.fragment_container,new MainFragment()).commit();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        //Checking if there is a monitoring account registered first.
+        //If not, prompt login screen.
+        AccountManager am=AccountManager.get(this);
+        if (am.getAccountsByType(getString(R.string.authenticator_account_type)).length==0){
+            Log.e("no accounts","adding");
+            am.addAccount(getString(R.string.authenticator_account_type),getString(R.string.token_refresh),null,null,this,null,null);
         }
     }
 
@@ -31,7 +45,6 @@ public class MainActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -50,4 +63,5 @@ public class MainActivity extends AppCompatActivity {
         }
         return super.onOptionsItemSelected(item);
     }
+
 }

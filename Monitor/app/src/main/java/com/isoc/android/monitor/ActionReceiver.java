@@ -1,12 +1,18 @@
 package com.isoc.android.monitor;
 
 import android.content.BroadcastReceiver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.preference.PreferenceManager;
 
+/*
+ * This receiver isn't disabled when the preference is disabled, because it's used
+ * to also persist interface data and start the service on reboot and to save interface data on shutdown
+ */
 public class ActionReceiver extends BroadcastReceiver {
     public ActionReceiver() {
     }
@@ -36,6 +42,23 @@ public class ActionReceiver extends BroadcastReceiver {
                 ActionCapture.getAction(context, Database.DatabaseSchema.Actions.ACTION_AIRPLANE_ON);
             else
                 ActionCapture.getAction(context, Database.DatabaseSchema.Actions.ACTION_AIRPLANE_OFF);
+        }
+    }
+
+    /**
+     * Actions are captured only when they are broadcasted, not on intervals.
+     * Look at the database schema for the captured actions.
+     */
+    private static class ActionCapture {
+
+        public static void getAction(Context context,String action){
+            String date = TimeCapture.getTime();
+            ContentValues values=new ContentValues();
+            values.put(Database.DatabaseSchema.Actions.COLUMN_NAME_ACTION,action);
+            values.put(Database.DatabaseSchema.Actions.COLUMN_NAME_DATE,date);
+            SQLiteDatabase db =new Database(context).getWritableDatabase();
+            db.insert(Database.DatabaseSchema.Actions.TABLE_NAME,null,values);
+            db.close();
         }
     }
 }

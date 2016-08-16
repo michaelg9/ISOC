@@ -300,6 +300,7 @@ public class XMLProduce {
             String[] datatype = new String[]{"unknown", "gprs", "edge", "umts", "cdma", "evdo0", "evdoA", "1xrtt", "hsdpa", "hsupa", "hspa", "iden", "evdoB", "lte", "ehrpd", "hspap"};
             TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
             data.add(new String[]{"imei", tm.getDeviceId()});
+            data.add(new String[]{"device","1"});
             data.add(new String[]{"dataNetType", datatype[tm.getNetworkType()]});
             data.add(new String[]{"country", tm.getNetworkCountryIso()});
             data.add(new String[]{"network", tm.getNetworkOperatorName()});
@@ -344,13 +345,12 @@ public class XMLProduce {
 
         public String sendXML() {
             if (!checkNet()) return null;
-            String urlString= PreferenceManager.getDefaultSharedPreferences(context).getString("server_url",null);
+            String urlString= PreferenceManager.getDefaultSharedPreferences(context).getString("server_url",null)+"/app/0.1/upload";
             String result;
-            URL url;
             HttpURLConnection client = null;
             String xml = this.xml;
             try {
-                url = new URL(urlString);
+                URL url = new URL(urlString);
                 client = (HttpURLConnection) url.openConnection();
                 client.setConnectTimeout(4000);
                 client.setFixedLengthStreamingMode(xml.getBytes().length);
@@ -361,7 +361,6 @@ public class XMLProduce {
                 out.flush();
                 out.close();
                 result = "Send succeeded: " + client.getResponseMessage()+'('+client.getResponseCode()+')';
-                showNotification(result);
             } catch (java.net.SocketTimeoutException e) {
                 result = "Send failed: TimeOut";
             } catch (MalformedURLException e) {
@@ -374,6 +373,7 @@ public class XMLProduce {
                 if (client != null)
                     client.disconnect();
             }
+            showNotification(result);
             return result;
         }
 
