@@ -116,7 +116,7 @@ var routes = Routes{
 		"UpdateUser",
 		"POST",
 		"/update/user",
-		sessionAuth,
+		tokenAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.UpdateUser },
 	},
 	Route{

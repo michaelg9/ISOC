@@ -97,7 +97,7 @@ func TestTokenLogout(t *testing.T) {
 		refreshToken string
 		expected     string
 	}{
-		{"123", "Success"},
+		{mocks.RefreshToken, "Success"},
 		{"", errNoToken + "\n"},
 		{"12345", errTokenAlreadyInvalid + "\n"},
 	}
@@ -106,6 +106,40 @@ func TestTokenLogout(t *testing.T) {
 	for _, test := range tests {
 		url := fmt.Sprintf("/auth/0.1/logout?token=%v", test.refreshToken)
 		testController(env.TokenLogout, "POST", url, test.expected, t)
+	}
+}
+
+// TODO: Test upload
+
+func TestUpdateUser(t *testing.T) {
+	var tests = []struct {
+		email        string
+		password     string
+		updateAPIKey int
+		expectedCode int
+		expectedBody string
+	}{
+		{"user@mail.com", "123", 1, 200, ""},
+		{"user@mail.com", "1234", 0, 200, ""},
+		{"user@mail.com", "", 0, 200, ""},
+		{"", "", 0, 200, ""},
+		{"", "", 42, 200, ""},
+	}
+
+	env := newEnv()
+	for _, test := range tests {
+		url := fmt.Sprintf("/update/user?email=%v&password=%v&apiKey=%v", test.email, test.password, test.updateAPIKey)
+
+		// TODO: More general test function
+		rec := httptest.NewRecorder()
+		req, _ := http.NewRequest("POST", url, nil)
+		context.Set(req, UserKey, mocks.Users[0])
+
+		http.HandlerFunc(env.UpdateUser).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		assert.Equal(t, test.expectedCode, rec.Code)
+		assert.Equal(t, test.expectedBody, obtained)
 	}
 }
 

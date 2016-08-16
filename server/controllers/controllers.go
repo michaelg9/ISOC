@@ -120,16 +120,10 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateUser handles /update/user
-// TODO: Use Token Auth
 func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	// Because of the middleware we know that these values exist
-	session, _ := env.SessionStore.Get(r, "log-in")
-	oldEmail := session.Values["email"]
-
-	// We need to get the user from the database to get his/her user ID
-	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	user, ok := context.Get(r, UserKey).(models.User)
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
@@ -138,15 +132,6 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user.Email = r.FormValue("email")
 	user.PasswordHash = r.FormValue("password")
 	user.APIKey = r.FormValue("apiKey")
-
-	if user.Email != "" {
-		// Update the current session with the new email address
-		session.Values["email"] = user.Email
-		if err = session.Save(r, w); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
 
 	if user.PasswordHash != "" {
 		// If password is non-empty create a new hash for the database.
@@ -165,12 +150,10 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		user.APIKey = ""
 	}
 
-	if err = env.DB.UpdateUser(user); err != nil {
+	if err := env.DB.UpdateUser(user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Fprint(w, "Success")
 }
 
 // GetUser handles /data/{user}. It gets all the devices and its data from

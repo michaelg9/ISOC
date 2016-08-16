@@ -81,6 +81,7 @@ function changeUserInfo(userInfo) {
 }
 
 function updateUserInfo() {
+    // TODO: Make request with Bearer token
     $.get({
         url: retrieveDataURL
     }).done(function(data, textStatus, jqXHR) {

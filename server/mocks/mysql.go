@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"database/sql"
+	"errors"
 	"reflect"
 
 	"github.com/michaelg9/ISOC/server/models"
@@ -25,6 +26,10 @@ func (mdb *MockDB) CreateUser(user models.User) error {
 }
 
 func (mdb *MockDB) UpdateUser(user models.User) error {
+	if user.ID == 0 {
+		return errors.New("No user id.")
+	}
+
 	return nil
 }
 
