@@ -12,6 +12,7 @@ import (
 
 	"github.com/michaelg9/ISOC/server/models"
 
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
@@ -32,9 +33,16 @@ const (
 	errUserIDNotInt        = "The user value is not an int."
 	errWrongFeature        = "This device has no data for this feature."
 	errWrongDeviceOrUser   = "The given user ID/device ID combination is not valid."
+	errForbidden           = "Forbidden resource access."
 
 	hmacSecret = "secret"
 )
+
+// key type for use with context
+type key int
+
+// UserKey is the key to the user data in the context
+const UserKey key = 0
 
 // Env contains the environment information
 type Env struct {
@@ -118,7 +126,7 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	session, _ := env.SessionStore.Get(r, "log-in")
 	oldEmail := session.Values["email"]
 
-	// We need to get the user from the database to get its user ID
+	// We need to get the user from the database to get his/her user ID
 	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -165,15 +173,19 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Success")
 }
 
-// User handles /data/{user}. It gets all the devices and its data from
+// GetUser handles /data/{user}. It gets all the devices and its data from
 // the user and information about the user.
-// TODO: Check if userID fits with token
-func (env *Env) User(w http.ResponseWriter, r *http.Request) {
+func (env *Env) GetUser(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
+		return
+	}
+
+	if !userIsAuthorized(r, userID) {
+		http.Error(w, errForbidden, http.StatusForbidden)
 		return
 	}
 
@@ -203,14 +215,19 @@ func (env *Env) User(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Device handles /data/{user}/{device}. It gets all the info about the
+// GetDevice handles /data/{user}/{device}. It gets all the info about the
 // specified device of the given user. Device should be the device ID (for now).
-func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
+func (env *Env) GetDevice(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
+		return
+	}
+
+	if !userIsAuthorized(r, userID) {
+		http.Error(w, errForbidden, http.StatusForbidden)
 		return
 	}
 
@@ -236,14 +253,19 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Feature handles /data/{user}/{device}/{feature}. It gets all the saved data from the
+// GetFeature handles /data/{user}/{device}/{feature}. It gets all the saved data from the
 // specified feature from the given device of the user.
-func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
+func (env *Env) GetFeature(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 
 	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
+		return
+	}
+
+	if !userIsAuthorized(r, userID) {
+		http.Error(w, errForbidden, http.StatusForbidden)
 		return
 	}
 
@@ -279,6 +301,8 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// getFeatureResponse queries the database to get the feature with the given name from the device
+// with the specified device ID.
 func getFeatureResponse(env *Env, feature string, deviceID int) (response models.TrackedData, err error) {
 	// Get the reflect value of the field with the name of the feature
 	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)
@@ -288,6 +312,19 @@ func getFeatureResponse(env *Env, feature string, deviceID int) (response models
 	// Get the feature data from the specified device and save it to the response struct
 	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, featurePtr)
 	return
+}
+
+// userIsAuthorized checks if the given user is allowed access to the resource i.e. when the user ID
+// in the request matches the ID from the logged in user or when the logged in user is an admin.
+func userIsAuthorized(r *http.Request, givenID int) bool {
+	user, ok := context.Get(r, UserKey).(models.User)
+	if !ok {
+		return false
+	}
+
+	isAdmin := user.Admin
+	rightID := givenID == user.ID
+	return rightID || isAdmin
 }
 
 // writeResponse prints a given struct in the specified format to the response writer. If no

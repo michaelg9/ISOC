@@ -124,20 +124,20 @@ var routes = Routes{
 		"GET",
 		"/data/{user}",
 		tokenAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.User },
+		func(env controllers.Env) http.HandlerFunc { return env.GetUser },
 	},
 	Route{
 		"Device",
 		"GET",
 		"/data/{user}/{device}",
 		tokenAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.Device },
+		func(env controllers.Env) http.HandlerFunc { return env.GetDevice },
 	},
 	Route{
 		"Feature",
 		"GET",
 		"/data/{user}/{device}/{feature}",
 		tokenAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.Feature },
+		func(env controllers.Env) http.HandlerFunc { return env.GetFeature },
 	},
 }

@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/michaelg9/ISOC/server/mocks"
 	"github.com/michaelg9/ISOC/server/models"
@@ -108,67 +109,73 @@ func TestTokenLogout(t *testing.T) {
 	}
 }
 
-func TestUser(t *testing.T) {
+func TestGetUser(t *testing.T) {
 	jsonResponse, _ := json.Marshal(models.UserResponse{
 		User:    mocks.Users[0],
 		Devices: mocks.Devices,
 	})
 	var tests = []struct {
+		user     models.User // User that is logged in
 		id       int
 		expected string
 	}{
-		{mocks.Users[0].ID, string(jsonResponse)},
-		{42, errWrongUser + "\n"},
+		{mocks.Users[0], mocks.Users[0].ID, string(jsonResponse)},
+		{models.User{ID: 42}, mocks.Users[0].ID, errForbidden + "\n"},
+		{models.User{ID: 42}, 42, errWrongUser + "\n"},
 	}
 
 	pattern := "/data/{user}"
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/data/%v", test.id)
-		testControllerWithPattern(env.User, "GET", url, pattern, test.expected, t)
+		testControllerWithPattern(env.GetUser, "GET", url, pattern, test.expected, test.user, t)
 	}
 }
 
-func TestDevice(t *testing.T) {
+func TestGetDevice(t *testing.T) {
 	jsonResponse, _ := json.Marshal(mocks.Devices[0])
 	var tests = []struct {
+		user     models.User
 		id       int
 		deviceID interface{}
 		expected string
 	}{
-		{mocks.Users[0].ID, mocks.AboutDevices[0].ID, string(jsonResponse)},
-		{42, mocks.AboutDevices[0].ID, errWrongDeviceOrUser + "\n"},
-		{mocks.Users[0].ID, "hello", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0].ID, 25, errWrongDeviceOrUser + "\n"},
+		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, string(jsonResponse)},
+		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, errForbidden + "\n"},
+		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, errWrongDeviceOrUser + "\n"},
+		{mocks.Users[0], mocks.Users[0].ID, "hello", errDeviceIDNotInt + "\n"},
+		{mocks.Users[0], mocks.Users[0].ID, 25, errWrongDeviceOrUser + "\n"},
 	}
 
 	pattern := "/data/{user}/{device}"
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/data/%v/%v", test.id, test.deviceID)
-		testControllerWithPattern(env.Device, "GET", url, pattern, test.expected, t)
+		testControllerWithPattern(env.GetDevice, "GET", url, pattern, test.expected, test.user, t)
 	}
 }
 
-func TestFeature(t *testing.T) {
+func TestGetFeature(t *testing.T) {
 	jsonResponse, _ := json.Marshal(models.TrackedData{Battery: mocks.BatteryData[:1]})
 	var tests = []struct {
+		user     models.User
 		id       int
 		deviceID interface{}
 		feature  string
 		expected string
 	}{
-		{mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
-		{42, mocks.AboutDevices[0].ID, "Battery", errWrongDeviceOrUser + "\n"},
-		{mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0].ID, 25, "Battery", errWrongDeviceOrUser + "\n"},
+		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
+		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", errForbidden + "\n"},
+		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, "Battery", errWrongDeviceOrUser + "\n"},
+		{mocks.Users[0], mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt + "\n"},
+		{mocks.Users[0], mocks.Users[0].ID, 25, "Battery", errWrongDeviceOrUser + "\n"},
 	}
 
 	pattern := "/data/{user}/{device}/{feature}"
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/data/%v/%v/%v", test.id, test.deviceID, test.feature)
-		testControllerWithPattern(env.Feature, "GET", url, pattern, test.expected, t)
+		testControllerWithPattern(env.GetFeature, "GET", url, pattern, test.expected, test.user, t)
 	}
 }
 
@@ -209,9 +216,11 @@ func testController(controller http.HandlerFunc, method, url, expected string, t
 	assert.Equal(t, expected, obtained)
 }
 
-func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern, expected string, t *testing.T) {
+// TODO: Parameters as struct
+func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern, expected string, user models.User, t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, url, nil)
+	context.Set(req, UserKey, user)
 
 	r := mux.NewRouter()
 	r.HandleFunc(pattern, controller)

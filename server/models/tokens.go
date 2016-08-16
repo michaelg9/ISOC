@@ -191,7 +191,8 @@ func getTokenRemainingValidity(timestamp interface{}) int {
 	return 0
 }
 
-// TODO: Add description
+// keyFunc checks if the token was used with the right signing method and
+// returns the secret key necessary to parse a JWT token.
 func keyFunc(token *jwt.Token) (interface{}, error) {
 	// Check if token was signed with the right signing method
 	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {

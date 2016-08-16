@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/gorilla/context"
 	"github.com/michaelg9/ISOC/server/controllers"
 )
 
@@ -19,7 +20,6 @@ type MiddlewareEnv struct {
 }
 
 // RequireSessionAuth is the middleware for routes that require a session to be set with an email.
-// TODO: Check if refresh token is valid
 func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	// Set header values to prevent caching
 	w.Header().Set("Cache-Control", "no-store, no-cache, private, must-revalidate")
@@ -33,13 +33,26 @@ func (env *MiddlewareEnv) RequireSessionAuth(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	// Check if the email is set
-	email, found := session.Values["email"]
-	// If email not set redirect to login page
-	if !found || email == "" {
+	// Check if user ID is set
+	userID, ok := session.Values["id"].(int)
+	idValid := ok && userID != 0
+	// Check if refresh token is set
+	token, ok := session.Values["refreshToken"].(string)
+	tokenValid := ok && token != ""
+
+	if !(idValid && tokenValid) {
+		// If one is invalid redirect to login page
 		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
+
+	user, err := env.Tokens.CheckRefreshToken(token)
+	if err != nil || user.ID != userID {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+
+	context.Set(r, controllers.UserKey, user)
 
 	next(w, r)
 }
@@ -69,12 +82,7 @@ func (env *MiddlewareEnv) RequireTokenAuth(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Check if user is registered in database
-	_, err = env.DB.GetUser(user)
-	if err != nil {
-		http.Error(w, errNotAuthorized, http.StatusForbidden)
-		return
-	}
+	context.Set(r, controllers.UserKey, user)
 
 	next(w, r)
 }

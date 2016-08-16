@@ -2,7 +2,6 @@ var retrieveDataURL = "../data/0.1/user";
 var updateUserURL = "../update/user?";
 var batteryChart;
 
-// TODO: Look into global variables and JS code structure
 // TODO: Use jQuery instead of Angular
 
 // Angular app

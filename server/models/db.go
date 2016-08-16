@@ -39,7 +39,6 @@ func NewDB(dsn string) *DB {
 // update takes a struct and the a map from the field names to database queries for updating
 // the value stored in the field. If a value in the given struct is non-empty and there is an
 // update query for the field stored in the map, we update the database.
-// TODO: Find solution for boolean values
 func (db *DB) update(queries map[string]string, arg interface{}) error {
 	value := reflect.ValueOf(arg)
 

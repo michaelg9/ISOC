@@ -19,6 +19,7 @@ func (env *Env) TokenLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 
+	// TODO: Make login function to be used for tokens and sessions
 	// Get the parameter values for email and password from the URI
 	email := r.FormValue("email")
 	password := r.FormValue("password")
@@ -202,7 +203,7 @@ func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	session.Values["refreshToken"] = refreshToken
-	session.Values["email"] = email
+	session.Values["id"] = user.ID
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -226,22 +227,12 @@ func (env *Env) SessionLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the email is set
-	email, found := session.Values["email"]
-	// If email not set redirect to login page
-	if !found || email == "" {
-		http.Error(w, errNoSessionSet, http.StatusUnauthorized)
-		return
+	token, ok := session.Values["refreshToken"].(string)
+	if !ok || token == "" {
+		return // We don't throw an error because the user is already logged out
 	}
 
-	token, found := session.Values["refreshToken"]
-	tokenString, ok := token.(string)
-	if !found || tokenString == "" || !ok {
-		http.Error(w, errNoToken, http.StatusInternalServerError)
-		return
-	}
-
-	if err = env.Tokens.InvalidateToken(tokenString); err != nil {
+	if err = env.Tokens.InvalidateToken(token); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
