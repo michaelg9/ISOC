@@ -61,3 +61,19 @@ var BatteryData = []models.Battery{
 		Time:  "2016-05-31 11:50:31",
 	},
 }
+
+var Uploads = []models.Upload{
+	// Should work
+	models.Upload{
+		Meta:        models.Meta{Device: 1},
+		TrackedData: trackedData,
+	},
+	// Should fail
+	models.Upload{
+		TrackedData: trackedData,
+	},
+}
+
+var trackedData = models.TrackedData{
+	Battery: BatteryData,
+}

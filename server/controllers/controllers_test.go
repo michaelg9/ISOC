@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -109,7 +110,30 @@ func TestTokenLogout(t *testing.T) {
 	}
 }
 
-// TODO: Test upload
+func TestUpload(t *testing.T) {
+	var tests = []struct {
+		requestBody models.Upload
+		expected    string
+	}{
+		{mocks.Uploads[0], "Success"},
+		{mocks.Uploads[1], errNoDeviceID + "\n"},
+	}
+
+	env := newEnv()
+	for _, test := range tests {
+		url := fmt.Sprint("/app/0.1/upload")
+
+		rec := httptest.NewRecorder()
+		reqBody, _ := xml.Marshal(test.requestBody)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+		context.Set(req, UserKey, mocks.Users[0])
+
+		http.HandlerFunc(env.Upload).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		assert.Equal(t, test.expected, obtained)
+	}
+}
 
 func TestUpdateUser(t *testing.T) {
 	var tests = []struct {
