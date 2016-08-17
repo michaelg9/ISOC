@@ -34,6 +34,7 @@ const (
 	errWrongFeature        = "This device has no data for this feature."
 	errWrongDeviceOrUser   = "The given user ID/device ID combination is not valid."
 	errForbidden           = "Forbidden resource access."
+	errUserExists          = "User already exists."
 
 	hmacSecret = "secret"
 )
@@ -61,31 +62,32 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user is already in the database
-	user, err := env.DB.GetUser(models.User{Email: email})
-	switch {
-	// User does not exist
-	case user == models.User{}:
-		// Create new user with hashed password
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Insert the credentials of the new user into the database
-		err = env.DB.CreateUser(models.User{Email: email, PasswordHash: string(hashedPassword)})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprintf(w, "Success")
-	case err != nil:
+	_, err := env.DB.GetUser(models.User{Email: email})
+	if err == nil {
+		// User already exists
+		http.Error(w, errUserExists, http.StatusConflict)
+		return
+	} else if err != sql.ErrNoRows {
+		// Unexpected error
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	default:
-		fmt.Fprintf(w, "User already exists")
 	}
+
+	// Create new user with hashed password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Insert the credentials of the new user into the database
+	err = env.DB.CreateUser(models.User{Email: email, PasswordHash: string(hashedPassword)})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "Success")
 }
 
 // Upload handles /app/0.1/upload

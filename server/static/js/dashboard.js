@@ -72,26 +72,6 @@ function changeDeviceInfo(deviceInfo) {
     });
 }
 
-function changeUserInfo(userInfo) {
-    var controllerElement = document.querySelector("[ng-controller=dashboardController]");
-    var $scope = angular.element(controllerElement).scope();
-    $scope.$apply(function() {
-        $scope.userInfo = userInfo;
-    });
-}
-
-function updateUserInfo() {
-    // TODO: Make request with Bearer token
-    $.get({
-        url: retrieveDataURL
-    }).done(function(data, textStatus, jqXHR) {
-        var userData = JSON.parse(data);
-        changeUserInfo(userData.user);
-    }).fail(function (data, textStatus, jqXHR) {
-        console.error(data);
-    });
-}
-
 function createBatteryGraph(batteryData) {
     // Sort data according to time so it gets displayed properly
     batteryData.sort(function(a,b){
@@ -156,6 +136,74 @@ function createBatteryGraph(batteryData) {
     });
 }
 
+var tokenAuth = (function() {
+    var tokenURL = "../auth/0.1/token";
+
+    var refreshAccessToken = function() {
+        $.post(tokenURL).done(function(data) {
+            sessionStorage.accessToken = data.accessToken;
+        });
+    };
+
+    var request = function(url, type, params) {
+        return $.ajax(url, {
+            type: type,
+            data: params,
+            beforeSend: function(jqXHR) {
+                jqXHR.setRequestHeader("Authorization", "Bearer " + sessionStorage.accessToken);
+            }
+        });
+    };
+
+    var makeAuthRequest = function(url, type, params) {
+        return request(url, type, params).done(function(data, textStatus, jqXHR) {
+            return jqXHR;
+        }).fail(function(data, statusText, jqXHR) {
+            if (xhr.status === 401) {
+                // If authentication failed refresh access token
+                refreshAccessToken();
+                return request(url, type, params);
+            }
+        });
+    };
+
+    return {
+        makeAuthRequest: makeAuthRequest
+    };
+})();
+
+var user = (function() {
+    // Used to store the info about the current user
+    var info;
+    var devices;
+
+    var changeUserInfo = function (data) {
+        var controllerElement = document.querySelector("[ng-controller=dashboardController]");
+        var $scope = angular.element(controllerElement).scope();
+        $scope.$apply(function() {
+            $scope.userInfo = data;
+        });
+    };
+
+    var updateUserInfo = function() {
+        var userDataURL = "../data/" + sessionStorage.userID;
+        $.get({
+            url: userDataURL,
+            beforeSend: function(xhr) {
+                xhr.setRequestHeader("Authorization", "Bearer " + sessionStorage.accessToken);
+            }
+        }).done(function(data, textStatus, jqXHR) {
+            changeUserInfo(data.user);
+        }).fail(function (data, textStatus, jqXHR) {
+            console.error(data);
+        });
+    };
+
+    return {
+        updateUserInfo: updateUserInfo
+    };
+})();
+
 // JQuery listeners
 $(document).ready(function() {
     // Listener for daterangepicker
@@ -193,11 +241,9 @@ $(document).ready(function() {
         bootbox.prompt("Please enter your new email", function(result) {
             if (result !== "") {
                 var updateData = {email: result};
-                $.post({
-                    url: updateUserURL,
-                    data: updateData
-                }).done(function () {
-                    updateUserInfo();
+                req = tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData);
+                req.done(function () {
+                    user.updateUserInfo();
                 }).fail(function(data, textStatus, jqXHR) {
                     console.error(data);
                 });
@@ -207,11 +253,8 @@ $(document).ready(function() {
 
     $("#updateAPIKey").on("click", function () {
         var updateData = {apiKey: "1"}; // Use 1 for true
-        $.post({
-            url: updateUserURL,
-            data: updateData
-        }).done(function () {
-            updateUserInfo();
+        tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
+            user.updateUserInfo();
         }).fail(function(data, textStatus, jqXHR) {
             console.error(data);
         });

@@ -24,7 +24,7 @@ func TestSignUp(t *testing.T) {
 		expected string
 	}{
 		{"/signup?email=user@mail.com&password=123456", "Success"},
-		{"/signup?email=user@usermail.com&password=123456", "User already exists"},
+		{"/signup?email=user@usermail.com&password=123456", errUserExists},
 		{"/signup?email=bla@blabla", errNoPasswordOrEmail},
 		{"/signup?password=123456", errNoPasswordOrEmail},
 	}
