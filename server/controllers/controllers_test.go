@@ -25,8 +25,8 @@ func TestSignUp(t *testing.T) {
 	}{
 		{"/signup?email=user@mail.com&password=123456", "Success"},
 		{"/signup?email=user@usermail.com&password=123456", "User already exists"},
-		{"/signup?email=bla@blabla", errNoPasswordOrEmail + "\n"},
-		{"/signup?password=123456", errNoPasswordOrEmail + "\n"},
+		{"/signup?email=bla@blabla", errNoPasswordOrEmail},
+		{"/signup?password=123456", errNoPasswordOrEmail},
 	}
 
 	env := newEnv()
@@ -43,11 +43,11 @@ func TestTokenLogin(t *testing.T) {
 		expected string
 	}{
 		{mocks.Users[0].Email, "123456", string(jsonResponse)},
-		{"user@mail.com", "123456", errWrongPasswordEmail + "\n"},
-		{mocks.Users[0].Email, "1234", errWrongPasswordEmail + "\n"},
-		{mocks.Users[0].Email, "", errNoPasswordOrEmail + "\n"},
-		{"", "123456", errNoPasswordOrEmail + "\n"},
-		{"", "", errNoPasswordOrEmail + "\n"},
+		{"user@mail.com", "123456", http.StatusText(http.StatusUnauthorized)},
+		{mocks.Users[0].Email, "1234", http.StatusText(http.StatusUnauthorized)},
+		{mocks.Users[0].Email, "", http.StatusText(http.StatusBadRequest)},
+		{"", "123456", http.StatusText(http.StatusBadRequest)},
+		{"", "", http.StatusText(http.StatusBadRequest)},
 	}
 
 	env := newEnv()
@@ -65,7 +65,7 @@ func TestToken(t *testing.T) {
 	}{
 		{mocks.RefreshToken, string(jsonResponse)},
 		//{"", errNoToken + "\n"}, left out because we have no mock session
-		{"12345", errTokenInvalid + "\n"},
+		{"12345", errTokenInvalid},
 	}
 
 	env := newEnv()
@@ -82,8 +82,8 @@ func TestRefreshToken(t *testing.T) {
 		expected     string
 	}{
 		{mocks.RefreshToken, string(jsonResponse)},
-		{"", errNoToken + "\n"},
-		{"12345", errTokenInvalid + "\n"},
+		{"", errNoToken},
+		{"12345", errTokenInvalid},
 	}
 
 	env := newEnv()
@@ -99,8 +99,8 @@ func TestTokenLogout(t *testing.T) {
 		expected     string
 	}{
 		{mocks.RefreshToken, "Success"},
-		{"", errNoToken + "\n"},
-		{"12345", errTokenAlreadyInvalid + "\n"},
+		{"", errNoToken},
+		{"12345", errTokenAlreadyInvalid},
 	}
 
 	env := newEnv()
@@ -178,8 +178,8 @@ func TestGetUser(t *testing.T) {
 		expected string
 	}{
 		{mocks.Users[0], mocks.Users[0].ID, string(jsonResponse)},
-		{models.User{ID: 42}, mocks.Users[0].ID, errForbidden + "\n"},
-		{models.User{ID: 42}, 42, errWrongUser + "\n"},
+		{models.User{ID: 42}, mocks.Users[0].ID, errForbidden},
+		{models.User{ID: 42}, 42, errWrongUser},
 	}
 
 	pattern := "/data/{user}"
@@ -199,10 +199,10 @@ func TestGetDevice(t *testing.T) {
 		expected string
 	}{
 		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, string(jsonResponse)},
-		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, errForbidden + "\n"},
-		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, errWrongDeviceOrUser + "\n"},
-		{mocks.Users[0], mocks.Users[0].ID, "hello", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0], mocks.Users[0].ID, 25, errWrongDeviceOrUser + "\n"},
+		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, errForbidden},
+		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, errWrongDeviceOrUser},
+		{mocks.Users[0], mocks.Users[0].ID, "hello", errDeviceIDNotInt},
+		{mocks.Users[0], mocks.Users[0].ID, 25, errWrongDeviceOrUser},
 	}
 
 	pattern := "/data/{user}/{device}"
@@ -223,10 +223,10 @@ func TestGetFeature(t *testing.T) {
 		expected string
 	}{
 		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
-		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", errForbidden + "\n"},
-		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, "Battery", errWrongDeviceOrUser + "\n"},
-		{mocks.Users[0], mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt + "\n"},
-		{mocks.Users[0], mocks.Users[0].ID, 25, "Battery", errWrongDeviceOrUser + "\n"},
+		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", errForbidden},
+		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, "Battery", errWrongDeviceOrUser},
+		{mocks.Users[0], mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt},
+		{mocks.Users[0], mocks.Users[0].ID, 25, "Battery", errWrongDeviceOrUser},
 	}
 
 	pattern := "/data/{user}/{device}/{feature}"
@@ -271,7 +271,7 @@ func testController(controller http.HandlerFunc, method, url, expected string, t
 	http.HandlerFunc(controller).ServeHTTP(rec, req)
 
 	obtained := rec.Body.String()
-	assert.Equal(t, expected, obtained)
+	assert.Contains(t, obtained, expected)
 }
 
 // TODO: Parameters as struct
@@ -285,7 +285,7 @@ func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern
 	r.ServeHTTP(rec, req)
 
 	obtained := rec.Body.String()
-	assert.Equal(t, expected, obtained)
+	assert.Contains(t, obtained, expected)
 }
 
 func newEnv() Env {

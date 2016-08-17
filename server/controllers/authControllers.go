@@ -19,56 +19,19 @@ func (env *Env) TokenLogin(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Pragma", "no-cache")
 
-	// TODO: Make login function to be used for tokens and sessions
-	// Get the parameter values for email and password from the URI
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-	// Check if parameters are non-empty
-	if email == "" || password == "" {
-		http.Error(w, errNoPasswordOrEmail, http.StatusBadRequest)
+	user, code := getUser(env, w, r)
+	if code != http.StatusOK {
+		http.Error(w, http.StatusText(code), code)
 		return
 	}
 
-	// Get the userdata from the specified email
-	user, err := env.DB.GetUser(models.User{Email: email})
-	if err == sql.ErrNoRows {
-		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Check if given password fits with stored hash inside the server
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err == bcrypt.ErrMismatchedHashAndPassword || err == bcrypt.ErrHashTooShort {
-		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Create short-lived acces token
-	accessToken, err := env.Tokens.NewAccessToken(user)
+	tokens, err := getTokens(env, user)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Create long-lived refresh token
-	refreshToken, err := env.Tokens.NewRefreshToken(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	response := models.Tokens{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-	}
-
-	err = writeResponse(w, "json", response)
+	err = writeResponse(w, "json", tokens)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
@@ -160,31 +123,14 @@ func (env *Env) TokenLogout(w http.ResponseWriter, r *http.Request) {
 
 // SessionLogin handles POST /login
 func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
-	// Get the parameter values for email and password from the URI
-	email := r.FormValue("email")
-	password := r.FormValue("password")
-	// Check if parameters are non-empty
-	if email == "" || password == "" {
-		http.Error(w, errNoPasswordOrEmail, http.StatusBadRequest)
+	user, code := getUser(env, w, r)
+	if code != http.StatusOK {
+		http.Error(w, http.StatusText(code), code)
 		return
 	}
 
-	// Get the userdata from the specified email
-	user, err := env.DB.GetUser(models.User{Email: email})
-	if err == sql.ErrNoRows {
-		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Check if given password fits with stored hash inside the server
-	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
-	if err == bcrypt.ErrMismatchedHashAndPassword {
-		http.Error(w, errWrongPasswordEmail, http.StatusUnauthorized)
-		return
-	} else if err != nil {
+	tokens, err := getTokens(env, user)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -196,26 +142,14 @@ func (env *Env) SessionLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	refreshToken, err := env.Tokens.NewRefreshToken(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	session.Values["refreshToken"] = refreshToken
+	session.Values["refreshToken"] = tokens.RefreshToken
 	session.Values["id"] = user.ID
 	if err := session.Save(r, w); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	accessToken, err := env.Tokens.NewAccessToken(user)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	writeResponse(w, "json", models.LoginResponse{AccessToken: accessToken, ID: user.ID})
+	writeResponse(w, "json", models.LoginResponse{AccessToken: tokens.AccessToken, ID: user.ID})
 }
 
 // SessionLogout handles /logout
@@ -245,6 +179,55 @@ func (env *Env) SessionLogout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprintf(w, "Success")
+}
+
+// getUser gets the given user from the parameters specified in the HTTP request.
+func getUser(env *Env, w http.ResponseWriter, r *http.Request) (user models.User, responseCode int) {
+	// Get the parameter values for email and password from the URI
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+	// Check if parameters are non-empty
+	if email == "" || password == "" {
+		return user, http.StatusBadRequest
+	}
+
+	// Get the userdata from the specified email
+	user, err := env.DB.GetUser(models.User{Email: email})
+	if err == sql.ErrNoRows {
+		return user, http.StatusUnauthorized
+	} else if err != nil {
+		return user, http.StatusInternalServerError
+	}
+
+	// Check if given password fits with stored hash inside the server
+	err = bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(password))
+	if err == bcrypt.ErrMismatchedHashAndPassword || err == bcrypt.ErrHashTooShort {
+		return user, http.StatusUnauthorized
+	} else if err != nil {
+		return user, http.StatusInternalServerError
+	}
+
+	return user, http.StatusOK
+}
+
+func getTokens(env *Env, user models.User) (tokens models.Tokens, err error) {
+	// Create short-lived acces token
+	accessToken, err := env.Tokens.NewAccessToken(user)
+	if err != nil {
+		return
+	}
+
+	// Create long-lived refresh token
+	refreshToken, err := env.Tokens.NewRefreshToken(user)
+	if err != nil {
+		return
+	}
+
+	tokens = models.Tokens{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+	return
 }
 
 // refreshTokenInCookie checks if there is a valid refresh token in
