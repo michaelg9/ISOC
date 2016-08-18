@@ -1,8 +1,8 @@
 var retrieveDataURL = "../data/0.1/user";
-var updateUserURL = "../update/user?";
 var batteryChart;
 
 // TODO: Use jQuery instead of Angular
+// TODO: Error handling
 
 // Angular app
 var app = angular.module("dashboardApp", []);
@@ -63,14 +63,6 @@ app.controller("dashboardController", function($scope, userService, downloadServ
         });
     };
 });
-
-function changeDeviceInfo(deviceInfo) {
-    var controllerElement = document.querySelector("[ng-controller=dashboardController]");
-    var $scope = angular.element(controllerElement).scope();
-    $scope.$apply(function() {
-        $scope.deviceInfo = deviceInfo;
-    });
-}
 
 function createBatteryGraph(batteryData) {
     // Sort data according to time so it gets displayed properly
@@ -159,20 +151,40 @@ var tokenAuth = (function() {
         return request(url, type, params).done(function(data, textStatus, jqXHR) {
             return jqXHR;
         }).fail(function(data, statusText, jqXHR) {
-            if (xhr.status === 401) {
+            var statusUnauthorized = 401;
+            if (jqXHR.status === statusUnauthorized) {
                 // If authentication failed refresh access token
                 refreshAccessToken();
                 return request(url, type, params);
             }
+            return jqXHR;
+        });
+    };
+
+    var logout = function() {
+        var logoutURL = "../logout";
+        $.post({
+            url: logoutURL
+        }).done(function(data, textStatus, jqXHR) {
+            if (data == "Success") {
+                window.location = "../";
+            }
+        }).fail(function() {
+            // This should never happen
+            console.error("Failed logout!");
+            return false;
         });
     };
 
     return {
-        makeAuthRequest: makeAuthRequest
+        makeAuthRequest: makeAuthRequest,
+        logout: logout
     };
 })();
 
 var user = (function() {
+    var updateUserURL = "../update/user?";
+
     // Used to store the info about the current user
     var info;
     var devices;
@@ -187,20 +199,34 @@ var user = (function() {
 
     var updateUserInfo = function() {
         var userDataURL = "../data/" + sessionStorage.userID;
-        $.get({
-            url: userDataURL,
-            beforeSend: function(xhr) {
-                xhr.setRequestHeader("Authorization", "Bearer " + sessionStorage.accessToken);
-            }
-        }).done(function(data, textStatus, jqXHR) {
+        tokenAuth.makeAuthRequest(userDataURL, "GET", {}).done(function(data) {
             changeUserInfo(data.user);
         }).fail(function (data, textStatus, jqXHR) {
             console.error(data);
         });
     };
 
+    var updateEmail = function(newEmail) {
+        var updateData = {email: newEmail};
+        tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
+            updateUserInfo();
+        }).fail(function(data, textStatus, jqXHR) {
+            console.error(data);
+        });
+    };
+
+    var updateAPIKey = function() {
+        var updateData = {apiKey: "1"}; // Use 1 for true
+        tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
+            updateUserInfo();
+        }).fail(function(data, textStatus, jqXHR) {
+            console.error(data);
+        });
+    };
+
     return {
-        updateUserInfo: updateUserInfo
+        updateEmail: updateEmail,
+        updateAPIKey: updateAPIKey
     };
 })();
 
@@ -222,41 +248,19 @@ $(document).ready(function() {
 
     // Logout the user on logout link
     $(".logout").on("click", function() {
-        var logoutURL = "../logout";
-        $.post({
-            url: logoutURL
-        }).done(function(data, textStatus, jqXHR) {
-            if (data == "Success") {
-                window.location = "../";
-            }
-        }).fail(function() {
-            // This should never happen
-            console.log("Failed logout!");
-            return false;
-        });
+        tokenAuth.logout();
     });
 
     // Add the modal prompt for new email
     $("#editEmail").on("click", function() {
         bootbox.prompt("Please enter your new email", function(result) {
             if (result !== "") {
-                var updateData = {email: result};
-                req = tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData);
-                req.done(function () {
-                    user.updateUserInfo();
-                }).fail(function(data, textStatus, jqXHR) {
-                    console.error(data);
-                });
+                user.updateEmail(result);
             }
         });
     });
 
     $("#updateAPIKey").on("click", function () {
-        var updateData = {apiKey: "1"}; // Use 1 for true
-        tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
-            user.updateUserInfo();
-        }).fail(function(data, textStatus, jqXHR) {
-            console.error(data);
-        });
+        user.updateAPIKey();
     });
 });

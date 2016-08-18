@@ -138,7 +138,6 @@ func (db *DB) UpdateDevice(aboutDevice AboutDevice) error {
 
 // DeleteDevice deletes the device with that specified in the struct.
 // Also deletes all the collected data from device.
-// IDEA: pass optional value to see if data should be deleted as well
 func (db *DB) DeleteDevice(aboutDevice AboutDevice) error {
 	deleteDeviceQuery := `DELETE FROM Device WHERE id = :id;`
 	_, err := db.NamedExec(deleteDeviceQuery, aboutDevice)
