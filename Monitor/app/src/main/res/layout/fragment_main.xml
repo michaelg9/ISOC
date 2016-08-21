@@ -25,12 +25,4 @@
         android:id="@+id/delete_db"
         android:layout_gravity="end" />
 
-    <Button
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Send"
-        android:id="@+id/buttonSend"
-        android:layout_gravity="center_horizontal" />
-
-
 </LinearLayout>

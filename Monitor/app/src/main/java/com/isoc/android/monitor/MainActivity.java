@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity {
         //Checking if there is a monitoring account registered first.
         //If not, prompt login screen.
         AccountManager am=AccountManager.get(this);
-        if (am.getAccountsByType(getString(R.string.authenticator_account_type)).length==0){
+        if ( am.getAccountsByType(getString(R.string.authenticator_account_type)).length==0){
             Log.e("no accounts","adding");
             am.addAccount(getString(R.string.authenticator_account_type),getString(R.string.token_refresh),null,null,this,null,null);
         }

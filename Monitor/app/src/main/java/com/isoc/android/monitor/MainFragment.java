@@ -2,7 +2,6 @@ package com.isoc.android.monitor;
 
 import android.app.Fragment;
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
@@ -19,12 +18,11 @@ import android.widget.Button;
  * TIMEZONE
  * BROWSER HISTORY?
  * CELL TOWER CHANGE
- * SENDING AUTOMATICALLY
  * String resources
  * capture accounts
  * ----------
  * BUGS:
- * Deprecated connecivity onreceive method, implement type?
+ * Deprecated connectivity onReceive method, implement type?
  * Matching sockets to specific app.
  * SYSTEM APPS REPORTING OLD INSTALLED DATE
  * ------
@@ -62,15 +60,6 @@ public class MainFragment extends Fragment {
             }
         });
 
-        final Button sendResults = (Button) view.findViewById(R.id.buttonSend);
-        sendResults.setOnClickListener(new View.OnClickListener() {
-
-            @Override
-            public void onClick(View view) {
-                sendXML();
-            }
-        });
-
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
         toolbar.setTitle("Monitor");
 
@@ -90,22 +79,14 @@ public class MainFragment extends Fragment {
     public String getResults(Context context) {
         XMLProduce XML = new XMLProduce(context);
         return XML.getXML();
-
     }
 
     public void showResults() {
-
         String results = getResults(getActivity());
         Bundle bundle = new Bundle();
         bundle.putString("results", results);
         ShowFragment showFragment = new ShowFragment();
         showFragment.setArguments(bundle);
         getFragmentManager().beginTransaction().replace(R.id.fragment_container, showFragment).addToBackStack(null).commit();
-    }
-
-    public void sendXML() {
-        Intent i=new Intent(getActivity(),MyService.class);
-        i.putExtra("com.isoc.android.monitor.send",true);
-        getActivity().startService(i);
     }
 }

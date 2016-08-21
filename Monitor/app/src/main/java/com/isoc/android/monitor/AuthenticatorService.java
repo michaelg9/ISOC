@@ -13,6 +13,7 @@ import android.os.IBinder;
 
 public class AuthenticatorService extends Service {
     private Authenticator authenticator;
+    private Synchronizer synchronizer;
     public AuthenticatorService() {
     }
 
@@ -20,11 +21,16 @@ public class AuthenticatorService extends Service {
     public void onCreate() {
         super.onCreate();
         authenticator=new Authenticator(this);
+        synchronizer=new Synchronizer(getBaseContext(),true);
     }
 
     @Override
     public IBinder onBind(Intent intent) {
-        return authenticator.getIBinder();
+        if (intent.getAction().equals("android.accounts.AccountAuthenticator")) {
+            return authenticator.getIBinder();
+        }else{
+            return synchronizer.getSyncAdapterBinder();
+        }
     }
 
 

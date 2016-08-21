@@ -30,17 +30,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * A login screen that offers login via email/password.
+ * A login screen that offers login via email and password.
  * Triggered when there's no account stored in the Account manager
  * or if it the refresh token is expired.
  * Only the email and the refreshToken (not the password) are saved
  * in the AccountManager for security purposes.
- * An AccessToken is requested each time we're about to send date
+ * An AccessToken is requested each time we're about to upload xml data
  */
 public class LoginActivity extends AccountAuthenticatorActivity implements LoaderCallbacks<Cursor> {
     public static final String ARG_ACCOUNT_TYPE = "account_type";
     public static final String ARG_AUTH_TYPE = "authentication_type";
     public static final String ARG_IS_ADDING_NEW_ACCOUNT = "is_new_account";
+    public static final String REGISTER_SUCCESS="registration_success";
 
     //Keep track of the login task to ensure we can cancel it if requested.
     private UserLoginTask mAuthTask = null;
@@ -51,8 +52,9 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
     private View mProgressView;
     private View mLoginFormView;
     private TextView mErrorView;
+    private TextView mSignUpLink;
 
-    //interface-contract for userprofile on device
+    //interface-contract for user-profile on device
     private interface ProfileQuery {
         String[] PROJECTION = {
                 ContactsContract.CommonDataKinds.Email.ADDRESS,
@@ -77,24 +79,40 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             @Override
             public boolean onEditorAction(TextView textView, int id, KeyEvent keyEvent) {
                 if (id == R.id.login || id == EditorInfo.IME_NULL) {
-                    attemptLogin();
+                    attemptTask(true);
                     return true;
                 }
                 return false;
             }
         });
 
-
-        Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
+        Button mEmailSignInButton = (Button) findViewById(R.id.sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                attemptLogin();
+                attemptTask(true);
             }
         });
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+
+        mSignUpLink= (TextView) findViewById(R.id.link_signup_register);
+        mSignUpLink.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mSignUpLink.setVisibility(View.GONE);
+                Button signUpButton=(Button)findViewById(R.id.sign_up_button);
+                signUpButton.setVisibility(View.VISIBLE);
+                signUpButton.setOnClickListener(new OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        attemptTask(false);
+                    }
+                });
+            }
+        });
+
     }
 
     private void populateAutoComplete() {
@@ -106,12 +124,10 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
     }
 
     private boolean isPasswordValid(String password) {
-        return true;
+        return password!=null;
     }
 
-    /**
-     * Shows the progress UI and hides the login form.
-     */
+      //Shows the progress UI and hides the login form.
     private void showProgress(final boolean show) {
         int shortAnimTime = getResources().getInteger(android.R.integer.config_shortAnimTime);
 
@@ -159,6 +175,14 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             emails.add(cursor.getString(ProfileQuery.ADDRESS));
             cursor.moveToNext();
         }
+        //Adding monitor account emails too
+        AccountManager am = AccountManager.get(this);
+        Account[] accounts=am.getAccountsByType(getString(R.string.authenticator_account_type));
+        //returned account[] may be empty but never null
+        for (Account a : accounts) {
+            emails.add(a.name);
+        }
+
         addEmailsToAutoComplete(emails);
     }
 
@@ -179,7 +203,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
      * If there are form errors (invalid email, missing fields, etc.), the
      * errors are presented and no actual login attempt is made.
      */
-    private void attemptLogin() {
+    private void attemptTask(boolean isLoggingIn) {
         if (mAuthTask != null) {
             return;
         }
@@ -220,7 +244,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
             showProgress(true);
-            mAuthTask = new UserLoginTask(email, password);
+            mAuthTask = new UserLoginTask(email, password,isLoggingIn);
             mAuthTask.execute((Void) null);
         }
     }
@@ -237,22 +261,22 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             AccountManager accountManager = AccountManager.get(getApplicationContext());
             accountManager.addAccountExplicitly(account,null,null);
             accountManager.setAuthToken(account, getString(R.string.token_refresh), refreshToken);
-            Log.e("finished NEW","refresh: "+refreshToken+" "+account.toString());
         }
         setAccountAuthenticatorResult(accountDetails.getExtras());
         setResult(RESULT_OK, accountDetails);
     }
 
-    /**
-     * Represents an asynchronous login task used to authenticate the user.
-     */
+     //Represents an asynchronous login task used to authenticate the user.
+
     public class UserLoginTask extends AsyncTask<Void, Void, Intent> {
         private final String mEmail;
         private final String mPassword;
+        private final boolean mIsLoggingIn;
 
-        UserLoginTask(String email, String password) {
+        UserLoginTask(String email, String password,boolean isLoggingIn) {
             mEmail = email;
             mPassword = password;
+            mIsLoggingIn=isLoggingIn;
         }
 
         @Override
@@ -260,6 +284,13 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             Intent accountDetails=new Intent();
             accountDetails.putExtra(AccountManager.KEY_ACCOUNT_NAME,mEmail);
             accountDetails.putExtra(AccountManager.KEY_ACCOUNT_TYPE,getString(R.string.authenticator_account_type));
+            if (!mIsLoggingIn){
+                String[] registerResponse=new ServerCommunication(getApplicationContext()).register(mEmail,mPassword);
+                if (!registerResponse[0].equals(REGISTER_SUCCESS)){
+                    accountDetails.putExtra(registerResponse[0],registerResponse[1]);
+                    return accountDetails;
+                }
+            }
             String[] loginResponse=new ServerCommunication(getApplicationContext()).login(mEmail,mPassword);
             accountDetails.putExtra(loginResponse[0],loginResponse[1]);
             return accountDetails;
@@ -275,8 +306,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             } else {
                 mErrorView.setVisibility(View.VISIBLE);
                 mErrorView.setText(accountDetails.getStringExtra(AccountManager.KEY_ERROR_MESSAGE));
-                mEmailView.setError(getString(R.string.authenticate_try_again));
-                mPasswordView.setError(getString(R.string.authenticate_try_again));
+                mEmailView.setError(getString(R.string.login_try_again));
+                mPasswordView.setError(getString(R.string.login_try_again));
                 mEmailView.requestFocus();
             }
         }

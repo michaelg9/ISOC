@@ -33,6 +33,7 @@
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -83,17 +84,27 @@
             <meta-data
                 android:name="android.accounts.AccountAuthenticator"
                 android:resource="@xml/authenitcator_properties" />
+            <meta-data
+                android:name="android.content.SyncAdapter"
+                android:resource="@xml/syncadapter" />
 
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />
+                <action android:name="android.content.SyncAdapter"/>
             </intent-filter>
         </service>
 
         <activity
             android:name=".LoginActivity"
-            android:theme="@style/AppTheme"
+            android:label="@string/title_activity_login"
             android:noHistory="true"
-            android:label="@string/title_activity_login"></activity>
+            android:theme="@style/AppTheme" />
+
+        <provider
+            android:name=".DataProvider"
+            android:authorities="@string/provider_authority"
+            android:enabled="true"
+            android:exported="false"/>
     </application>
 
 </manifest>

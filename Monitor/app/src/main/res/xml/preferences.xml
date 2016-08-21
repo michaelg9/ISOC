@@ -24,15 +24,6 @@
         app:time="minutes"
         android:defaultValue="@integer/timer_def"/>
 
-    <com.isoc.android.monitor.NumberPreference
-        android:key="@string/sent_interval"
-        android:title="Send Interval"
-        android:dialogTitle="Select number of hours"
-        app:max="24"
-        app:min="1"
-        app:time="hours"
-        android:defaultValue="@integer/timer_def"/>
-
     <PreferenceCategory android:title="Monitoring">
         <ListPreference
             android:dependency="monitoring"

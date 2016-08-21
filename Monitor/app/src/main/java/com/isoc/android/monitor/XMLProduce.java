@@ -1,28 +1,15 @@
 package com.isoc.android.monitor;
 
-import android.app.Notification;
-import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.Build;
-import android.preference.PreferenceManager;
-import android.support.v4.app.NotificationCompat;
 import android.telephony.TelephonyManager;
 
-import java.io.BufferedOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.TimeZone;
 
@@ -329,59 +316,6 @@ public class XMLProduce {
             }
             result.append("</metadata>\n");
             return result.toString();
-        }
-    }
-
-    public class XMLSend {
-        private String xml;
-
-        public XMLSend(String xml) {this.xml=xml;}
-
-        private boolean checkNet(){
-            ConnectivityManager connection = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-            NetworkInfo netInfo = connection.getActiveNetworkInfo();
-            return (netInfo != null && netInfo.isConnected());
-        }
-
-        public String sendXML() {
-            if (!checkNet()) return null;
-            String urlString= PreferenceManager.getDefaultSharedPreferences(context).getString("server_url",null)+"/app/0.1/upload";
-            String result;
-            HttpURLConnection client = null;
-            String xml = this.xml;
-            try {
-                URL url = new URL(urlString);
-                client = (HttpURLConnection) url.openConnection();
-                client.setConnectTimeout(4000);
-                client.setFixedLengthStreamingMode(xml.getBytes().length);
-                client.setRequestMethod("POST");
-                client.setDoOutput(true);
-                OutputStream out = new BufferedOutputStream(client.getOutputStream());
-                out.write(xml.getBytes());
-                out.flush();
-                out.close();
-                result = "Send succeeded: " + client.getResponseMessage()+'('+client.getResponseCode()+')';
-            } catch (java.net.SocketTimeoutException e) {
-                result = "Send failed: TimeOut";
-            } catch (MalformedURLException e) {
-                result = "Send failed: Malformed URL";
-            } catch (ProtocolException e) {
-                result = "Send failed: Protocol Exception: " + e.getMessage();
-            } catch (IOException e) {
-                result = "Send failed: IOException: " + e.getMessage();
-            } finally {
-                if (client != null)
-                    client.disconnect();
-            }
-            showNotification(result);
-            return result;
-        }
-
-        private void showNotification(String result) {
-            Notification n = new NotificationCompat.Builder(context).setContentTitle("Monitor Data Sent").setSmallIcon(R.mipmap.ic_launcher)
-                    .setContentText(result).build();
-            NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-            notificationManager.notify(0, n);
         }
     }
 }
