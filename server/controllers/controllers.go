@@ -1,7 +1,5 @@
 package controllers
 
-// TODO: Change routing with v1..
-
 import (
 	"database/sql"
 	"encoding/json"
@@ -14,6 +12,7 @@ import (
 
 	"github.com/michaelg9/ISOC/server/models"
 
+	"github.com/gorilla/context"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
 	"golang.org/x/crypto/bcrypt"
@@ -32,10 +31,19 @@ const (
 	errWrongUser           = "No such user."
 	errDeviceIDNotInt      = "The device value is not an int."
 	errUserIDNotInt        = "The user value is not an int."
-	errWrongDevice         = "There is no device with this ID."
+	errWrongFeature        = "This device has no data for this feature."
+	errWrongDeviceOrUser   = "The given user ID/device ID combination is not valid."
+	errForbidden           = "Forbidden resource access."
+	errUserExists          = "User already exists."
 
 	hmacSecret = "secret"
 )
+
+// key type for use with context
+type key int
+
+// UserKey is the key to the user data in the context
+const UserKey key = 0
 
 // Env contains the environment information
 type Env struct {
@@ -54,31 +62,32 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Check if the user is already in the database
-	user, err := env.DB.GetUser(models.User{Email: email})
-	switch {
-	// User does not exist
-	case user == models.User{}:
-		// Create new user with hashed password
-		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Insert the credentials of the new user into the database
-		err = env.DB.CreateUser(models.User{Email: email, PasswordHash: string(hashedPassword)})
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprintf(w, "Success")
-	case err != nil:
+	_, err := env.DB.GetUser(models.User{Email: email})
+	if err == nil {
+		// User already exists
+		http.Error(w, errUserExists, http.StatusConflict)
+		return
+	} else if err != sql.ErrNoRows {
+		// Unexpected error
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	default:
-		fmt.Fprintf(w, "User already exists")
 	}
+
+	// Create new user with hashed password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Insert the credentials of the new user into the database
+	err = env.DB.CreateUser(models.User{Email: email, PasswordHash: string(hashedPassword)})
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprintf(w, "Success")
 }
 
 // Upload handles /app/0.1/upload
@@ -113,16 +122,10 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 }
 
 // UpdateUser handles /update/user
-// TODO: Use Token Auth
 func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
-	// Because of the middleware we know that these values exist
-	session, _ := env.SessionStore.Get(r, "log-in")
-	oldEmail := session.Values["email"]
-
-	// We need to get the user from the database to get its user ID
-	user, err := env.DB.GetUser(models.User{Email: oldEmail.(string)})
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+	user, ok := context.Get(r, UserKey).(models.User)
+	if !ok {
+		http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 		return
 	}
 
@@ -131,15 +134,6 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	user.Email = r.FormValue("email")
 	user.PasswordHash = r.FormValue("password")
 	user.APIKey = r.FormValue("apiKey")
-
-	if user.Email != "" {
-		// Update the current session with the new email address
-		session.Values["email"] = user.Email
-		if err = session.Save(r, w); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-	}
 
 	if user.PasswordHash != "" {
 		// If password is non-empty create a new hash for the database.
@@ -158,23 +152,25 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		user.APIKey = ""
 	}
 
-	if err = env.DB.UpdateUser(user); err != nil {
+	if err := env.DB.UpdateUser(user); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
-	fmt.Fprint(w, "Success")
 }
 
-// User handles /data/{user}. It gets all the devices and its data from
+// GetUser handles /data/{user}. It gets all the devices and its data from
 // the user and information about the user.
-// TODO: Check if userID fits with token
-func (env *Env) User(w http.ResponseWriter, r *http.Request) {
-	userIDString := mux.Vars(r)["user"]
+func (env *Env) GetUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
 
-	userID, err := strconv.Atoi(userIDString)
+	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
+		return
+	}
+
+	if !userIsAuthorized(r, userID) {
+		http.Error(w, errForbidden, http.StatusForbidden)
 		return
 	}
 
@@ -192,6 +188,7 @@ func (env *Env) User(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	response := models.UserResponse{
 		User:    user,
 		Devices: devices,
@@ -203,39 +200,32 @@ func (env *Env) User(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Device handles /data/{user}/{device}. It gets all the info about the
+// GetDevice handles /data/{user}/{device}. It gets all the info about the
 // specified device of the given user. Device should be the device ID (for now).
-func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
+func (env *Env) GetDevice(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	user := vars["user"]
-	device := vars["device"]
 
-	userID, err := strconv.Atoi(user)
+	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	deviceID, err := strconv.Atoi(device)
+	if !userIsAuthorized(r, userID) {
+		http.Error(w, errForbidden, http.StatusForbidden)
+		return
+	}
+
+	deviceID, err := strconv.Atoi(vars["device"])
 	if err != nil {
 		http.Error(w, errDeviceIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = env.DB.GetUser(models.User{ID: userID})
+	device := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
+	response, err := env.DB.GetDeviceFromUser(models.User{ID: userID}, device)
 	if err == sql.ErrNoRows {
-		http.Error(w, errWrongUser, http.StatusInternalServerError)
-		return
-	} else if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// TODO: Check if device belongs to user
-	deviceStruct := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
-	response, err := env.DB.GetDevice(deviceStruct)
-	if err == sql.ErrNoRows {
-		http.Error(w, errWrongDevice, http.StatusInternalServerError)
+		http.Error(w, errWrongDeviceOrUser, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -248,42 +238,42 @@ func (env *Env) Device(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// Feature handles /data/{user}/{device}/{feature}. It gets all the saved data from the
+// GetFeature handles /data/{user}/{device}/{feature}. It gets all the saved data from the
 // specified feature from the given device of the user.
-func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
+func (env *Env) GetFeature(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	user := vars["user"]
-	device := vars["device"]
-	feature := vars["feature"]
 
-	userID, err := strconv.Atoi(user)
+	userID, err := strconv.Atoi(vars["user"])
 	if err != nil {
 		http.Error(w, errUserIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	deviceID, err := strconv.Atoi(device)
+	if !userIsAuthorized(r, userID) {
+		http.Error(w, errForbidden, http.StatusForbidden)
+		return
+	}
+
+	deviceID, err := strconv.Atoi(vars["device"])
 	if err != nil {
 		http.Error(w, errDeviceIDNotInt, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = env.DB.GetUser(models.User{ID: userID})
+	// Check if device ID is registered with users
+	deviceStruct := models.Device{AboutDevice: models.AboutDevice{ID: deviceID}}
+	_, err = env.DB.GetDeviceFromUser(models.User{ID: userID}, deviceStruct)
 	if err == sql.ErrNoRows {
-		http.Error(w, errWrongUser, http.StatusInternalServerError)
+		http.Error(w, errWrongDeviceOrUser, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// TODO: Refactor into new function and add comments
-	var response models.TrackedData
-	v := reflect.ValueOf(&response).Elem()
-	ptrToFeature := v.FieldByName(feature).Addr().Interface()
-	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, ptrToFeature)
+	response, err := getFeatureResponse(env, vars["feature"], deviceID)
 	if err == sql.ErrNoRows {
-		http.Error(w, errWrongDevice, http.StatusInternalServerError)
+		http.Error(w, errWrongFeature, http.StatusInternalServerError)
 		return
 	} else if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -294,6 +284,32 @@ func (env *Env) Feature(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+}
+
+// getFeatureResponse queries the database to get the feature with the given name from the device
+// with the specified device ID.
+func getFeatureResponse(env *Env, feature string, deviceID int) (response models.TrackedData, err error) {
+	// Get the reflect value of the field with the name of the feature
+	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)
+	// Get a pointer to the feature value
+	featurePtr := featureValue.Addr().Interface()
+
+	// Get the feature data from the specified device and save it to the response struct
+	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, featurePtr)
+	return
+}
+
+// userIsAuthorized checks if the given user is allowed access to the resource i.e. when the user ID
+// in the request matches the ID from the logged in user or when the logged in user is an admin.
+func userIsAuthorized(r *http.Request, givenID int) bool {
+	user, ok := context.Get(r, UserKey).(models.User)
+	if !ok {
+		return false
+	}
+
+	isAdmin := user.Admin
+	rightID := givenID == user.ID
+	return rightID || isAdmin
 }
 
 // writeResponse prints a given struct in the specified format to the response writer. If no

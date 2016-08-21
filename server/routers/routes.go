@@ -24,6 +24,7 @@ type Route struct {
 type Routes []Route
 
 var routes = Routes{
+	/* Website routes */
 	Route{
 		"Index",
 		"GET",
@@ -46,6 +47,14 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.Dashboard },
 	},
 	Route{
+		"Admin",
+		"GET",
+		"/dashboard/admin",
+		sessionAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.Admin },
+	},
+	/* Session authentication routes */
+	Route{
 		"SessionLogin",
 		"POST",
 		"/login",
@@ -59,27 +68,7 @@ var routes = Routes{
 		"",
 		func(env controllers.Env) http.HandlerFunc { return env.SessionLogout },
 	},
-	Route{
-		"SignUp",
-		"POST",
-		"/signup",
-		"",
-		func(env controllers.Env) http.HandlerFunc { return env.SignUp },
-	},
-	Route{
-		"Upload",
-		"POST",
-		"/app/0.1/upload",
-		tokenAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.Upload },
-	},
-	Route{
-		"UpdateUser",
-		"POST",
-		"/update/user",
-		sessionAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.UpdateUser },
-	},
+	/* Token authentication routes */
 	Route{
 		"TokenLogin",
 		"POST",
@@ -108,25 +97,47 @@ var routes = Routes{
 		"",
 		func(env controllers.Env) http.HandlerFunc { return env.TokenLogout },
 	},
+	/* API routes */
+	Route{
+		"SignUp",
+		"POST",
+		"/signup",
+		"",
+		func(env controllers.Env) http.HandlerFunc { return env.SignUp },
+	},
+	Route{
+		"Upload",
+		"POST",
+		"/app/0.1/upload",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.Upload },
+	},
+	Route{
+		"UpdateUser",
+		"POST",
+		"/update/user",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.UpdateUser },
+	},
 	Route{
 		"UserData",
 		"GET",
 		"/data/{user}",
 		tokenAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.User },
+		func(env controllers.Env) http.HandlerFunc { return env.GetUser },
 	},
 	Route{
 		"Device",
 		"GET",
 		"/data/{user}/{device}",
 		tokenAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.Device },
+		func(env controllers.Env) http.HandlerFunc { return env.GetDevice },
 	},
 	Route{
 		"Feature",
 		"GET",
 		"/data/{user}/{device}/{feature}",
 		tokenAuth,
-		func(env controllers.Env) http.HandlerFunc { return env.Feature },
+		func(env controllers.Env) http.HandlerFunc { return env.GetFeature },
 	},
 }

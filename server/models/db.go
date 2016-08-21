@@ -15,7 +15,7 @@ type Datastore interface {
 	CreateUser(user User) error
 	UpdateUser(user User) error
 	DeleteUser(user User) error
-	GetDevice(device Device) (fullDevice Device, err error)
+	GetDeviceFromUser(user User, device Device) (fullDevice Device, err error)
 	GetDevicesFromUser(user User) ([]Device, error)
 	CreateDeviceForUser(user User, aboutDevice AboutDevice) error
 	UpdateDevice(aboutDevice AboutDevice) error
@@ -39,7 +39,6 @@ func NewDB(dsn string) *DB {
 // update takes a struct and the a map from the field names to database queries for updating
 // the value stored in the field. If a value in the given struct is non-empty and there is an
 // update query for the field stored in the map, we update the database.
-// TODO: Find solution for boolean values
 func (db *DB) update(queries map[string]string, arg interface{}) error {
 	value := reflect.ValueOf(arg)
 

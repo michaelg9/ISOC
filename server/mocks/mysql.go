@@ -2,6 +2,7 @@ package mocks
 
 import (
 	"database/sql"
+	"errors"
 	"reflect"
 
 	"github.com/michaelg9/ISOC/server/models"
@@ -25,6 +26,10 @@ func (mdb *MockDB) CreateUser(user models.User) error {
 }
 
 func (mdb *MockDB) UpdateUser(user models.User) error {
+	if user.ID == 0 {
+		return errors.New("No user id.")
+	}
+
 	return nil
 }
 
@@ -32,8 +37,10 @@ func (mdb *MockDB) DeleteUser(user models.User) error {
 	return nil
 }
 
-func (mdb *MockDB) GetDevice(device models.Device) (models.Device, error) {
-	if device.AboutDevice.ID == 1 {
+func (mdb *MockDB) GetDeviceFromUser(user models.User, device models.Device) (models.Device, error) {
+	rightDevice := device.AboutDevice.ID == Devices[0].AboutDevice.ID
+	rightUser := user.ID == Users[0].ID
+	if rightDevice && rightUser {
 		return Devices[0], nil
 	}
 	return models.Device{}, sql.ErrNoRows

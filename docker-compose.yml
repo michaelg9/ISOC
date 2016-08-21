@@ -24,8 +24,6 @@ services:
      - PORT=8080
   mysql:
     build: ./test_db
-    ports:
-      - "3306:3306"
   # Comment out test-db when on GCE
   mysql-test:
     image: mysql:latest

@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/negroni"
 )
 
-// Number of redis database
+// Number of redis database we use to store the tokens
 const dbNR = 0
 
 func main() {

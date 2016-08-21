@@ -150,7 +150,6 @@ var destroyRunservice = `
 DROP TABLE Runservice;
 `
 
-// TODO: User mocks
 var users = []User{
 	User{
 		ID:           1,
@@ -316,31 +315,44 @@ func TestGetUser(t *testing.T) {
 	for _, test := range tests {
 		user := User{ID: test.id, Email: test.email, APIKey: test.key}
 		result, err := db.GetUser(user)
-		assert.Empty(t, err)
+		assert.NoError(t, err)
 		assert.Equal(t, test.expected, result)
 	}
 }
 
-func TestGetDevice(t *testing.T) {
+func TestGetDeviceFromUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	device := Device{AboutDevice: AboutDevice{ID: 1}}
-	expected := devices[0]
-	result, err := db.GetDevice(device)
-	assert.Empty(t, err)
-	assert.Equal(t, expected, result)
+	var tests = []struct {
+		device      Device
+		user        User
+		expected    Device
+		expectedErr error
+	}{
+		{devices[0], users[0], devices[0], nil},
+		{devices[0], User{ID: 42}, Device{}, sql.ErrNoRows},
+	}
+
+	for _, test := range tests {
+		result, err := db.GetDeviceFromUser(test.user, test.device)
+		if test.expectedErr != nil {
+			assert.EqualError(t, test.expectedErr, err.Error())
+		} else if assert.NoError(t, err) {
+			assert.Equal(t, result, test.expected)
+		}
+	}
 }
 
 func TestGetDevicesFromUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := User{Email: "user@usermail.com"}
+	user := User{ID: 1}
 	expected := devices
 
 	result, err := db.GetDevicesFromUser(user)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
@@ -348,11 +360,11 @@ func TestGetDeviceInfos(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := User{Email: "user@usermail.com"}
+	user := User{ID: 1}
 	expected := deviceInfos[:1]
 
 	result, err := db.getDeviceInfos(user)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
@@ -373,7 +385,7 @@ func TestGetData(t *testing.T) {
 	device := deviceInfos[0]
 	for _, test := range tests {
 		err := db.GetData(device, test.ptrToResult)
-		assert.Empty(t, err)
+		assert.NoError(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
 		assert.Equal(t, test.expected, result)
 	}
@@ -387,10 +399,10 @@ func TestCreateUser(t *testing.T) {
 	pwd, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 	newUser.PasswordHash = string(pwd)
 	err := db.CreateUser(newUser)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 
 	result, err := db.GetUser(newUser)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, newUser, result)
 }
 
@@ -402,12 +414,12 @@ func TestCreateDeviceForUser(t *testing.T) {
 	newDevice := deviceInfos[1]
 
 	err := db.CreateDeviceForUser(user, newDevice)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 
 	oldDevice := deviceInfos[0]
 	expected := []AboutDevice{oldDevice, newDevice}
 	result, err := db.getDeviceInfos(user)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
@@ -434,10 +446,10 @@ func TestCreateData(t *testing.T) {
 	device := deviceInfos[0]
 	for _, test := range tests {
 		err := db.CreateData(device, test.toInsert)
-		assert.Empty(t, err)
+		assert.NoError(t, err)
 
 		err = db.GetData(device, test.ptrToResult)
-		assert.Empty(t, err)
+		assert.NoError(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
 		assert.Equal(t, test.expected, result)
 	}
@@ -450,16 +462,16 @@ func TestUpdateUser(t *testing.T) {
 	user := users[0]
 	user.Email = "user2@mail.com"
 	pwd, err := bcrypt.GenerateFromPassword([]byte("12345"), bcrypt.DefaultCost)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	user.PasswordHash = string(pwd)
 	user.APIKey = "1"
 	// user.Admin = false
 	err = db.UpdateUser(user)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 
 	result, err := db.GetUser(user)
 	user.APIKey = result.APIKey
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, user, result)
 }
 
@@ -472,11 +484,11 @@ func TestUpdateDevice(t *testing.T) {
 	device.Model = "iPhone 6"
 	device.OS = "iOS 10"
 	err := db.UpdateDevice(device)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 
 	expected := []AboutDevice{device}
 	result, err := db.getDeviceInfos(users[0])
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	assert.Equal(t, expected, result)
 }
 
@@ -486,7 +498,7 @@ func TestDeleteUser(t *testing.T) {
 
 	user := users[0]
 	err := db.DeleteUser(user)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 
 	expectedErr := sql.ErrNoRows
 	_, err = db.GetUser(user)
@@ -499,9 +511,9 @@ func TestDeleteDevice(t *testing.T) {
 
 	device := deviceInfos[0]
 	err := db.DeleteDevice(device)
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 
 	result, err := db.getDeviceInfos(User{Email: "user@usermail.com"})
-	assert.Empty(t, err)
+	assert.NoError(t, err)
 	assert.Empty(t, result)
 }
