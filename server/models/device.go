@@ -113,15 +113,20 @@ func (db *DB) getDeviceInfos(user User) (devices []AboutDevice, err error) {
 }
 
 // CreateDeviceForUser creates the device which was passed as a struct
-func (db *DB) CreateDeviceForUser(user User, aboutDevice AboutDevice) error {
+func (db *DB) CreateDeviceForUser(user User, aboutDevice AboutDevice) (insertedID int, err error) {
 	createDeviceQuery := `INSERT INTO Device (imei, manufacturer, modelName, osVersion, user)
                           VALUES (:IMEI, :Manufacturer, :Model, :OS, :User);`
 
 	// Transform the device struct into a map[string]interface{} so we can add the user ID
 	args := structs.Map(aboutDevice)
 	args["User"] = user.ID
-	_, err := db.NamedExec(createDeviceQuery, args)
-	return err
+	result, err := db.NamedExec(createDeviceQuery, args)
+	if err != nil {
+		return
+	}
+
+	id, err := result.LastInsertId()
+	return int(id), err
 }
 
 // UpdateDevice updates the given field of the device with the given id

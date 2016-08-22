@@ -21,8 +21,8 @@ func (mdb *MockDB) GetUser(user models.User) (models.User, error) {
 	return models.User{}, sql.ErrNoRows
 }
 
-func (mdb *MockDB) CreateUser(user models.User) error {
-	return nil
+func (mdb *MockDB) CreateUser(user models.User) (int, error) {
+	return 2, nil
 }
 
 func (mdb *MockDB) UpdateUser(user models.User) error {
@@ -54,8 +54,8 @@ func (mdb *MockDB) GetDeviceInfos(user models.User) ([]models.AboutDevice, error
 	return AboutDevices[:1], nil
 }
 
-func (mdb *MockDB) CreateDeviceForUser(user models.User, aboutDevice models.AboutDevice) error {
-	return nil
+func (mdb *MockDB) CreateDeviceForUser(user models.User, aboutDevice models.AboutDevice) (int, error) {
+	return 2, nil
 }
 
 func (mdb *MockDB) UpdateDevice(aboutDevice models.AboutDevice) error {

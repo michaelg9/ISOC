@@ -23,10 +23,15 @@ func (db *DB) GetUser(user User) (fullUser User, err error) {
 }
 
 // CreateUser creates a new user from the given struct
-func (db *DB) CreateUser(user User) error {
+func (db *DB) CreateUser(user User) (insertedID int, err error) {
 	insertUserQuery := `INSERT INTO User (email, passwordHash, admin) VALUES (:email, :passwordHash, :admin);`
-	_, err := db.NamedExec(insertUserQuery, user)
-	return err
+	result, err := db.NamedExec(insertUserQuery, user)
+	if err != nil {
+		return
+	}
+
+	id, err := result.LastInsertId()
+	return int(id), err
 }
 
 // UpdateUser update the specified user

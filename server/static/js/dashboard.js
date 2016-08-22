@@ -1,6 +1,7 @@
 var batteryChart;
 
 // TODO: Error handling
+// TODO: Restructure in seperate files and comment
 
 function createBatteryGraph(batteryData) {
     // Sort data according to time so it gets displayed properly
