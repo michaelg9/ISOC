@@ -6,6 +6,7 @@ services:
     # command: gin -a 8080 -b .gin-bin run
     ports:
      - "3000:3000"
+     - "8080:8080"
     # Comment this out if deploying on GCE
     volumes:
      - ./server:/go/src/github.com/michaelg9/ISOC/server

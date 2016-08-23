@@ -141,7 +141,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Fprint(w, "Success")
+	fmt.Fprint(w, http.StatusText(http.StatusOK))
 }
 
 // UpdateUser handles /update/user
@@ -179,6 +179,8 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Fprint(w, http.StatusText(http.StatusOK))
 }
 
 // GetUser handles /data/{user}. It gets all the devices and its data from

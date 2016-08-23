@@ -1,6 +1,5 @@
 var batteryChart;
 
-// TODO: Error handling
 // TODO: Restructure in seperate files and comment
 
 function createBatteryGraph(batteryData) {
@@ -125,9 +124,9 @@ var user = (function() {
     var updateUserURL = "../update/user?";
 
     // Used to store the info about the current user
-    var info;
-    var devices;
-    var currentDevice;
+    var info = {};
+    var devices = [];
+    var currentDevice = {};
 
     var getCurrentDevice = function() {
         return currentDevice;
@@ -136,7 +135,7 @@ var user = (function() {
     var getUser = function() {
         var userURL = "../data/" + sessionStorage.userID;
         tokenAuth.makeAuthRequest(userURL, "GET", {}).done(function(result) {
-            info = result.user;
+            setUserInfo(result.user);
             devices = result.devices;
             currentDevice = devices[0];
             rivets.bind($("#userInfo"), {userInfo: info});
@@ -147,20 +146,19 @@ var user = (function() {
         });
     };
 
-    var changeUserInfo = function (data) {
-        var controllerElement = document.querySelector("[ng-controller=dashboardController]");
-        var $scope = angular.element(controllerElement).scope();
-        $scope.$apply(function() {
-            $scope.userInfo = data;
-        });
+    var setUserInfo = function (data) {
+        // We have to update each attribute seperately because otherwise
+        // rivetjs does not update the view
+        info.email = data.email;
+        info.apiKey = data.apiKey;
     };
 
     var updateUserInfo = function() {
         var userDataURL = "../data/" + sessionStorage.userID;
         tokenAuth.makeAuthRequest(userDataURL, "GET", {}).done(function(data) {
-            changeUserInfo(data.user);
-        }).fail(function (data, textStatus, jqXHR) {
-            console.error(data);
+            setUserInfo(data.user);
+        }).fail(function (result) {
+            console.error(result);
         });
     };
 
@@ -168,8 +166,8 @@ var user = (function() {
         var updateData = {email: newEmail};
         tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
             updateUserInfo();
-        }).fail(function(data, textStatus, jqXHR) {
-            console.error(data);
+        }).fail(function(result) {
+            console.error(result);
         });
     };
 
@@ -177,8 +175,8 @@ var user = (function() {
         var updateData = {apiKey: "1"}; // Use 1 for true
         tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
             updateUserInfo();
-        }).fail(function(data, textStatus, jqXHR) {
-            console.error(data);
+        }).fail(function(result) {
+            console.error(result);
         });
     };
 
@@ -225,7 +223,8 @@ $(document).ready(function() {
     });
 
     // Add the modal prompt for new email
-    $("#editEmail").on("click", function() {
+    $("#editEmail").on("click", function(e) {
+        e.preventDefault();
         bootbox.prompt("Please enter your new email", function(result) {
             if (result !== "") {
                 user.updateEmail(result);
@@ -233,7 +232,8 @@ $(document).ready(function() {
         });
     });
 
-    $("#updateAPIKey").on("click", function () {
+    $("#updateAPIKey").on("click", function (e) {
+        e.preventDefault();
         user.updateAPIKey();
     });
 

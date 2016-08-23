@@ -52,7 +52,7 @@ func TestUpload(t *testing.T) {
 		requestBody models.Upload
 		expected    string
 	}{
-		{mocks.Uploads[0], "Success"},
+		{mocks.Uploads[0], http.StatusText(http.StatusOK)},
 		{mocks.Uploads[1], errNoDeviceID + "\n"},
 	}
 
@@ -155,11 +155,11 @@ func TestUpdateUser(t *testing.T) {
 		expectedCode int
 		expectedBody string
 	}{
-		{"user@mail.com", "123", 1, 200, ""},
-		{"user@mail.com", "1234", 0, 200, ""},
-		{"user@mail.com", "", 0, 200, ""},
-		{"", "", 0, 200, ""},
-		{"", "", 42, 200, ""},
+		{"user@mail.com", "123", 1, 200, http.StatusText(http.StatusOK)},
+		{"user@mail.com", "1234", 0, 200, http.StatusText(http.StatusOK)},
+		{"user@mail.com", "", 0, 200, http.StatusText(http.StatusOK)},
+		{"", "", 0, 200, http.StatusText(http.StatusOK)},
+		{"", "", 1, 200, http.StatusText(http.StatusOK)},
 	}
 
 	env := newEnv()
