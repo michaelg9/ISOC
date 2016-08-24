@@ -116,7 +116,7 @@ func (env *Env) TokenLogout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, "Success")
+	fmt.Fprint(w, http.StatusText(http.StatusOK))
 }
 
 /* Handlers for web session */

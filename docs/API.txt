@@ -1,0 +1,40 @@
+Get a new access/refresh token pair
+
+POST /auth/0.1/login?email=[email]&password=[password]
+
+Response:
+{accessToken: [accessToken], refreshToken: [refreshToken]}
+
+-----------------------------------------------------------------------------------------------------
+Get a new access token
+
+POST /auth/0.1/token?refreshToken=[refreshToken]
+
+Response:
+{accessToken: [accessToken]}
+
+-----------------------------------------------------------------------------------------------------
+Get a new refresh token
+
+POST /auth/0.1/refresh?refreshToken=[refreshToken]
+
+Response:
+{refreshToken: [refreshToken]}
+-----------------------------------------------------------------------------------------------------
+Logout/invalidate a refresh token
+
+POST /auth/0.1/logout?token=[refreshToken]
+
+-----------------------------------------------------------------------------------------------------
+Sign up a new user
+
+POST /signup?email=[email]&password=[password]
+
+Request body: See testInputXML.xml (without the <data> tag).
+
+-----------------------------------------------------------------------------------------------------
+Upload data from device
+
+POST /upload
+
+Request body: See testInputXML.xml.

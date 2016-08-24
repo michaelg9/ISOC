@@ -20,6 +20,7 @@ import (
 
 func TestSignUp(t *testing.T) {
 	validXML := models.Upload{Meta: mocks.AboutDevices[1]}
+	invalidXML := models.Upload{}
 	var tests = []struct {
 		email       string
 		password    string
@@ -30,6 +31,7 @@ func TestSignUp(t *testing.T) {
 		{"user@usermail.com", "123456", validXML, errUserExists},
 		{"user@mail.com", "", validXML, errNoPasswordOrEmail},
 		{"", "123456", validXML, errNoPasswordOrEmail},
+		{"user@mail.com", "123456", invalidXML, errNoDevice},
 	}
 
 	env := newEnv()
