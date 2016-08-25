@@ -137,7 +137,7 @@ func TestTokenLogout(t *testing.T) {
 		refreshToken string
 		expected     string
 	}{
-		{mocks.RefreshToken, "Success"},
+		{mocks.RefreshToken, http.StatusText(http.StatusOK)},
 		{"", errNoToken},
 		{"12345", errTokenAlreadyInvalid},
 	}

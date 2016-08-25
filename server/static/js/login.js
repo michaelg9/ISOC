@@ -3,14 +3,7 @@ $(document).ready(function(){
     $("#login-btn").on("click", function(){
         var email = $("#email").val();
         var password = $("#password").val();
-        var loginParams = {email: email, password: password};
-        var loginURL = "../login?";
-        $.post({
-            url: loginURL,
-            data: loginParams
-        }).done(function(data, textStatus, jqXHR) {
-            sessionStorage.userID = data.id;
-            sessionStorage.accessToken = data.accessToken;
+        tokenAuth.login(email, password).done(function() {
             window.location = "../dashboard";
         }).fail(function(data, textStatus, jqXHR) {
             $("#alert-wrong-password").html('<div class="alert alert-danger">Wrong password or email.</div>');
