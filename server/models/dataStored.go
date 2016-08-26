@@ -13,7 +13,6 @@ const (
 
 // Battery is the struct for the battery
 // percentage element
-// TODO: Add charging attribute
 type Battery struct {
 	Time  string `xml:"time,attr" json:"time" db:"timestamp"`
 	Value int    `xml:",chardata" json:"value" db:"batteryPercentage"`

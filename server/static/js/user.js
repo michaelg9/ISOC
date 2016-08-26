@@ -10,6 +10,8 @@ var user = (function() {
         return currentDevice;
     };
 
+    // Get the info for the current user from the server, bind info
+    // to rivetjs and create graphs.
     var initUser = function() {
         var userURL = "../data/" + sessionStorage.userID;
         tokenAuth.makeAuthRequest(userURL, "GET", {}).done(function(result) {
@@ -24,6 +26,7 @@ var user = (function() {
         });
     };
 
+    // Update the rivetjs binding with the given data.
     var setUserInfo = function (data) {
         // We have to update each attribute seperately because otherwise
         // rivetjs does not update the view
@@ -31,6 +34,7 @@ var user = (function() {
         info.apiKey = data.apiKey;
     };
 
+    // Get new userdata from the server
     var updateUserInfo = function() {
         var userDataURL = "../data/" + sessionStorage.userID;
         tokenAuth.makeAuthRequest(userDataURL, "GET", {}).done(function(data) {

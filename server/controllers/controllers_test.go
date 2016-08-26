@@ -312,7 +312,6 @@ func testController(controller http.HandlerFunc, method, url, expected string, t
 	assert.Contains(t, obtained, expected)
 }
 
-// TODO: Parameters as struct
 func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern, expected string, user models.User, t *testing.T) {
 	rec := httptest.NewRecorder()
 	req, _ := http.NewRequest(method, url, nil)

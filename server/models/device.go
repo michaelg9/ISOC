@@ -130,12 +130,9 @@ func (db *DB) CreateDeviceForUser(user User, aboutDevice AboutDevice) (insertedI
 }
 
 // UpdateDevice updates the given field of the device with the given id
-// NOTE: What should one be able to update?
 func (db *DB) UpdateDevice(aboutDevice AboutDevice) error {
 	queries := map[string]string{
-		"Manufacturer": `UPDATE Device SET manufacturer = :manufacturer WHERE id = :id;`,
-		"Model":        `UPDATE Device SET modelName = :modelName WHERE id = :id;`,
-		"OS":           `UPDATE Device SET osVersion = :osVersion WHERE id = :id;`,
+		"OS": `UPDATE Device SET osVersion = :osVersion WHERE id = :id;`,
 	}
 
 	return db.update(queries, aboutDevice)

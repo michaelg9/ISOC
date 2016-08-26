@@ -2,8 +2,9 @@ var tokenAuth = (function() {
     var tokenURL = "../auth/0.1/token";
 
     var refreshAccessToken = function() {
-        $.post(tokenURL).done(function(data) {
+        return $.post(tokenURL).done(function(data, textStatus, jqXHR) {
             sessionStorage.accessToken = data.accessToken;
+            return jqXHR;
         });
     };
 
@@ -21,12 +22,12 @@ var tokenAuth = (function() {
         return request(url, type, params).done(function(data, textStatus, jqXHR) {
             return jqXHR;
         }).fail(function(data, statusText, jqXHR) {
-            // FIXME
-            var statusUnauthorized = 401;
-            if (jqXHR.status === statusUnauthorized) {
+            var statusForbidden = 403;
+            if (data.status === statusForbidden) {
                 // If authentication failed refresh access token
-                refreshAccessToken();
-                return request(url, type, params);
+                return refreshAccessToken().done(function() {
+                    return request(url, type, params);
+                });
             }
             return jqXHR;
         });

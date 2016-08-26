@@ -3,6 +3,7 @@
 
 // JQuery listeners
 $(document).ready(function() {
+    // Get the userdata from the server
     user.initUser();
 
     // Listener for daterangepicker
@@ -14,6 +15,7 @@ $(document).ready(function() {
             format: "MMMM D, YYYY"
         }
     }, function(startDate, endDate, label) {
+        // When user selects daterange update the graph
         graphs.updateBatteryGraph(startDate, endDate);
     });
 
@@ -38,6 +40,7 @@ $(document).ready(function() {
     });
 
     $("#batteryJSON").on("click", function() {
+        // Get the battery data from the current device in JSON format
         downloads
         .getFeature(user.getCurrentDevice().aboutDevice.id, "Battery", "json")
         .done(function(data) {

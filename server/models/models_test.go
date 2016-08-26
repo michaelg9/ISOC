@@ -1,7 +1,6 @@
 package models
 
 // TODO: Test time input
-// TODO: Write table test
 
 import (
 	"database/sql"
@@ -556,41 +555,69 @@ func TestUpdateDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	device := deviceInfos[0]
-	device.Manufacturer = "Apple"
-	device.Model = "iPhone 6"
-	device.OS = "iOS 10"
-	err := db.UpdateDevice(device)
-	assert.NoError(t, err)
+	tests := []struct {
+		newOS string
+	}{
+		{"iOS 10"},
+		{""},
+	}
 
-	expected := []AboutDevice{device}
-	result, err := db.getDeviceInfos(users[0])
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		oldDevices, _ := db.getDeviceInfos(users[0])
+		newDevice := deviceInfos[0]
+		newDevice.OS = test.newOS
+		err := db.UpdateDevice(newDevice)
+		assert.NoError(t, err)
+
+		if test.newOS == "" {
+			newDevice.OS = oldDevices[0].OS
+		}
+		expected := []AboutDevice{newDevice}
+		result, _ := db.getDeviceInfos(users[0])
+		assert.Equal(t, expected, result)
+	}
 }
 
 func TestDeleteUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := users[0]
-	err := db.DeleteUser(user)
-	assert.NoError(t, err)
+	tests := []struct {
+		userID int
+	}{
+		{1},
+		{42},
+	}
 
-	expectedErr := sql.ErrNoRows
-	_, err = db.GetUser(user)
-	assert.Equal(t, expectedErr, err)
+	for _, test := range tests {
+		user := User{ID: test.userID}
+		err := db.DeleteUser(user)
+		assert.NoError(t, err)
+
+		expectedErr := sql.ErrNoRows
+		_, err = db.GetUser(user)
+		assert.EqualError(t, expectedErr, err.Error())
+	}
 }
 
 func TestDeleteDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	device := deviceInfos[0]
-	err := db.DeleteDevice(device)
-	assert.NoError(t, err)
+	tests := []struct {
+		deviceID int
+	}{
+		{1},
+		{42},
+	}
 
-	result, err := db.getDeviceInfos(User{Email: "user@usermail.com"})
-	assert.NoError(t, err)
-	assert.Empty(t, result)
+	for _, test := range tests {
+		device := AboutDevice{ID: test.deviceID}
+		err := db.DeleteDevice(device)
+		assert.NoError(t, err)
+
+		expectedErr := sql.ErrNoRows
+		_, err = db.GetDeviceFromUser(users[0], Device{AboutDevice: device})
+		assert.EqualError(t, expectedErr, err.Error())
+	}
 }

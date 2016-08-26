@@ -64,6 +64,7 @@ var graphs = (function() {
         });
     };
 
+    // Update the timerange of the battery graph
     var updateBatteryGraph = function(startDate, endDate) {
         batteryGraph.options.scales.xAxes[0].time.min = startDate;
         batteryGraph.options.scales.xAxes[0].time.max = endDate;
