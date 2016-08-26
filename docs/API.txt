@@ -28,10 +28,24 @@ POST /auth/0.1/logout?token=[refreshToken]
 -----------------------------------------------------------------------------------------------------
 Sign up a new user
 
-POST /signup?email=[email]&password=[password]
+POST /signup?email=[email]&password=[password] HTTP/1.1
 
-Request body: See testInputXML.xml (without the <data> tag).
-
+<xml>
+    <metadata>
+        <device>1</device>
+        <imei>123</imei>
+        <datanettype>LTE</datanettype>
+        <country>gb</country>
+        <network>O2 - UK</network>
+        <carrier>giffgaff</carrier>
+        <manufacturer>LGE</manufacturer>
+        <model>LG-D855</model>
+        <androidver>6.0</androidver>
+        <lastReboot>2016-06-12 19:20:34</lastReboot>
+        <timeZone>GMT +01:00</timeZone>
+        <defaultBrowser>com.android.chrome</defaultBrowser>
+    </metadata>
+</xml>
 -----------------------------------------------------------------------------------------------------
 Upload data from device
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/http/httputil"
 	"testing"
 
 	"github.com/gorilla/context"
@@ -18,13 +19,34 @@ import (
 
 /* Test controller functions */
 
+// Taken from testInputXML.xml
+var testXML = `
+<xml>
+    <metadata>
+        <device>1</device>
+        <imei>123</imei>
+        <datanettype>LTE</datanettype>
+        <country>gb</country>
+        <network>O2 - UK</network>
+        <carrier>giffgaff</carrier>
+        <manufacturer>LGE</manufacturer>
+        <model>LG-D855</model>
+        <androidver>6.0</androidver>
+        <lastReboot>2016-06-12 19:20:34</lastReboot>
+        <timeZone>GMT +01:00</timeZone>
+        <defaultBrowser>com.android.chrome</defaultBrowser>
+    </metadata>
+</xml>
+`
+
 func TestSignUp(t *testing.T) {
-	validXML := models.Upload{Meta: mocks.AboutDevices[1]}
-	invalidXML := models.Upload{}
+	validXML, _ := xml.Marshal(models.Upload{Meta: mocks.AboutDevices[1]})
+	validXML2 := []byte(testXML)
+	invalidXML, _ := xml.Marshal(models.Upload{})
 	var tests = []struct {
 		email       string
 		password    string
-		requestBody models.Upload
+		requestBody []byte
 		expected    string
 	}{
 		{"user@mail.com", "123456", validXML, "2"},
@@ -32,6 +54,7 @@ func TestSignUp(t *testing.T) {
 		{"user@mail.com", "", validXML, errNoPasswordOrEmail},
 		{"", "123456", validXML, errNoPasswordOrEmail},
 		{"user@mail.com", "123456", invalidXML, errNoDevice},
+		{"user2@mail.com", "123456", validXML2, "2"},
 	}
 
 	env := newEnv()
@@ -39,8 +62,9 @@ func TestSignUp(t *testing.T) {
 		url := fmt.Sprintf("/signup?email=%v&password=%v", test.email, test.password)
 
 		rec := httptest.NewRecorder()
-		reqBody, _ := xml.Marshal(test.requestBody)
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(test.requestBody))
+		dump, _ := httputil.DumpRequest(req, true)
+		t.Logf("\n%s", dump)
 
 		http.HandlerFunc(env.SignUp).ServeHTTP(rec, req)
 

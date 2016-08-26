@@ -15,11 +15,11 @@ type Device struct {
 // AboutDevice is the struct of the stored
 // device data
 type AboutDevice struct {
-	ID           int    `json:"id" db:"id"`
-	IMEI         string `json:"imei" db:"imei"`
-	Manufacturer string `json:"manufacturer" db:"manufacturer"`
-	Model        string `json:"model" db:"modelName"`
-	OS           string `json:"os" db:"osVersion"`
+	ID           int    `xml:"device" json:"id" db:"id"`
+	IMEI         string `xml:"imei" json:"imei" db:"imei"`
+	Manufacturer string `xml:"manufacturer" json:"manufacturer" db:"manufacturer"`
+	Model        string `xml:"model" json:"model" db:"modelName"`
+	OS           string `xml:"os" json:"os" db:"osVersion"`
 }
 
 // TrackedData contains all the tracked data of the device

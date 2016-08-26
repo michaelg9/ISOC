@@ -337,9 +337,9 @@ func TestGetDeviceFromUser(t *testing.T) {
 	for _, test := range tests {
 		result, err := db.GetDeviceFromUser(test.user, test.device)
 		if test.expectedErr != nil {
-			assert.EqualError(t, test.expectedErr, err.Error())
+			assert.EqualError(t, err, test.expectedErr.Error())
 		} else if assert.NoError(t, err) {
-			assert.Equal(t, result, test.expected)
+			assert.Equal(t, test.expected, result)
 		}
 	}
 }
@@ -348,24 +348,47 @@ func TestGetDevicesFromUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := User{ID: 1}
-	expected := devices
+	tests := []struct {
+		user        User
+		expected    []Device
+		expectedErr error
+	}{
+		{User{ID: 1}, devices, nil},
+		{User{ID: 42}, []Device{}, nil},
+	}
 
-	result, err := db.GetDevicesFromUser(user)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		result, err := db.GetDevicesFromUser(test.user)
+		if test.expectedErr != nil {
+			assert.EqualError(t, err, test.expectedErr.Error())
+		} else if assert.NoError(t, err) {
+			assert.Equal(t, test.expected, result)
+		}
+	}
 }
 
 func TestGetDeviceInfos(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := User{ID: 1}
-	expected := deviceInfos[:1]
+	tests := []struct {
+		user        User
+		expected    []AboutDevice
+		expectedErr error
+	}{
+		{User{ID: 1}, deviceInfos[:1], nil},
+		{User{ID: 42}, []AboutDevice(nil), nil},
+	}
 
-	result, err := db.getDeviceInfos(user)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		result, err := db.getDeviceInfos(test.user)
+		if test.expectedErr != nil {
+			t.Log(result)
+			assert.EqualError(t, err, test.expectedErr.Error())
+		} else if assert.NoError(t, err) {
+			assert.Equal(t, test.expected, result)
+		}
+	}
 }
 
 func TestGetData(t *testing.T) {
@@ -395,32 +418,53 @@ func TestCreateUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	newUser := users[1]
-	pwd, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
-	newUser.PasswordHash = string(pwd)
-	_, err := db.CreateUser(newUser)
-	assert.NoError(t, err)
+	tests := []struct {
+		newUser     User
+		password    string
+		expectedErr error
+	}{
+		{users[1], "123456", nil},
+	}
 
-	result, err := db.GetUser(newUser)
-	assert.NoError(t, err)
-	assert.Equal(t, newUser, result)
+	for _, test := range tests {
+		pwd, _ := bcrypt.GenerateFromPassword([]byte(test.password), bcrypt.DefaultCost)
+		test.newUser.PasswordHash = string(pwd)
+		_, err := db.CreateUser(test.newUser)
+		if test.expectedErr != nil {
+			assert.EqualError(t, test.expectedErr, err.Error())
+		} else if assert.NoError(t, err) {
+			result, err := db.GetUser(test.newUser)
+			assert.NoError(t, err)
+			assert.Equal(t, test.newUser, result)
+		}
+	}
 }
 
 func TestCreateDeviceForUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := users[0]
-	newDevice := deviceInfos[1]
+	tests := []struct {
+		user            User
+		newDevice       AboutDevice
+		existingDevices []AboutDevice
+		expectedErr     error
+	}{
+		{users[0], deviceInfos[1], deviceInfos[:1], nil},
+		{users[0], AboutDevice{ID: 3}, deviceInfos, nil},
+	}
 
-	_, err := db.CreateDeviceForUser(user, newDevice)
-	assert.NoError(t, err)
-
-	oldDevice := deviceInfos[0]
-	expected := []AboutDevice{oldDevice, newDevice}
-	result, err := db.getDeviceInfos(user)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		_, err := db.CreateDeviceForUser(test.user, test.newDevice)
+		if test.expectedErr != nil {
+			assert.EqualError(t, test.expectedErr, err.Error())
+		} else if assert.NoError(t, err) {
+			expected := append(test.existingDevices, test.newDevice)
+			result, err := db.getDeviceInfos(test.user)
+			assert.NoError(t, err)
+			assert.Equal(t, expected, result)
+		}
+	}
 }
 
 func TestCreateData(t *testing.T) {
@@ -459,20 +503,53 @@ func TestUpdateUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := users[0]
-	user.Email = "user2@mail.com"
-	pwd, err := bcrypt.GenerateFromPassword([]byte("12345"), bcrypt.DefaultCost)
-	assert.NoError(t, err)
-	user.PasswordHash = string(pwd)
-	user.APIKey = "1"
-	// user.Admin = false
-	err = db.UpdateUser(user)
-	assert.NoError(t, err)
+	tests := []struct {
+		newEmail    string
+		newPassword string
+		newAPIKey   string
+		//    isAdmin bool
+	}{
+		{"user2@mail.com", "12345", "1"},
+		{"user@mail.com", "", ""},
+		{"", "123456", ""},
+		{"", "", "1"},
+		{"", "", ""},
+	}
 
-	result, err := db.GetUser(user)
-	user.APIKey = result.APIKey
-	assert.NoError(t, err)
-	assert.Equal(t, user, result)
+	for _, test := range tests {
+		oldUser, _ := db.GetUser(User{ID: 1})
+
+		newUser := User{ID: 1, Admin: true}
+		newUser.Email = test.newEmail
+
+		if test.newPassword != "" {
+			pwd, _ := bcrypt.GenerateFromPassword([]byte(test.newPassword), bcrypt.DefaultCost)
+			newUser.PasswordHash = string(pwd)
+		} else {
+			newUser.PasswordHash = ""
+		}
+
+		newUser.APIKey = test.newAPIKey
+		err := db.UpdateUser(newUser)
+		assert.NoError(t, err)
+
+		result, err := db.GetUser(User{ID: 1})
+		assert.NoError(t, err)
+
+		if test.newEmail == "" {
+			newUser.Email = oldUser.Email
+		}
+		if test.newPassword == "" {
+			newUser.PasswordHash = oldUser.PasswordHash
+		}
+		if test.newAPIKey == "" {
+			newUser.APIKey = oldUser.APIKey
+		} else {
+			newUser.APIKey = result.APIKey
+		}
+
+		assert.Equal(t, newUser, result)
+	}
 }
 
 func TestUpdateDevice(t *testing.T) {
