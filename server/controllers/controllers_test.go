@@ -252,7 +252,7 @@ func TestGetDevice(t *testing.T) {
 }
 
 func TestGetFeature(t *testing.T) {
-	jsonResponse, _ := json.Marshal(models.TrackedData{Battery: mocks.BatteryData[:1]})
+	jsonResponse, _ := json.Marshal(models.Features{Battery: mocks.BatteryData[:1]})
 	var tests = []struct {
 		user     models.User
 		id       int

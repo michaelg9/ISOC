@@ -185,7 +185,7 @@ var deviceInfos = []AboutDevice{
 var devices = []Device{
 	Device{
 		AboutDevice: deviceInfos[0],
-		Data: TrackedData{
+		Data: Features{
 			Battery: batteryData[:1],
 		},
 	},
@@ -390,7 +390,7 @@ func TestGetDeviceInfos(t *testing.T) {
 	}
 }
 
-func TestGetData(t *testing.T) {
+func TestGetFeatureOfDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
@@ -406,7 +406,47 @@ func TestGetData(t *testing.T) {
 
 	device := deviceInfos[0]
 	for _, test := range tests {
-		err := db.GetData(device, test.ptrToResult)
+		err := db.GetFeatureOfDevice(device, test.ptrToResult)
+		assert.NoError(t, err)
+		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
+		assert.Equal(t, test.expected, result)
+	}
+}
+
+func TestGetAllUsers(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	result, err := db.GetAllUsers()
+	assert.NoError(t, err)
+	assert.Equal(t, users[:1], result)
+}
+
+func TestGetAllDevices(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	result, err := db.GetAllDevices()
+	assert.NoError(t, err)
+	assert.Equal(t, deviceInfos[:1], result)
+}
+
+func TestGetAllFeatureData(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	var tests = []struct {
+		ptrToResult interface{}
+		expected    interface{}
+	}{
+		{&[]Battery{}, batteryData[:1]},
+		{&[]Call{}, callData[:1]},
+		{&[]App{}, appData[:1]},
+		{&[]Runservice{}, runserviceData[:1]},
+	}
+
+	for _, test := range tests {
+		err := db.GetAllFeatureData(test.ptrToResult)
 		assert.NoError(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
 		assert.Equal(t, test.expected, result)
@@ -466,7 +506,7 @@ func TestCreateDeviceForUser(t *testing.T) {
 	}
 }
 
-func TestCreateData(t *testing.T) {
+func TestCreateFeatureForDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
@@ -488,10 +528,10 @@ func TestCreateData(t *testing.T) {
 
 	device := deviceInfos[0]
 	for _, test := range tests {
-		err := db.CreateData(device, test.toInsert)
+		err := db.CreateFeatureForDevice(device, test.toInsert)
 		assert.NoError(t, err)
 
-		err = db.GetData(device, test.ptrToResult)
+		err = db.GetFeatureOfDevice(device, test.ptrToResult)
 		assert.NoError(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
 		assert.Equal(t, test.expected, result)

@@ -44,7 +44,7 @@ var AboutDevices = []models.AboutDevice{
 var Devices = []models.Device{
 	models.Device{
 		AboutDevice: AboutDevices[0],
-		Data: models.TrackedData{
+		Data: models.Features{
 			Battery: BatteryData[:1],
 		},
 	},
@@ -66,15 +66,15 @@ var BatteryData = []models.Battery{
 var Uploads = []models.Upload{
 	// Should work
 	models.Upload{
-		Meta:        models.AboutDevice{ID: 1},
-		TrackedData: trackedData,
+		Meta:     models.AboutDevice{ID: 1},
+		Features: features,
 	},
 	// Should fail
 	models.Upload{
-		TrackedData: trackedData,
+		Features: features,
 	},
 }
 
-var trackedData = models.TrackedData{
+var features = models.Features{
 	Battery: BatteryData,
 }

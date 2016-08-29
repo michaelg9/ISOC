@@ -1,15 +1,11 @@
 package models
 
-import (
-	"reflect"
-
-	"github.com/fatih/structs"
-)
+import "github.com/fatih/structs"
 
 // Device contains all stored information about one device
 type Device struct {
 	AboutDevice AboutDevice `xml:"about-device" json:"aboutDevice"`
-	Data        TrackedData `xml:"device-data" json:"data"`
+	Data        Features    `xml:"device-data" json:"data"`
 }
 
 // AboutDevice is the struct of the stored
@@ -22,22 +18,11 @@ type AboutDevice struct {
 	OS           string `xml:"os" json:"os" db:"osVersion"`
 }
 
-// TrackedData contains all the tracked data of the device
-type TrackedData struct {
-	Battery []Battery `xml:"battery,omitempty" json:"battery,omitempty"`
-}
-
-// GetContents returns a slice of pointers to all the data of the device in the struct.
-// We need to return pointers in order to preserve the underlying type.
-func (deviceData *TrackedData) GetContents() []interface{} {
-	v := reflect.Indirect(reflect.ValueOf(deviceData))
-	contents := make([]interface{}, v.NumField())
-
-	for i := range contents {
-		contents[i] = v.Field(i).Addr().Interface()
-	}
-
-	return contents
+// GetAllDevices gets all registered devices.
+func (db *DB) GetAllDevices() (devices []AboutDevice, err error) {
+	getDevicesQuery := `SELECT id, imei, manufacturer, modelName, osVersion FROM Device;`
+	err = db.Select(&devices, getDevicesQuery)
+	return
 }
 
 // GetDeviceFromUser gets a device and its tracked data by the Device ID and the user ID.
@@ -60,7 +45,7 @@ func (db *DB) GetDeviceFromUser(user User, device Device) (fullDevice Device, er
 	}
 
 	for _, data := range fullDevice.Data.GetContents() {
-		err = db.GetData(device.AboutDevice, data)
+		err = db.GetFeatureOfDevice(device.AboutDevice, data)
 		if err != nil {
 			return
 		}
@@ -88,7 +73,7 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 		// Get pointers to the arrays which store the tracked data
 		// and fill them with the data from the DB
 		for _, data := range devices[i].Data.GetContents() {
-			err = db.GetData(d.AboutDevice, data)
+			err = db.GetFeatureOfDevice(d.AboutDevice, data)
 			if err != nil {
 				return
 			}

@@ -20,8 +20,8 @@ type Datastore interface {
 	CreateDeviceForUser(user User, aboutDevice AboutDevice) (insertedID int, err error)
 	UpdateDevice(aboutDevice AboutDevice) error
 	DeleteDevice(aboutDevice AboutDevice) error
-	GetData(aboutDevice AboutDevice, ptrToData interface{}) error
-	CreateData(aboutDevice AboutDevice, ptrToData interface{}) error
+	GetFeatureOfDevice(aboutDevice AboutDevice, ptrToData interface{}) error
+	CreateFeatureForDevice(aboutDevice AboutDevice, ptrToData interface{}) error
 }
 
 // DB is the database struct

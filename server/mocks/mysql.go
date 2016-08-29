@@ -66,7 +66,7 @@ func (mdb *MockDB) DeleteDevice(aboutDevice models.AboutDevice) error {
 	return nil
 }
 
-func (mdb *MockDB) GetData(aboutDevice models.AboutDevice, ptrToData interface{}) error {
+func (mdb *MockDB) GetFeatureOfDevice(aboutDevice models.AboutDevice, ptrToData interface{}) error {
 	if aboutDevice.ID == 1 {
 		var getData = map[reflect.Type]interface{}{
 			reflect.TypeOf([]models.Battery{}): BatteryData[:1],
@@ -78,6 +78,6 @@ func (mdb *MockDB) GetData(aboutDevice models.AboutDevice, ptrToData interface{}
 	return sql.ErrNoRows
 }
 
-func (mdb *MockDB) CreateData(aboutDevice models.AboutDevice, ptrToData interface{}) error {
+func (mdb *MockDB) CreateFeatureForDevice(aboutDevice models.AboutDevice, ptrToData interface{}) error {
 	return nil
 }

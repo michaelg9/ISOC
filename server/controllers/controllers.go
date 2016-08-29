@@ -133,8 +133,8 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// If decoding was successfull input the data into the database
-	for _, data := range d.TrackedData.GetContents() {
-		err := env.DB.CreateData(models.AboutDevice{ID: deviceID}, data)
+	for _, data := range d.Features.GetContents() {
+		err := env.DB.CreateFeatureForDevice(models.AboutDevice{ID: deviceID}, data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -313,14 +313,14 @@ func (env *Env) GetFeature(w http.ResponseWriter, r *http.Request) {
 
 // getFeatureResponse queries the database to get the feature with the given name from the device
 // with the specified device ID.
-func getFeatureResponse(env *Env, feature string, deviceID int) (response models.TrackedData, err error) {
+func getFeatureResponse(env *Env, feature string, deviceID int) (response models.Features, err error) {
 	// Get the reflect value of the field with the name of the feature
 	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)
 	// Get a pointer to the feature value
 	featurePtr := featureValue.Addr().Interface()
 
 	// Get the feature data from the specified device and save it to the response struct
-	err = env.DB.GetData(models.AboutDevice{ID: deviceID}, featurePtr)
+	err = env.DB.GetFeatureOfDevice(models.AboutDevice{ID: deviceID}, featurePtr)
 	return
 }
 

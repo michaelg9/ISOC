@@ -9,6 +9,13 @@ type User struct {
 	Admin        bool   `db:"admin" json:"admin"` // TODO: Use pointer
 }
 
+// GetAllUsers gets all registered users.
+func (db *DB) GetAllUsers() (users []User, err error) {
+	getUsersQuery := `SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey, admin FROM User;`
+	err = db.Select(&users, getUsersQuery)
+	return
+}
+
 // GetUser gets a user with the specified email
 func (db *DB) GetUser(user User) (fullUser User, err error) {
 	getUserQuery := `SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey, admin FROM User
