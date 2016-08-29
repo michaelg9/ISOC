@@ -1,10 +1,7 @@
-// TODO: Comment
-// TODO: RequireJS and capitalize modules
-
 // JQuery listeners
 $(document).ready(function() {
     // Get the userdata from the server
-    user.initUser();
+    User.initUser();
 
     // Listener for daterangepicker
     $("#daterangepicker").daterangepicker({
@@ -16,12 +13,12 @@ $(document).ready(function() {
         }
     }, function(startDate, endDate, label) {
         // When user selects daterange update the graph
-        graphs.updateBatteryGraph(startDate, endDate);
+        Graphs.updateBatteryGraph(startDate, endDate);
     });
 
     // Logout the user on logout link
     $(".logout").on("click", function() {
-        tokenAuth.logout();
+        TokenAuth.logout();
     });
 
     // Add the modal prompt for new email
@@ -29,20 +26,20 @@ $(document).ready(function() {
         e.preventDefault();
         bootbox.prompt("Please enter your new email", function(result) {
             if (result !== "") {
-                user.updateEmail(result);
+                User.updateEmail(result);
             }
         });
     });
 
     $("#updateAPIKey").on("click", function (e) {
         e.preventDefault();
-        user.updateAPIKey();
+        User.updateAPIKey();
     });
 
     $("#batteryJSON").on("click", function() {
         // Get the battery data from the current device in JSON format
-        downloads
-        .getFeature(user.getCurrentDevice().aboutDevice.id, "Battery", "json")
+        Downloads
+        .getFeature(User.getCurrentDevice().aboutDevice.id, "Battery", "json")
         .done(function(data) {
             var blob = new Blob([JSON.stringify(data)], {type: "application/json"});
             saveAs(blob, "Battery.json");

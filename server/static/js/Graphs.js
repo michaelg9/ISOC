@@ -1,4 +1,4 @@
-var graphs = (function() {
+var Graphs = (function() {
     var batteryGraph;
 
     var createBatteryGraph = function (context, batteryData) {

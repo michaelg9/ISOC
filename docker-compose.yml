@@ -3,10 +3,10 @@ services:
   go-server:
     build: ./server
     # Uncomment when on GCE
-    # command: gin -a 8080 -b .gin-bin run
+    # command: server
     ports:
      - "3000:3000"
-     - "8080:8080"
+    restart: always # round-about way to wait for mysql-server to start up
     # Comment this out if deploying on GCE
     volumes:
      - ./server:/go/src/github.com/michaelg9/ISOC/server
@@ -22,7 +22,7 @@ services:
      - TEST_MYSQL_USER=root
      - TEST_MYSQL_PWD=123
      - REDIS_HOST=redis
-     - PORT=8080
+     - PORT=3000
   mysql:
     build: ./test_db
   # Comment out test-db when on GCE

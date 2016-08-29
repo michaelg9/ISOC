@@ -1,4 +1,4 @@
-var user = (function() {
+var User = (function() {
     var updateUserURL = "../update/user?";
 
     // Used to store the info about the current user
@@ -14,13 +14,13 @@ var user = (function() {
     // to rivetjs and create graphs.
     var initUser = function() {
         var userURL = "../data/" + sessionStorage.userID;
-        tokenAuth.makeAuthRequest(userURL, "GET", {}).done(function(result) {
+        TokenAuth.makeAuthRequest(userURL, "GET", {}).done(function(result) {
             setUserInfo(result.user);
             devices = result.devices;
             currentDevice = devices[0];
             rivets.bind($("#userInfo"), {userInfo: info});
             rivets.bind($("#deviceInfo"), {deviceInfo: currentDevice.aboutDevice});
-            graphs.createBatteryGraph($("#batteryGraph"), currentDevice.data.battery);
+            Graphs.createBatteryGraph($("#batteryGraph"), currentDevice.data.battery);
         }).fail(function(result) {
             console.error(result);
         });
@@ -37,7 +37,7 @@ var user = (function() {
     // Get new userdata from the server
     var updateUserInfo = function() {
         var userDataURL = "../data/" + sessionStorage.userID;
-        tokenAuth.makeAuthRequest(userDataURL, "GET", {}).done(function(data) {
+        TokenAuth.makeAuthRequest(userDataURL, "GET", {}).done(function(data) {
             setUserInfo(data.user);
         }).fail(function (result) {
             console.error(result);
@@ -46,7 +46,7 @@ var user = (function() {
 
     var updateEmail = function(newEmail) {
         var updateData = {email: newEmail};
-        tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
+        TokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
             updateUserInfo();
         }).fail(function(result) {
             console.error(result);
@@ -55,7 +55,7 @@ var user = (function() {
 
     var updateAPIKey = function() {
         var updateData = {apiKey: "1"}; // Use 1 for true
-        tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
+        TokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
             updateUserInfo();
         }).fail(function(result) {
             console.error(result);

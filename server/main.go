@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
@@ -18,6 +19,7 @@ import (
 const dbNR = 0
 
 func main() {
+	time.sleep(20 * time.Second)
 	db := startDB()
 	sessionStore := startSessions()
 	tokenstore := models.NewTokenstore(os.Getenv("REDIS_HOST")+":6379", dbNR)

@@ -1,4 +1,6 @@
-var tokenAuth = (function() {
+// TODO: Comment
+
+var TokenAuth = (function() {
     var tokenURL = "../auth/0.1/token";
 
     var refreshAccessToken = function() {

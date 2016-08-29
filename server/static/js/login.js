@@ -3,7 +3,7 @@ $(document).ready(function(){
     $("#login-btn").on("click", function(){
         var email = $("#email").val();
         var password = $("#password").val();
-        tokenAuth.login(email, password).done(function() {
+        TokenAuth.login(email, password).done(function() {
             // If login was successfull redirect to dashboad
             window.location = "../dashboard";
         }).fail(function(data, textStatus, jqXHR) {
