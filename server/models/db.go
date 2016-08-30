@@ -12,12 +12,12 @@ import (
 // Datastore is the interface for the database actions
 type Datastore interface {
 	GetUser(user User) (fullUser User, err error)
-	CreateUser(user User) error
+	CreateUser(user User) (insertedID int, err error)
 	UpdateUser(user User) error
 	DeleteUser(user User) error
 	GetDeviceFromUser(user User, device Device) (fullDevice Device, err error)
 	GetDevicesFromUser(user User) ([]Device, error)
-	CreateDeviceForUser(user User, aboutDevice AboutDevice) error
+	CreateDeviceForUser(user User, aboutDevice AboutDevice) (insertedID int, err error)
 	UpdateDevice(aboutDevice AboutDevice) error
 	DeleteDevice(aboutDevice AboutDevice) error
 	GetData(aboutDevice AboutDevice, ptrToData interface{}) error

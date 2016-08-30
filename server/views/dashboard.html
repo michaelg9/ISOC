@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" ng-app="dashboardApp" ng-controller="dashboardController">
+<html lang="en">
 <head>
   <title>Monitor</title>
   <meta charset="utf-8">
@@ -9,8 +9,10 @@
   <!-- Dependencies for Bootstrap -->
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
-  <!-- Dependencies for Angular.js -->
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.6/angular.min.js"></script>
+  <!-- Dependencies for rivets.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/rivets/0.9.4/rivets.bundled.min.js"></script>
+  <!-- Dependencies for FileSaver.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2014-11-29/FileSaver.min.js"></script>
   <!-- Dependencies for Chart.js -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.13.0/moment.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.1.6/Chart.min.js"></script>
@@ -39,7 +41,7 @@
     <div class="collapse navbar-collapse" id="myNavbar">
       <ul class="nav navbar-nav">
         <li class="active"><a href="">Dashboard</a></li>
-        <li ng-if="userInfo.admin"><a href="/dashboard/admin">Admin</a></li>
+        <li rv-show="userInfo.admin"><a href="/dashboard/admin">Admin</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul>
     </div>
@@ -53,7 +55,7 @@
       <h2>Monitor</h2>
       <ul class="nav nav-pills nav-stacked">
         <li class="active"><a href="">Dashboard</a></li>
-        <li ng-if="userInfo.admin"><a href="/dashboard/admin">Admin</a></li>
+        <li rv-show="userInfo.admin"><a href="/dashboard/admin">Admin</a></li>
         <li><a href="" class="logout">Log out</a></li>
       </ul><br>
     </div>
@@ -65,19 +67,19 @@
           <div class="well">
             <h4>Device</h4>
             <div class="table-responsive">
-              <table class="table borderless">
+              <table class="table borderless" id="deviceInfo">
                 <tbody>
                   <tr>
                     <td><b>Model:</b></td>
-                    <td>{{deviceInfo.model}}</td>
+                    <td>{deviceInfo.model}</td>
                   </tr>
                   <tr>
                     <td><b>Manufacturer:</b></td>
-                    <td>{{deviceInfo.manufacturer}}</td>
+                    <td>{deviceInfo.manufacturer}</td>
                   </tr>
                   <tr>
                     <td><b>Operating System:</b></td>
-                    <td>{{deviceInfo.os}}</td>
+                    <td>{deviceInfo.os}</td>
                   </tr>
                 </tbody>
               </table>
@@ -88,16 +90,16 @@
           <div class="well">
             <h4>My Details</h4>
             <div class="table-responsive">
-              <table class="table borderless">
+              <table class="table borderless" id="userInfo">
                 <tbody>
                   <tr>
                     <td><b>Email:</b></td>
-                    <td>{{userInfo.email}}</td>
+                    <td>{userInfo.email}</td>
                     <td><a href="" id="editEmail">Edit</a></td>
                   </tr>
                   <tr>
                     <td><b>API key:</b></td>
-                    <td>{{userInfo.apiKey}}</td>
+                    <td>{userInfo.apiKey}</td>
                     <td><a href="" id="updateAPIKey">Get new key</a></td>
                   </tr>
                 </tbody>
@@ -117,7 +119,7 @@
               </div>
             </div>
             <canvas id="batteryChart" width="400" height="400"></canvas>
-            <a class="btn btn-info" role="button" ng-click="saveBatteryJSON()">Download JSON</a>
+            <a class="btn btn-info" role="button" id="batteryJSON">Download JSON</a>
           </div>
         </div>
         <div class="col-sm-6">

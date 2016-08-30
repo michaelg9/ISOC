@@ -19,19 +19,58 @@ import (
 /* Test controller functions */
 
 func TestSignUp(t *testing.T) {
+	validXML := models.Upload{Meta: mocks.AboutDevices[1]}
+	invalidXML := models.Upload{}
 	var tests = []struct {
-		url      string
-		expected string
+		email       string
+		password    string
+		requestBody models.Upload
+		expected    string
 	}{
-		{"/signup?email=user@mail.com&password=123456", "Success"},
-		{"/signup?email=user@usermail.com&password=123456", errUserExists},
-		{"/signup?email=bla@blabla", errNoPasswordOrEmail},
-		{"/signup?password=123456", errNoPasswordOrEmail},
+		{"user@mail.com", "123456", validXML, "2"},
+		{"user@usermail.com", "123456", validXML, errUserExists},
+		{"user@mail.com", "", validXML, errNoPasswordOrEmail},
+		{"", "123456", validXML, errNoPasswordOrEmail},
+		{"user@mail.com", "123456", invalidXML, errNoDevice},
 	}
 
 	env := newEnv()
 	for _, test := range tests {
-		testController(env.SignUp, "POST", test.url, test.expected, t)
+		url := fmt.Sprintf("/signup?email=%v&password=%v", test.email, test.password)
+
+		rec := httptest.NewRecorder()
+		reqBody, _ := xml.Marshal(test.requestBody)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+
+		http.HandlerFunc(env.SignUp).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		assert.Contains(t, obtained, test.expected)
+	}
+}
+
+func TestUpload(t *testing.T) {
+	var tests = []struct {
+		requestBody models.Upload
+		expected    string
+	}{
+		{mocks.Uploads[0], http.StatusText(http.StatusOK)},
+		{mocks.Uploads[1], errNoDeviceID + "\n"},
+	}
+
+	env := newEnv()
+	for _, test := range tests {
+		url := fmt.Sprint("/app/0.1/upload")
+
+		rec := httptest.NewRecorder()
+		reqBody, _ := xml.Marshal(test.requestBody)
+		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
+		context.Set(req, UserKey, mocks.Users[0])
+
+		http.HandlerFunc(env.Upload).ServeHTTP(rec, req)
+
+		obtained := rec.Body.String()
+		assert.Equal(t, test.expected, obtained)
 	}
 }
 
@@ -110,31 +149,6 @@ func TestTokenLogout(t *testing.T) {
 	}
 }
 
-func TestUpload(t *testing.T) {
-	var tests = []struct {
-		requestBody models.Upload
-		expected    string
-	}{
-		{mocks.Uploads[0], "Success"},
-		{mocks.Uploads[1], errNoDeviceID + "\n"},
-	}
-
-	env := newEnv()
-	for _, test := range tests {
-		url := fmt.Sprint("/app/0.1/upload")
-
-		rec := httptest.NewRecorder()
-		reqBody, _ := xml.Marshal(test.requestBody)
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
-		context.Set(req, UserKey, mocks.Users[0])
-
-		http.HandlerFunc(env.Upload).ServeHTTP(rec, req)
-
-		obtained := rec.Body.String()
-		assert.Equal(t, test.expected, obtained)
-	}
-}
-
 func TestUpdateUser(t *testing.T) {
 	var tests = []struct {
 		email        string
@@ -143,11 +157,11 @@ func TestUpdateUser(t *testing.T) {
 		expectedCode int
 		expectedBody string
 	}{
-		{"user@mail.com", "123", 1, 200, ""},
-		{"user@mail.com", "1234", 0, 200, ""},
-		{"user@mail.com", "", 0, 200, ""},
-		{"", "", 0, 200, ""},
-		{"", "", 42, 200, ""},
+		{"user@mail.com", "123", 1, 200, http.StatusText(http.StatusOK)},
+		{"user@mail.com", "1234", 0, 200, http.StatusText(http.StatusOK)},
+		{"user@mail.com", "", 0, 200, http.StatusText(http.StatusOK)},
+		{"", "", 0, 200, http.StatusText(http.StatusOK)},
+		{"", "", 1, 200, http.StatusText(http.StatusOK)},
 	}
 
 	env := newEnv()

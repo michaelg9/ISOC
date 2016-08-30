@@ -1,68 +1,6 @@
-var retrieveDataURL = "../data/0.1/user";
 var batteryChart;
 
-// TODO: Use jQuery instead of Angular
-// TODO: Error handling
-
-// Angular app
-var app = angular.module("dashboardApp", []);
-app.factory("userService", function($http) {
-    return {
-        getUser: function() {
-            return $http.get("../data/" + sessionStorage.userID, {
-                headers: {"Authorization": "Bearer " + sessionStorage.accessToken}
-            });
-        },
-        saveUser: function($scope) {
-            return function(response) {
-                $scope.user = response.data;
-                $scope.deviceInfo = $scope.user.devices[0].aboutDevice;
-                $scope.userInfo = $scope.user.user;
-                createBatteryGraph($scope.user.devices[0].data.battery);
-            };
-        }
-    };
-});
-
-app.factory("downloadService", function($http) {
-    return {
-        getFeature: function(deviceID, feature, type) {
-            return $http.get("../data/" + sessionStorage.userID + "/" + deviceID + "/" + feature + "?out=" + type, {
-                headers: {"Authorization": "Bearer " + sessionStorage.accessToken},
-                responseType: "arraybuffer"
-            });
-        },
-        getAccessToken: function() {
-            return $http.post("../auth/0.1/token");
-        }
-    };
-});
-
-app.controller("dashboardController", function($scope, userService, downloadService) {
-    userService.getUser().then(userService.saveUser($scope)).catch(function(response) {
-        if (response.status == 403) {
-            downloadService.getAccessToken().then(function(response) {
-                sessionStorage.accessToken = response.data.accessToken;
-                userService.getUser().then(userService.saveUser($scope));
-            });
-        }
-    });
-    $scope.saveBatteryJSON = function() {
-        var controllerElement = document.querySelector("[ng-controller=dashboardController]");
-        var scope = angular.element(controllerElement).scope();
-        var fileName = "battery.json";
-        var a = document.createElement("a");
-        document.body.appendChild(a);
-        a.style = "display: none";
-        downloadService.getFeature(scope.deviceInfo.id, "Battery", "json").then(function (result) {
-            var file = new Blob([result.data], {type: "application/json"});
-            var fileURL = window.URL.createObjectURL(file);
-            a.href = fileURL;
-            a.download = fileName;
-            a.click();
-        });
-    };
-});
+// TODO: Restructure in seperate files and comment
 
 function createBatteryGraph(batteryData) {
     // Sort data according to time so it gets displayed properly
@@ -186,23 +124,41 @@ var user = (function() {
     var updateUserURL = "../update/user?";
 
     // Used to store the info about the current user
-    var info;
-    var devices;
+    var info = {};
+    var devices = [];
+    var currentDevice = {};
 
-    var changeUserInfo = function (data) {
-        var controllerElement = document.querySelector("[ng-controller=dashboardController]");
-        var $scope = angular.element(controllerElement).scope();
-        $scope.$apply(function() {
-            $scope.userInfo = data;
+    var getCurrentDevice = function() {
+        return currentDevice;
+    };
+
+    var getUser = function() {
+        var userURL = "../data/" + sessionStorage.userID;
+        tokenAuth.makeAuthRequest(userURL, "GET", {}).done(function(result) {
+            setUserInfo(result.user);
+            devices = result.devices;
+            currentDevice = devices[0];
+            rivets.bind($("#userInfo"), {userInfo: info});
+            rivets.bind($("#deviceInfo"), {deviceInfo: currentDevice.aboutDevice});
+            createBatteryGraph(currentDevice.data.battery);
+        }).fail(function(result) {
+            console.error(result);
         });
+    };
+
+    var setUserInfo = function (data) {
+        // We have to update each attribute seperately because otherwise
+        // rivetjs does not update the view
+        info.email = data.email;
+        info.apiKey = data.apiKey;
     };
 
     var updateUserInfo = function() {
         var userDataURL = "../data/" + sessionStorage.userID;
         tokenAuth.makeAuthRequest(userDataURL, "GET", {}).done(function(data) {
-            changeUserInfo(data.user);
-        }).fail(function (data, textStatus, jqXHR) {
-            console.error(data);
+            setUserInfo(data.user);
+        }).fail(function (result) {
+            console.error(result);
         });
     };
 
@@ -210,8 +166,8 @@ var user = (function() {
         var updateData = {email: newEmail};
         tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
             updateUserInfo();
-        }).fail(function(data, textStatus, jqXHR) {
-            console.error(data);
+        }).fail(function(result) {
+            console.error(result);
         });
     };
 
@@ -219,19 +175,34 @@ var user = (function() {
         var updateData = {apiKey: "1"}; // Use 1 for true
         tokenAuth.makeAuthRequest(updateUserURL, "POST", updateData).done(function () {
             updateUserInfo();
-        }).fail(function(data, textStatus, jqXHR) {
-            console.error(data);
+        }).fail(function(result) {
+            console.error(result);
         });
     };
 
     return {
+        getCurrentDevice: getCurrentDevice,
+        getUser: getUser,
         updateEmail: updateEmail,
         updateAPIKey: updateAPIKey
     };
 })();
 
+var downloads = (function() {
+    var getFeature = function(deviceID, feature, format) {
+        var featureURL = "../data/" + sessionStorage.userID + "/" + deviceID + "/" + feature;
+        return tokenAuth.makeAuthRequest(featureURL, "GET", {out: format});
+    };
+
+    return {
+        getFeature: getFeature
+    };
+})();
+
 // JQuery listeners
 $(document).ready(function() {
+    user.getUser();
+
     // Listener for daterangepicker
     $("#daterangepicker").daterangepicker({
         startDate: moment().subtract(7, "days"),
@@ -252,7 +223,8 @@ $(document).ready(function() {
     });
 
     // Add the modal prompt for new email
-    $("#editEmail").on("click", function() {
+    $("#editEmail").on("click", function(e) {
+        e.preventDefault();
         bootbox.prompt("Please enter your new email", function(result) {
             if (result !== "") {
                 user.updateEmail(result);
@@ -260,7 +232,17 @@ $(document).ready(function() {
         });
     });
 
-    $("#updateAPIKey").on("click", function () {
+    $("#updateAPIKey").on("click", function (e) {
+        e.preventDefault();
         user.updateAPIKey();
+    });
+
+    $("#batteryJSON").on("click", function() {
+        downloads.getFeature(user.getCurrentDevice().aboutDevice.id, "Battery", "json").done(function(data) {
+            var blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+            saveAs(blob, "Battery.json");
+        }).fail(function(data, textStatus, jqXHR) {
+            console.error(textStatus);
+        });
     });
 });

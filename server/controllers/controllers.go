@@ -35,6 +35,7 @@ const (
 	errWrongDeviceOrUser   = "The given user ID/device ID combination is not valid."
 	errForbidden           = "Forbidden resource access."
 	errUserExists          = "User already exists."
+	errNoDevice            = "No device data specified."
 
 	hmacSecret = "secret"
 )
@@ -73,6 +74,15 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	decoder := xml.NewDecoder(r.Body)
+
+	// Decode the given XML from the request body into the struct defined in models
+	var d models.Upload
+	if err = decoder.Decode(&d); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
 	// Create new user with hashed password
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -81,13 +91,26 @@ func (env *Env) SignUp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Insert the credentials of the new user into the database
-	err = env.DB.CreateUser(models.User{Email: email, PasswordHash: string(hashedPassword)})
+	userID, err := env.DB.CreateUser(models.User{Email: email, PasswordHash: string(hashedPassword)})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprintf(w, "Success")
+	device := d.Meta
+	noDevice := device == models.AboutDevice{}
+	if noDevice {
+		http.Error(w, errNoDevice, http.StatusBadRequest)
+		return
+	}
+
+	deviceID, err := env.DB.CreateDeviceForUser(models.User{ID: userID}, device)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, deviceID)
 }
 
 // Upload handles /app/0.1/upload
@@ -101,7 +124,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	deviceID := d.Meta.Device
+	deviceID := d.Meta.ID
 	// Check if the device ID was specified in the input.
 	// If no ID was specified it defaults to 0.
 	if deviceID == 0 {
@@ -118,7 +141,7 @@ func (env *Env) Upload(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	fmt.Fprint(w, "Success")
+	fmt.Fprint(w, http.StatusText(http.StatusOK))
 }
 
 // UpdateUser handles /update/user
@@ -156,6 +179,8 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Fprint(w, http.StatusText(http.StatusOK))
 }
 
 // GetUser handles /data/{user}. It gets all the devices and its data from
@@ -314,7 +339,6 @@ func userIsAuthorized(r *http.Request, givenID int) bool {
 
 // writeResponse prints a given struct in the specified format to the response writer. If no
 // format is specified it will be JSON.
-// TODO: Add csv support
 func writeResponse(w http.ResponseWriter, format string, response interface{}) (err error) {
 	var out []byte
 	switch format {

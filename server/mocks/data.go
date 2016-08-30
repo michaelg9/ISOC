@@ -8,7 +8,7 @@ var (
 	RefreshToken = "1234"
 )
 
-// Users is a slice of sample Users.
+// Users is a slice of sample users.
 var Users = []models.User{
 	models.User{
 		ID:           1,
@@ -40,7 +40,7 @@ var AboutDevices = []models.AboutDevice{
 	},
 }
 
-// Devices is a slice of sample Devices.
+// Devices is a slice of sample devices.
 var Devices = []models.Device{
 	models.Device{
 		AboutDevice: AboutDevices[0],
@@ -50,7 +50,7 @@ var Devices = []models.Device{
 	},
 }
 
-// BatteryData is a slice of sample Battery data.
+// BatteryData is a slice of sample battery data.
 var BatteryData = []models.Battery{
 	models.Battery{
 		Value: 70,
@@ -62,10 +62,11 @@ var BatteryData = []models.Battery{
 	},
 }
 
+// Uploads is a slice of sample upload structs.
 var Uploads = []models.Upload{
 	// Should work
 	models.Upload{
-		Meta:        models.Meta{Device: 1},
+		Meta:        models.AboutDevice{ID: 1},
 		TrackedData: trackedData,
 	},
 	// Should fail

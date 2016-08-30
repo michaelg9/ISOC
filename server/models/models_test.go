@@ -398,7 +398,7 @@ func TestCreateUser(t *testing.T) {
 	newUser := users[1]
 	pwd, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
 	newUser.PasswordHash = string(pwd)
-	err := db.CreateUser(newUser)
+	_, err := db.CreateUser(newUser)
 	assert.NoError(t, err)
 
 	result, err := db.GetUser(newUser)
@@ -413,7 +413,7 @@ func TestCreateDeviceForUser(t *testing.T) {
 	user := users[0]
 	newDevice := deviceInfos[1]
 
-	err := db.CreateDeviceForUser(user, newDevice)
+	_, err := db.CreateDeviceForUser(user, newDevice)
 	assert.NoError(t, err)
 
 	oldDevice := deviceInfos[0]
