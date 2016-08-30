@@ -37,6 +37,10 @@ func (mdb *MockDB) DeleteUser(user models.User) error {
 	return nil
 }
 
+func (mdb *MockDB) GetAllDevices() ([]models.AboutDevice, error) {
+	return AboutDevices[:1], nil
+}
+
 func (mdb *MockDB) GetDeviceFromUser(user models.User, device models.Device) (models.Device, error) {
 	rightDevice := device.AboutDevice.ID == Devices[0].AboutDevice.ID
 	rightUser := user.ID == Users[0].ID
@@ -66,18 +70,27 @@ func (mdb *MockDB) DeleteDevice(aboutDevice models.AboutDevice) error {
 	return nil
 }
 
-func (mdb *MockDB) GetFeatureOfDevice(aboutDevice models.AboutDevice, ptrToData interface{}) error {
+func (mdb *MockDB) GetAllFeatureData(ptrToFeature interface{}) error {
+	var getData = map[reflect.Type]interface{}{
+		reflect.TypeOf([]models.Battery{}): BatteryData[:1],
+	}
+	v := reflect.ValueOf(ptrToFeature).Elem()
+	v.Set(reflect.ValueOf(getData[v.Type()]))
+	return nil
+}
+
+func (mdb *MockDB) GetFeatureOfDevice(aboutDevice models.AboutDevice, ptrToFeature interface{}) error {
 	if aboutDevice.ID == 1 {
 		var getData = map[reflect.Type]interface{}{
 			reflect.TypeOf([]models.Battery{}): BatteryData[:1],
 		}
-		v := reflect.ValueOf(ptrToData).Elem()
+		v := reflect.ValueOf(ptrToFeature).Elem()
 		v.Set(reflect.ValueOf(getData[v.Type()]))
 		return nil
 	}
 	return sql.ErrNoRows
 }
 
-func (mdb *MockDB) CreateFeatureForDevice(aboutDevice models.AboutDevice, ptrToData interface{}) error {
+func (mdb *MockDB) CreateFeatureForDevice(aboutDevice models.AboutDevice, ptrToFeature interface{}) error {
 	return nil
 }

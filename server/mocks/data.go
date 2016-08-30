@@ -18,9 +18,8 @@ var Users = []models.User{
 		Admin:        true,
 	},
 	models.User{
-		ID:     2,
-		Email:  "user@mail.com",
-		APIKey: "",
+		ID:    2,
+		Email: "user@mail.com",
 	},
 }
 

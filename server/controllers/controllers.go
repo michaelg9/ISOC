@@ -38,6 +38,8 @@ const (
 	errNoDevice            = "No device data specified."
 
 	hmacSecret = "secret"
+
+	noUser = 0
 )
 
 // key type for use with context
@@ -225,6 +227,26 @@ func (env *Env) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetAllDevices handels /data/all/devices. It gets the info about every stored device.
+func (env *Env) GetAllDevices(w http.ResponseWriter, r *http.Request) {
+	isAdmin := userIsAuthorized(r, noUser)
+	if !isAdmin {
+		http.Error(w, errForbidden, http.StatusForbidden)
+		return
+	}
+
+	response, err := env.DB.GetAllDevices()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 // GetDevice handles /data/{user}/{device}. It gets all the info about the
 // specified device of the given user. Device should be the device ID (for now).
 func (env *Env) GetDevice(w http.ResponseWriter, r *http.Request) {
@@ -253,6 +275,59 @@ func (env *Env) GetDevice(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, errWrongDeviceOrUser, http.StatusInternalServerError)
 		return
 	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// GetAllFeatures handles /data/all/features. It gets every entry from all features.
+func (env *Env) GetAllFeatures(w http.ResponseWriter, r *http.Request) {
+	isAdmin := userIsAuthorized(r, noUser)
+	if !isAdmin {
+		http.Error(w, errForbidden, http.StatusForbidden)
+		return
+	}
+
+	var response models.Features
+	for _, feature := range response.GetContents() {
+		err := env.DB.GetAllFeatureData(feature)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+	}
+
+	err := writeResponse(w, r.FormValue("out"), response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
+// GetAllOfFeature handles /data/all/features/{feature}. It gets every entry from the given
+// feature.
+func (env *Env) GetAllOfFeature(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	feature := vars["feature"]
+
+	isAdmin := userIsAuthorized(r, noUser)
+	if !isAdmin {
+		http.Error(w, errForbidden, http.StatusForbidden)
+		return
+	}
+
+	var response models.Features
+	// Get the reflect value of the field with the name of the feature
+	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)
+	// Get a pointer to the feature value
+	featurePtr := featureValue.Addr().Interface()
+
+	err := env.DB.GetAllFeatureData(featurePtr)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -313,6 +388,7 @@ func (env *Env) GetFeature(w http.ResponseWriter, r *http.Request) {
 
 // getFeatureResponse queries the database to get the feature with the given name from the device
 // with the specified device ID.
+// TODO: Rename
 func getFeatureResponse(env *Env, feature string, deviceID int) (response models.Features, err error) {
 	// Get the reflect value of the field with the name of the feature
 	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)

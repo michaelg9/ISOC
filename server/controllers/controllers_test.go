@@ -228,6 +228,10 @@ func TestGetUser(t *testing.T) {
 	}
 }
 
+func TestGetAllDevices(t *testing.T) {
+	return
+}
+
 func TestGetDevice(t *testing.T) {
 	jsonResponse, _ := json.Marshal(mocks.Devices[0])
 	var tests = []struct {
@@ -248,6 +252,42 @@ func TestGetDevice(t *testing.T) {
 	for _, test := range tests {
 		url := fmt.Sprintf("/data/%v/%v", test.id, test.deviceID)
 		testControllerWithPattern(env.GetDevice, "GET", url, pattern, test.expected, test.user, t)
+	}
+}
+
+func TestGetAllFeatures(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.Features{Battery: mocks.BatteryData[:1]})
+	var tests = []struct {
+		user     models.User
+		expected string
+	}{
+		{mocks.Users[0], string(jsonResponse)},
+		{mocks.Users[1], errForbidden},
+	}
+
+	url := "/data/all/features"
+	env := newEnv()
+	for _, test := range tests {
+		testControllerWithPattern(env.GetAllFeatures, "GET", url, url, test.expected, test.user, t)
+	}
+}
+
+func TestGetAllOfFeature(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.Features{Battery: mocks.BatteryData[:1]})
+	var tests = []struct {
+		user     models.User
+		feature  string
+		expected string
+	}{
+		{mocks.Users[0], "Battery", string(jsonResponse)},
+		{mocks.Users[1], "Battery", errForbidden},
+	}
+
+	pattern := "/data/all/features/{feature}"
+	env := newEnv()
+	for _, test := range tests {
+		url := fmt.Sprintf("/data/all/features/%v", test.feature)
+		testControllerWithPattern(env.GetAllOfFeature, "GET", url, pattern, test.expected, test.user, t)
 	}
 }
 

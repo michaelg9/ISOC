@@ -12,6 +12,7 @@ var (
 )
 
 // Features contains all the data that we store
+// TODO: Include other stuff as well
 type Features struct {
 	Battery []Battery `xml:"battery,omitempty" json:"battery,omitempty"`
 }
