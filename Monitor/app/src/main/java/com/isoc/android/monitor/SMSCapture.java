@@ -41,7 +41,7 @@ public class SMSCapture {
             String number = ContactsCapture.formatNumber(cursor.getString(indexes[0]),countryISO);
             log.put(Database.DatabaseSchema.SMSLog.COLUMN_NAME_NUMBER,number);
             replacement.put(Database.DatabaseSchema.CallLogNumberReplacements.COLUMN_NAME_NUMBER,number);
-            log.put(Database.DatabaseSchema.SMSLog.COLUMN_NAME_DATE,TimeCapture.getTime(cursor.getLong(indexes[1])));
+            log.put(Database.DatabaseSchema.SMSLog.COLUMN_NAME_DATE,TimeCapture.getGivenStringTime(cursor.getLong(indexes[1])));
             log.put(Database.DatabaseSchema.SMSLog.COLUMN_NAME_READ,isRead(cursor.getString(indexes[2])));
             log.put(Database.DatabaseSchema.SMSLog.COLUMN_NAME_TYPE,resolveFolder(cursor.getString(indexes[3])));
             //conflict ignore makes sure that duplicate rows (date not unique) are not re-inserted

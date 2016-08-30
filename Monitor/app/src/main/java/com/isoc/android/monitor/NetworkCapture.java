@@ -217,7 +217,7 @@ public class NetworkCapture {
 
     public static void getTrafficStats(Context context, NetworkInfo affectedNet) {
         if (affectedNet == null) return;
-        String time = TimeCapture.getTime();
+        String time = TimeCapture.getCurrentStringTime();
         String type = new String();
         Log.e("NETCHANGE", affectedNet.toString());
         long tx;
@@ -283,8 +283,10 @@ public class NetworkCapture {
             values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_CAPABILITIES, sr.capabilities);
 
             //timestamp only available on api 17+
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
-                values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_SEEN, TimeCapture.getTime(sr.timestamp));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                Long lastSeenTime=TimeCapture.getUpTime()+(sr.timestamp/1000);
+                values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_SEEN, TimeCapture.getGivenStringTime(lastSeenTime));
+            }
 
             //signal quality from 0 to 10
             values.put(Database.DatabaseSchema.WifiAP.COLUMN_NAME_SIGNAL, WifiManager.calculateSignalLevel(sr.level, 11));

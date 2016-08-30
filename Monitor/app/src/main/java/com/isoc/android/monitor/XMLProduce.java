@@ -24,9 +24,9 @@ public class XMLProduce {
     private StringBuilder xmlString;
     private static Context context;
 
-    public XMLProduce(Context c) {
+    public XMLProduce(Context c, SQLiteDatabase database) {
         context = c;
-        db = new Database(context).getReadableDatabase();
+        db = database;
         xmlString=new StringBuilder();
     }
 
@@ -56,7 +56,6 @@ public class XMLProduce {
         Cursor cursor = db.query(Database.DatabaseSchema.Actions.TABLE_NAME, projection,
                 Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT + "='FALSE'", null, null, null, null);
         String result = cursorToXML(cursor, Database.DatabaseSchema.Actions.TAG, Database.DatabaseSchema.Actions.COLUMN_NAME_ACTION);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -68,7 +67,6 @@ public class XMLProduce {
         Cursor cursor = db.query(Database.DatabaseSchema.Battery.TABLE_NAME,
                 projection, Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT + "='FALSE'", null, null, null, null);
         String result = cursorToXML(cursor, Database.DatabaseSchema.Battery.TAG, Database.DatabaseSchema.Battery.COLUMN_NAME_LEVEL);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -88,7 +86,7 @@ public class XMLProduce {
         int iIndex = cursor.getColumnIndex(Database.DatabaseSchema.CallLogNumberReplacements._ID);
 
         while (cursor.moveToNext()) {
-            result.append("<call time=\"" + TimeCapture.getTime(cursor.getLong(dateIndex)) + "\" type=\"" + cursor.getString(typeIndex) +
+            result.append("<call time=\"" + TimeCapture.getGivenStringTime(cursor.getLong(dateIndex)) + "\" type=\"" + cursor.getString(typeIndex) +
                     "\" duration=\"" + cursor.getString(durationIndex) + "\" saved=\"" + cursor.getString(savedIndex) + "\">" +
                     cursor.getString(iIndex) + "</call>\n");
         }
@@ -104,14 +102,12 @@ public class XMLProduce {
                 Database.DatabaseSchema.CallLog.COLUMN_NAME_NUMBER);
         Cursor cursor = db.rawQuery(query, null);
         String result = cursorToXML(cursor, Database.DatabaseSchema.CallLog.TAG, Database.DatabaseSchema.CallLogNumberReplacements._ID);
-        //cursor.close();
         xmlString.append(result);
     }
 
     private void getNumberReplacments() {
         Cursor cursor = db.query(Database.DatabaseSchema.CallLogNumberReplacements.TABLE_NAME, null, null, null, null, null, null);
         String result = cursorToXML(cursor, "rep",null);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -133,7 +129,6 @@ public class XMLProduce {
         }
         Cursor cursor = db.query(Database.DatabaseSchema.WifiAP.TABLE_NAME, projection, null, null, null, null, null);
         String result = cursorToXML(cursor, Database.DatabaseSchema.WifiAP.TAG, Database.DatabaseSchema.WifiAP.COLUMN_NAME_SSID);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -152,7 +147,6 @@ public class XMLProduce {
                 Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT);
         Cursor cursor = db.rawQuery(query, null);
         String result = cursorToXML(cursor, Database.DatabaseSchema.NetworkInterface.TAG, Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -166,7 +160,6 @@ public class XMLProduce {
                 Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT + "='FALSE'", null, null, null, null);
         String result = cursorToXML(cursor, Database.DatabaseSchema.RunningServices.TAG,
                 Database.DatabaseSchema.RunningServices.COLUMN_NAME_PACKAGE_NAME);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -179,7 +172,6 @@ public class XMLProduce {
                 Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT + "='FALSE'", null, null, null,
                 Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_INSTALLED_DATE + " DESC");
         String result = cursorToXML(cursor, Database.DatabaseSchema.InstalledPackages.TAG, Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_LABEL);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -195,7 +187,7 @@ public class XMLProduce {
 
         while (cursor.moveToNext()) {
             result.append("<installedapp name=\"" + cursor.getString(name) + "\" installed=\"" +
-                    TimeCapture.getTime(cursor.getLong(date)) + "\" version=\"" + cursor.getString(version) + "\" uid=\"" +
+                    TimeCapture.getGivenStringTime(cursor.getLong(date)) + "\" version=\"" + cursor.getString(version) + "\" uid=\"" +
                     cursor.getString(uid) + "\">" + cursor.getString(label) + "</installedapp>\n");
         }
         cursor.close();
@@ -211,7 +203,6 @@ public class XMLProduce {
                 Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT);
         Cursor cursor = db.rawQuery(query, null);
         String result = cursorToXML(cursor, Database.DatabaseSchema.SMSLog.TAG, Database.DatabaseSchema.CallLogNumberReplacements._ID);
-        //cursor.close();
         xmlString.append(result);
     }
 
@@ -249,10 +240,14 @@ public class XMLProduce {
         xmlString.append(result);
     }
 
+    public String getMetaData(Integer deviceId){
+        return new MetaDataCapture(deviceId).getMetaDataXML();
+    }
 
-    public String getXML() {
+    public String getXML(Integer deviceID) {
+        if (db==null) return null;
         xmlString.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<data>\n"
-                + new MetaDataCapture().getMetaDataXML() + "<device-data>\n");
+                + getMetaData(deviceID) + "<device-data>\n");
         //we call all methods even if some functionality is disabled, because it may have been disabled after collecting some new data
         getActions();
         getBattery();
@@ -264,16 +259,17 @@ public class XMLProduce {
         getSockets();
         getInstalledPackages2();
         xmlString.append("</device-data>\n</data>");
-        String result = xmlString.toString();
-        db.close();
-        return result;
+        return xmlString.toString();
     }
 
     private class MetaDataCapture {
+        //device id can be null(there will be no <device> tag in this case)
+        private Integer deviceID;
         private ArrayList<String[]> data;
 
-        public MetaDataCapture() {
+        public MetaDataCapture(Integer deviceID) {
             data=new ArrayList<String[]>();
+            this.deviceID=deviceID;
             getMetaData();
         }
 
@@ -287,7 +283,7 @@ public class XMLProduce {
             String[] datatype = new String[]{"unknown", "gprs", "edge", "umts", "cdma", "evdo0", "evdoA", "1xrtt", "hsdpa", "hsupa", "hspa", "iden", "evdoB", "lte", "ehrpd", "hspap"};
             TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
             data.add(new String[]{"imei", tm.getDeviceId()});
-            data.add(new String[]{"device","1"});
+            if (deviceID!=null) data.add(new String[]{"device",deviceID.toString()});
             data.add(new String[]{"dataNetType", datatype[tm.getNetworkType()]});
             data.add(new String[]{"country", tm.getNetworkCountryIso()});
             data.add(new String[]{"network", tm.getNetworkOperatorName()});

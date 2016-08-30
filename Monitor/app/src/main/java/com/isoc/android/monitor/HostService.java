@@ -11,10 +11,10 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.IBinder;
 
-public class AuthenticatorService extends Service {
+public class HostService extends Service {
     private Authenticator authenticator;
     private Synchronizer synchronizer;
-    public AuthenticatorService() {
+    public HostService() {
     }
 
     @Override

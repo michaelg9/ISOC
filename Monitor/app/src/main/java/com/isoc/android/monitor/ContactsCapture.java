@@ -47,7 +47,7 @@ public class ContactsCapture {
             log.put(Database.DatabaseSchema.CallLog.COLUMN_NAME_NUMBER,number);
             replacement.put(Database.DatabaseSchema.CallLogNumberReplacements.COLUMN_NAME_NUMBER,number);
             log.put(Database.DatabaseSchema.CallLog.COLUMN_NAME_DURATION,cursor.getString(durationIndex));
-            log.put(Database.DatabaseSchema.CallLog.COLUMN_NAME_DATE, TimeCapture.getTime(cursor.getLong(dateIndex)));
+            log.put(Database.DatabaseSchema.CallLog.COLUMN_NAME_DATE, TimeCapture.getGivenStringTime(cursor.getLong(dateIndex)));
             boolean saved=cursor.getString(nameIndex)!=null;
             log.put(Database.DatabaseSchema.CallLog.COLUMN_NAME_SAVED,Boolean.toString(saved));
             String callType=resolveType(cursor.getString(typeIndex));
@@ -72,7 +72,6 @@ public class ContactsCapture {
         return countryISO;
     }
 
-
     public static String formatNumber(String number,String countryISO){
         String result;
         PhoneNumberUtil phoneUtil=com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();
@@ -85,6 +84,7 @@ public class ContactsCapture {
         }
         return result;
     }
+
 
     private static String resolveType(String type) {
         String callType;

@@ -28,6 +28,8 @@
     <string name="prompt_email">Email</string>
     <string name="prompt_password">Password</string>
     <string name="sign_in">Sign in</string>
+    <string name="action_log_out">Log out</string>
+
     <string name="register">Register</string>
     <string name="error_invalid_email">This email address is invalid</string>
     <string name="error_invalid_password">This password is too short</string>
@@ -43,6 +45,9 @@
     <string name="authenticator_account_type">com.isoc.android.monitor.account</string>
     <string name="token_refresh">refreshToken</string>
     <string name="token_access">accessToken</string>
+    <string name="accounts_key">accounts</string>
+    <string name="am_refreshDateKey">refreshDate</string>
+    <string name="am_deviceID">device_id</string>
     <!-- Strings related to authentication -->
 
 

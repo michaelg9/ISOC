@@ -27,6 +27,7 @@ public class Database extends SQLiteOpenHelper {
         db.execSQL(DatabaseSchema.Sockets.SQL_CREATE_TABLE);
         db.execSQL(DatabaseSchema.WifiAP.SQL_CREATE_TABLE);
         db.execSQL(DatabaseSchema.SMSLog.SQL_CREATE_TABLE);
+        db.execSQL(DatabaseSchema.Accounts.SQL_CREATE_TABLE);
     }
 
     @Override
@@ -41,26 +42,39 @@ public class Database extends SQLiteOpenHelper {
         onCreate(db);
     }
 
-    public final static class DatabaseControls{
-        public static void markSend(String[] tables,SQLiteDatabase db){
-            ContentValues values=new ContentValues();
-            values.put(Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT,true);
-            for (String table : tables) {
-                db.update(table, values, DatabaseSchema.GLOBAL_COLUMN_NAME_SENT + "='TRUE'", null);
-            }
+    public void markSend(SQLiteDatabase db) {
+        ContentValues values = new ContentValues();
+        values.put(Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT, true);
+        for (String table : DatabaseSchema.tables) {
+            db.update(table, values, DatabaseSchema.GLOBAL_COLUMN_NAME_SENT + "='TRUE'", null);
         }
-
     }
 
     public final static class DatabaseSchema {
         public final static String dbName = "Statistics.db";
         public final static String SQL_DELETE_DB = "DROP DATABASE " + dbName;
-        public static final String GLOBAL_COLUMN_NAME_SENT="sent";
+        public static final String GLOBAL_COLUMN_NAME_SENT = "sent";
+        public static final String[] tables = new String[]{InstalledPackages.TABLE_NAME, RunningServices.TABLE_NAME,
+                SMSLog.TABLE_NAME, CallLog.TABLE_NAME, Battery.TABLE_NAME, NetworkInterface.TABLE_NAME, WifiAP.TABLE_NAME,
+                Actions.TABLE_NAME, Sockets.TABLE_NAME};
 
         //to avoid instantiating
         private DatabaseSchema() {}
 
-        public static abstract class InstalledPackages implements BaseColumns {
+        public static final class Accounts implements BaseColumns {
+            public final static String TABLE_NAME = "Accounts";
+            public final static String TAG = "account";
+            public final static String COLUMN_NAME_ACCOUNT_NAME = "name";
+            public final static String COLUMN_NAME_ACCOUNT_TYPE = "type";
+
+            public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
+                    _ID + " INTEGER PRIMARY KEY," +
+                    COLUMN_NAME_ACCOUNT_NAME + " TEXT UNIQUE," + //package names are unique
+                    COLUMN_NAME_ACCOUNT_TYPE + " TEXT," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE)";
+        }
+
+        public static final class InstalledPackages implements BaseColumns {
             public final static String TABLE_NAME = "InstalledPackages";
             public final static String TAG = "installedapp";
             public final static String COLUMN_NAME_PACKAGE_NAME = "name";
@@ -75,12 +89,13 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_INSTALLED_DATE + " TEXT," +
                     COLUMN_NAME_VERSION + " TEXT," +
                     COLUMN_NAME_UID + " TEXT," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
-                    COLUMN_NAME_LABEL + " TEXT);";}
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
+                    COLUMN_NAME_LABEL + " TEXT);";
+        }
 
-        public static abstract class RunningServices implements BaseColumns {
+        public static final class RunningServices implements BaseColumns {
             public final static String TABLE_NAME = "RunningServices";
-            public final static String TAG="runservice";
+            public final static String TAG = "runservice";
             public final static String COLUMN_NAME_PACKAGE_NAME = "pckgName";
             public static final String COLUMN_NAME_SINCE = "since";
             public static final String COLUMN_NAME_TIME = "time";
@@ -94,12 +109,12 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_SINCE + " TEXT," +
                     COLUMN_NAME_TIME + " TEXT," +
                     COLUMN_NAME_UID + " TEXT," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_RX + " TEXT," +
                     COLUMN_NAME_TX + " TEXT);"; //no foreign key because user has the option to monitor services and not installed packages
         }
 
-        public static abstract class SMSLog implements BaseColumns {
+        public static final class SMSLog implements BaseColumns {
             public final static String TABLE_NAME = "SMSLog";
             public final static String TAG = "sms";
             public final static String COLUMN_NAME_NUMBER = "number";
@@ -112,13 +127,13 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_NUMBER + " TEXT," +
                     COLUMN_NAME_TYPE + " TEXT," +
                     COLUMN_NAME_READ + " TEXT," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_DATE + " TEXT UNIQUE," +
                     //every number should exist in the Replacement table
-                    "FOREIGN KEY ("+COLUMN_NAME_NUMBER+") REFERENCES "+CallLogNumberReplacements.TABLE_NAME+"("+CallLogNumberReplacements.COLUMN_NAME_NUMBER+"));";
+                    "FOREIGN KEY (" + COLUMN_NAME_NUMBER + ") REFERENCES " + CallLogNumberReplacements.TABLE_NAME + "(" + CallLogNumberReplacements.COLUMN_NAME_NUMBER + "));";
         }
 
-        public static abstract class CallLog implements BaseColumns {
+        public static final class CallLog implements BaseColumns {
             public final static String TABLE_NAME = "CallLog";
             public final static String TAG = "call";
             public final static String COLUMN_NAME_NUMBER = "number";
@@ -134,13 +149,13 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_DURATION + " TEXT," +
                     COLUMN_NAME_DATE + " TEXT UNIQUE," +
                     COLUMN_NAME_SAVED + " TEXT," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     //every number should exist in the Replacement table
-                    "FOREIGN KEY ("+COLUMN_NAME_NUMBER+") REFERENCES "+CallLogNumberReplacements.TABLE_NAME+"("+CallLogNumberReplacements.COLUMN_NAME_NUMBER+"));";
+                    "FOREIGN KEY (" + COLUMN_NAME_NUMBER + ") REFERENCES " + CallLogNumberReplacements.TABLE_NAME + "(" + CallLogNumberReplacements.COLUMN_NAME_NUMBER + "));";
         }
 
         //keeps the replacement number for each phone number in the call log
-        public static abstract class CallLogNumberReplacements implements BaseColumns {
+        public static final class CallLogNumberReplacements implements BaseColumns {
             public final static String TABLE_NAME = "CallLogNumberReplacements";
             public final static String COLUMN_NAME_NUMBER = "number";
 
@@ -149,7 +164,7 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_NUMBER + " TEXT UNIQUE NOT NULL); ";
         }
 
-        public static abstract class Battery implements BaseColumns {
+        public static final class Battery implements BaseColumns {
             public final static String TABLE_NAME = "battery";
             public final static String TAG = "battery";
             public final static String COLUMN_NAME_TIME = "time";
@@ -159,15 +174,15 @@ public class Database extends SQLiteOpenHelper {
 
             public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
                     _ID + " INTEGER PRIMARY KEY," +
-                    COLUMN_NAME_TIME+ " TEXT UNIQUE," +
+                    COLUMN_NAME_TIME + " TEXT UNIQUE," +
                     COLUMN_NAME_CHARGING + " TEXT," +
                     COLUMN_NAME_TEMP + " REAL," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_LEVEL + " INTEGER);";
         }
 
         //holds connectivity changes
-        public static abstract class NetworkInterface implements BaseColumns {
+        public static final class NetworkInterface implements BaseColumns {
             public final static String TABLE_NAME = "NetIntf";
             public final static String TAG = "data";
             public final static String COLUMN_NAME_ACTIVE = "active";
@@ -187,14 +202,14 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_TYPE + " TEXT NOT NULL," +
                     COLUMN_NAME_TIME + " TEXT UNIQUE," +
                     COLUMN_NAME_SINCE + " TEXT," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_CURRENT_RX + " INTEGER DEFAULT 0," +
                     COLUMN_NAME_CURRENT_TX + " INTEGER DEFAULT 0," +
                     COLUMN_NAME_TOTAL_RX + " INTEGER DEFAULT 0," +
                     COLUMN_NAME_TOTAL_TX + " INTEGER DEFAULT 0);";
         }
 
-        public static abstract class WifiAP implements BaseColumns {
+        public static final class WifiAP implements BaseColumns {
             public final static String TABLE_NAME = "WifiAPs";
             public final static String TAG = "wifiAP";
             public final static String COLUMN_NAME_SSID = "ssid";
@@ -211,27 +226,28 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_CAPABILITIES + " TEXT," +
                     COLUMN_NAME_SEEN + " TEXT," +
                     COLUMN_NAME_SIGNAL + " INTEGER," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_FREQ + " INTEGER);";
         }
-        public static abstract class Actions implements BaseColumns {
+
+        public static final class Actions implements BaseColumns {
             public final static String TABLE_NAME = "Actions";
             public final static String TAG = "action";
             public final static String COLUMN_NAME_ACTION = "action";
             public final static String COLUMN_NAME_DATE = "time";
-            public final static String ACTION_BOOT="boot";
-            public final static String ACTION_SHUTDOWN="shutdown";
-            public final static String ACTION_AIRPLANE_ON="airplaneOn";
-            public final static String ACTION_AIRPLANE_OFF="airplaneOff";
+            public final static String ACTION_BOOT = "boot";
+            public final static String ACTION_SHUTDOWN = "shutdown";
+            public final static String ACTION_AIRPLANE_ON = "airplaneOn";
+            public final static String ACTION_AIRPLANE_OFF = "airplaneOff";
 
             public static final String SQL_CREATE_TABLE = "CREATE TABLE " + TABLE_NAME + "(" +
                     _ID + " INTEGER PRIMARY KEY," +
                     COLUMN_NAME_ACTION + " TEXT," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_DATE + " TEXT);";
         }
 
-        public static abstract class Sockets implements BaseColumns {
+        public static final class Sockets implements BaseColumns {
             public final static String TABLE_NAME = "Sockets";
             public final static String TAG = "connection";
             public final static String COLUMN_NAME_TYPE = "type";
@@ -252,7 +268,7 @@ public class Database extends SQLiteOpenHelper {
                     COLUMN_NAME_LPORT + " TEXT," +
                     COLUMN_NAME_RIP + " TEXT," +
                     COLUMN_NAME_RPORT + " TEXT," +
-                    GLOBAL_COLUMN_NAME_SENT+ " TEXT DEFAULT FALSE," +
+                    GLOBAL_COLUMN_NAME_SENT + " TEXT DEFAULT FALSE," +
                     COLUMN_NAME_DATE + " TEXT);";
         }
     }

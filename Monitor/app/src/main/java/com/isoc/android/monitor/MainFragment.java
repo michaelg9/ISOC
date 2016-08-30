@@ -2,6 +2,7 @@ package com.isoc.android.monitor;
 
 import android.app.Fragment;
 import android.content.Context;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
@@ -33,7 +34,6 @@ public class MainFragment extends Fragment {
     public MainFragment() {
         // Required empty public constructor
     }
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -77,8 +77,10 @@ public class MainFragment extends Fragment {
     }
 
     public String getResults(Context context) {
-        XMLProduce XML = new XMLProduce(context);
-        return XML.getXML();
+        SQLiteDatabase db=new Database(getActivity()).getReadableDatabase();
+        String result = new XMLProduce(context,db).getXML(null);
+        db.close();
+        return result;
     }
 
     public void showResults() {

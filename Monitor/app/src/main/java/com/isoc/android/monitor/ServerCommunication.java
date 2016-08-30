@@ -18,6 +18,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -32,20 +33,37 @@ public class ServerCommunication {
     private static String loginURL = "/auth/0.1/login";
     private static String sendURL = "/app/0.1/upload";
     private static String registerURL="/signup";
+    private static String accessTokenRequestURL= "/auth/0.1/token";
+    private static String logOutURL="/auth/0.1/logout";
 
     public ServerCommunication(Context context) {
         this.context = context;
         serverURL = PreferenceManager.getDefaultSharedPreferences(context).getString(context.getString(R.string.server_url), null);
     }
 
+    public String refreshRefreshToken(String oldRefreshToken){
+        final String refreshURL="/auth/0.1/refresh";
+        String[] s=requestPOST(refreshURL,"refreshToken="+oldRefreshToken,null);
+
+        if (s[0].equals("200")) {
+            return extractToken(context.getString(R.string.token_refresh), s[2]);
+        }
+        return null;
+    }
+
+    public String[] logOut(String refreshToken){
+        return requestPOST(logOutURL,"refreshToken="+refreshToken,null);
+    }
+
     public String getAccessToken(String refreshToken) {
-        String[] s = requestPOST(loginURL, "refreshToken=" + refreshToken, null);
+        String[] s = requestPOST(accessTokenRequestURL, "refreshToken=" + refreshToken, null);
         String result;
         if (s[0].equals("200")) {
             result = extractToken(context.getString(R.string.token_access), s[2]);
         } else {
             result = null;
         }
+        Log.e("access:","here: "+result);
         return result;
     }
 
@@ -66,22 +84,25 @@ public class ServerCommunication {
     public String[] sendData(String accessToken, String body) {
         HashMap<String, String> headers = new HashMap<>(1);
         headers.put("Authorization", "Bearer " + accessToken);
+        headers.put("Content-Type", "application/xml");
         String[] result= requestPOST(sendURL, body, headers);
         showNotification(result);
         return result;
     }
 
     public String[] register(String email, String password) {
-        String[] s = requestPOST(registerURL, "email=" + email + "&" + "password=" + password, null);
+        HashMap<String,String> header=new HashMap<>();
+        header.put("Content-Type", "application/xml");
+        String[] s = requestPOST(registerURL+"?email=" + email + "&" + "password=" + password,
+                "<xml>\n"+new XMLProduce(context,null).getMetaData(null)+"\n</xml>",header);
         String result[] = new String[2];
         if (s[0].equals("200")) {
             result[0] = LoginActivity.REGISTER_SUCCESS;
-            result[1] = "200";
+            result[1] = s[2];
         } else {
             result[0] = AccountManager.KEY_ERROR_MESSAGE;
             result[1] = s[0];
         }
-        Log.e("token", result[1]);
         return result;
     }
 
@@ -134,6 +155,7 @@ public class ServerCommunication {
             if (client != null)
                 client.disconnect();
         }
+        Log.e("answer:", Arrays.toString(result));
         return result;
     }
 

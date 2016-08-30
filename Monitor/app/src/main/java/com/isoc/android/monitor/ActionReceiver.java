@@ -27,7 +27,7 @@ public class ActionReceiver extends BroadcastReceiver {
         if (action.equals("android.intent.action.BOOT_COMPLETED")) {
             if (connectivityEnabled) NetworkCapture.saveCurrentStats(context);
             if (prefs.getBoolean("monitoring", false)) {
-                MyService.ServiceControls.startRepeated(context);
+                MyService.ServiceControls.start(context);
             }
             if (actionsEnabled)
                 ActionCapture.getAction(context, Database.DatabaseSchema.Actions.ACTION_BOOT);
@@ -52,7 +52,7 @@ public class ActionReceiver extends BroadcastReceiver {
     private static class ActionCapture {
 
         public static void getAction(Context context,String action){
-            String date = TimeCapture.getTime();
+            String date = TimeCapture.getCurrentStringTime();
             ContentValues values=new ContentValues();
             values.put(Database.DatabaseSchema.Actions.COLUMN_NAME_ACTION,action);
             values.put(Database.DatabaseSchema.Actions.COLUMN_NAME_DATE,date);

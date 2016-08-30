@@ -33,7 +33,7 @@ public class BatteryReceiver extends BroadcastReceiver {
             values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_TEMP,((float) battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -1))/10);
             values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_CHARGING,charging);
             values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_LEVEL,battery.getIntExtra(BatteryManager.EXTRA_LEVEL, -1));
-            values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_TIME,TimeCapture.getTime());
+            values.put(Database.DatabaseSchema.Battery.COLUMN_NAME_TIME,TimeCapture.getCurrentStringTime());
             SQLiteDatabase db= new Database(context).getWritableDatabase();
             db.insert(Database.DatabaseSchema.Battery.TABLE_NAME,null,values);
             db.close();

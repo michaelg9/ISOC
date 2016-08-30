@@ -21,7 +21,7 @@ public class SocketsCapture {
     private static String Connection6 = "\\d+: " + socket6 + " " + socket6 + " \\p{XDigit}{2} \\p{XDigit}*:\\p{XDigit}* \\p{XDigit}{2}:\\p{XDigit}{8} \\p{XDigit}{8}\\s+\\d+";
 
     public static void getSockets(SQLiteDatabase db) {
-        String time = TimeCapture.getTime();
+        String time = TimeCapture.getCurrentStringTime();
         String[] types={"tcp","udp","raw","tcp6","udp6","raw6"}; //the names of the interesting files
         for (String type :types) {
             String content = NetworkCapture.readStatsFromFile("/proc/net/"+type);

@@ -86,5 +86,12 @@
             android:defaultValue="false"
             android:title="SMS"/>
 
+        <CheckBoxPreference
+            android:dependency="monitoring"
+            android:key="@string/accounts_key"
+            android:defaultValue="false"
+            android:title="Accounts"
+            android:summary="Accounts stored on the device"/>
+
     </PreferenceCategory>
 </PreferenceScreen>

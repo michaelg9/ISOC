@@ -5,6 +5,18 @@ import android.database.Cursor;
 import android.net.Uri;
 
 public class DataProvider extends android.content.ContentProvider {
+    private static final int accounts=0;
+    private static final int installedPackages=5;
+    private static final int runningServices=10;
+    private static final int smsLog=15;
+    private static final int callLog=20;
+    private static final int battery=25;
+    private static final int networkInterface=30;
+    private static final int wifiAp=35;
+    private static final int actions=40;
+    private static final int sockets=45;
+
+
     public DataProvider() {
     }
 

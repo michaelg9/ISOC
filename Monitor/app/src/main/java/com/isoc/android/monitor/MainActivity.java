@@ -1,7 +1,13 @@
 package com.isoc.android.monitor;
 
+import android.accounts.Account;
 import android.accounts.AccountManager;
+import android.app.Dialog;
+import android.app.DialogFragment;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -32,11 +38,14 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         //Checking if there is a monitoring account registered first.
         //If not, prompt login screen.
+
+        ///*
         AccountManager am=AccountManager.get(this);
-        if ( am.getAccountsByType(getString(R.string.authenticator_account_type)).length==0){
+        if (am.getAccountsByType(getString(R.string.authenticator_account_type)).length==0){
             Log.e("no accounts","adding");
             am.addAccount(getString(R.string.authenticator_account_type),getString(R.string.token_refresh),null,null,this,null,null);
         }
+        //*/
     }
 
     @Override
@@ -57,11 +66,42 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case android.R.id.home:
                 if (getFragmentManager().getBackStackEntryCount()>0) getFragmentManager().popBackStack();
-                break;
+                return true;
+            case R.id.action_logout:
+                new InvalidateTokenDialog().show(getFragmentManager(),"dialog");
+                return true;
             default:
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public static class InvalidateTokenDialog extends DialogFragment{
+        @Override
+        public Dialog onCreateDialog(Bundle savedInstanceState) {
+            AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+            builder.setTitle("Invalidate Auth Token?").setMessage("You will be asked to login again on the next sync.")
+                    .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialogInterface, int i) {
+                    logOut(getActivity());
+                }
+            }).setNegativeButton("Cancel", null);
+            return builder.create();
+        }
+
+        private void logOut(final Context context){
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    AccountManager accountManager=AccountManager.get(context);
+                    Account[] accounts=accountManager.getAccountsByType(getString(R.string.authenticator_account_type));
+                    for (Account a : accounts) {
+                        accountManager.invalidateAuthToken(getString(R.string.authenticator_account_type),accountManager.peekAuthToken(a,getString(R.string.token_refresh)));
+                    }
+                }
+            }).start();
+        }
     }
 
 }

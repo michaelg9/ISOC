@@ -74,7 +74,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         if (preference instanceof SwitchPreference) {
             //if the switch is changed, we disable / enable everything
             if (((SwitchPreference) preference).isChecked()) {
-                MyService.ServiceControls.startRepeated(getActivity());
+                MyService.ServiceControls.start(getActivity());
             } else {
                 MyService.ServiceControls.stop(getActivity());
                 //we need to disable receivers too

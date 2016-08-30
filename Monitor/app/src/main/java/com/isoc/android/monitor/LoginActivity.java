@@ -6,6 +6,7 @@ import android.accounts.AccountManager;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.app.LoaderManager.LoaderCallbacks;
+import android.content.ContentResolver;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
@@ -251,6 +252,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
 
     @Override
     public void onBackPressed() {
+        moveTaskToBack(true);
     }
 
     private void finishLogin(Intent accountDetails) {
@@ -261,6 +263,15 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             AccountManager accountManager = AccountManager.get(getApplicationContext());
             accountManager.addAccountExplicitly(account,null,null);
             accountManager.setAuthToken(account, getString(R.string.token_refresh), refreshToken);
+            accountManager.setUserData(account,getString(R.string.am_refreshDateKey),Long.toString(TimeCapture.getCurrentLongTime()));
+            ContentResolver.setSyncAutomatically(account,getString(R.string.provider_authority),true);
+            //saving device id
+            if (accountDetails.hasExtra(getString(R.string.am_deviceID))){
+                int dev=accountDetails.getIntExtra(getString(R.string.am_deviceID),-1);
+                Log.e("devID",Integer.toString(dev));
+                accountManager.setUserData(account,getString(R.string.am_deviceID),Integer.toString(dev));
+
+            }
         }
         setAccountAuthenticatorResult(accountDetails.getExtras());
         setResult(RESULT_OK, accountDetails);
@@ -285,12 +296,19 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             accountDetails.putExtra(AccountManager.KEY_ACCOUNT_NAME,mEmail);
             accountDetails.putExtra(AccountManager.KEY_ACCOUNT_TYPE,getString(R.string.authenticator_account_type));
             if (!mIsLoggingIn){
+                //if the user is registering, send a register request first
                 String[] registerResponse=new ServerCommunication(getApplicationContext()).register(mEmail,mPassword);
                 if (!registerResponse[0].equals(REGISTER_SUCCESS)){
+                    //if the request failed do not attempt to login
                     accountDetails.putExtra(registerResponse[0],registerResponse[1]);
                     return accountDetails;
+                }else{
+                    //save device id
+                    Log.e("device-id",registerResponse[1]);
+                    accountDetails.putExtra(getString(R.string.am_deviceID),Integer.parseInt(registerResponse[1]));
                 }
             }
+            //if the register request was successful, save the device id and login
             String[] loginResponse=new ServerCommunication(getApplicationContext()).login(mEmail,mPassword);
             accountDetails.putExtra(loginResponse[0],loginResponse[1]);
             return accountDetails;

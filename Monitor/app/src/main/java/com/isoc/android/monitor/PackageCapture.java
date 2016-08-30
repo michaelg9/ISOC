@@ -32,7 +32,7 @@ public class PackageCapture {
             ContentValues values = new ContentValues();
 
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_PACKAGE_NAME, packages.get(i).packageName);
-            values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_INSTALLED_DATE, TimeCapture.getTime(packages.get(i).firstInstallTime));
+            values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_INSTALLED_DATE, TimeCapture.getGivenStringTime(packages.get(i).firstInstallTime));
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_VERSION, packages.get(i).versionName);
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_UID, Integer.toString(packages.get(i).applicationInfo.uid));
             values.put(Database.DatabaseSchema.InstalledPackages.COLUMN_NAME_LABEL, packageManager.getApplicationLabel(packages.get(i).applicationInfo).toString());
@@ -44,12 +44,12 @@ public class PackageCapture {
     protected static void getRunningServices(Context context, SQLiteDatabase db) {
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         List<ActivityManager.RunningServiceInfo> runningServices = am.getRunningServices(Integer.MAX_VALUE);
-        String time = TimeCapture.getTime();
+        String time = TimeCapture.getCurrentStringTime();
 
         for (int i = 0; i < runningServices.size(); i++) {
             ContentValues values = new ContentValues();
             values.put(Database.DatabaseSchema.RunningServices.COLUMN_NAME_PACKAGE_NAME, runningServices.get(i).process);
-            values.put(Database.DatabaseSchema.RunningServices.COLUMN_NAME_SINCE, TimeCapture.getTime(TimeCapture.getUpTime() + runningServices.get(i).activeSince));
+            values.put(Database.DatabaseSchema.RunningServices.COLUMN_NAME_SINCE, TimeCapture.getGivenStringTime(TimeCapture.getUpTime() + runningServices.get(i).activeSince));
             values.put(Database.DatabaseSchema.RunningServices.COLUMN_NAME_TIME, time);
             int uid = runningServices.get(i).uid;
             values.put(Database.DatabaseSchema.RunningServices.COLUMN_NAME_UID, Integer.toString(uid));

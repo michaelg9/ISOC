@@ -25,7 +25,7 @@ public class MyService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        Log.e("RecordService", "started: " + TimeCapture.getTime());
+        Log.e("RecordService", "started: " + TimeCapture.getCurrentStringTime());
         SQLiteDatabase db = new Database(getApplicationContext()).getWritableDatabase();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
         if (preferences.getBoolean(getString(R.string.calls_key), false))
@@ -41,9 +41,12 @@ public class MyService extends IntentService {
             NetworkCapture.getWifiAPs(this, db);
         if (preferences.getBoolean(getString(R.string.sms_key), false))
             SMSCapture.getSMS(this, db);
+        if (preferences.getBoolean(getString(R.string.accounts_key),false)){
+            AccountsCapture.getAccounts(this,db);
+        }
         db.close();
         ServiceControls.scheduleLaunch(this);
-        Log.e("RecordService", "ended: " + TimeCapture.getTime());
+        Log.e("RecordService", "ended: " + TimeCapture.getCurrentStringTime());
         ServiceReceiver.completeWakefulIntent(intent);
     }
 
@@ -54,10 +57,9 @@ public class MyService extends IntentService {
 
         private static int pendingLaunchCode = 1;
 
-        public static void startRepeated(Context context) {
+        public static void start(Context context) {
             Intent i = new Intent(context, MyService.class);
             context.startService(i);
-            scheduleLaunch(context);
         }
 
 
