@@ -39,6 +39,7 @@ const (
 
 	hmacSecret = "secret"
 
+	// 0 is the user ID when no user is specified
 	noUser = 0
 )
 

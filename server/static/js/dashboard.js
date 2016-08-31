@@ -18,7 +18,15 @@ $(document).ready(function() {
 
     // Logout the user on logout link
     $(".logout").on("click", function() {
-        TokenAuth.logout();
+        TokenAuth.logout().done(function(data, textStatus, jqXHR) {
+            if (data == "Success") {
+                window.location = "../";
+            }
+        }).fail(function() {
+            // This should never happen
+            console.error("Failed logout!");
+            return false;
+        });
     });
 
     // Add the modal prompt for new email

@@ -9,10 +9,42 @@
   <!-- Dependencies for Bootstrap -->
   <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
   <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  <!-- Dependencies for FileSaver.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2014-11-29/FileSaver.min.js"></script>
   <!-- Own JavaScript -->
-  <!-- <script src="static/js/admin.js"></script> -->
+  <script src="/static/js/TokenAuth.js"></script>
+  <script src="/static/js/User.js"></script>
+  <script src="/static/js/Downloads.js"></script>
   <!-- Own CSS -->
   <link rel="stylesheet" href="/static/style/dashboard.css">
+  <script>
+    $(document).ready(function() {
+        // Logout the user on logout link
+        $(".logout").on("click", function() {
+            TokenAuth.logout().done(function(data, textStatus, jqXHR) {
+                if (data == "Success") {
+                    window.location = "../..";
+                }
+            }).fail(function() {
+                // This should never happen
+                console.error("Failed logout!");
+                return false;
+            });
+        });
+
+        $("#allBatteryJSON").on("click", function() {
+            // Get the battery data from the current device in JSON format
+            Downloads
+            .getAllOfFeature("Battery", "json")
+            .done(function(data) {
+                var blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+                saveAs(blob, "Battery.json");
+            }).fail(function(data, textStatus, jqXHR) {
+                console.error(textStatus);
+            });
+          });
+    });
+  </script>
 </head>
 <body>
 <!-- Collapsed Navbar -->
@@ -50,7 +82,7 @@
     <div class="col-sm-9 col-sm-offset-3">
       <div>
         <div class="pull-right">
-            <a class="btn btn-info">Download JSON</a>
+            <a class="btn btn-info" id="allBatteryJSON">Download JSON</a>
             <a class="btn btn-info">Download XML</a>
         </div>
         <h2>Battery</h2>

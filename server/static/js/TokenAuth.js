@@ -50,16 +50,8 @@ var TokenAuth = (function() {
 
     var logout = function() {
         var logoutURL = "../logout";
-        $.post({
+        return $.post({
             url: logoutURL
-        }).done(function(data, textStatus, jqXHR) {
-            if (data == "Success") {
-                window.location = "../";
-            }
-        }).fail(function() {
-            // This should never happen
-            console.error("Failed logout!");
-            return false;
         });
     };
 

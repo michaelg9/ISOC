@@ -4,6 +4,7 @@ package models
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -515,27 +516,32 @@ func TestCreateFeatureForDevice(t *testing.T) {
 	toInsertApp := appData[1:]
 	toInsertRunservice := runserviceData[1:]
 
+	errWrongDeviceID := errors.New("Error 1452: Cannot add or update a child row")
+
 	var tests = []struct {
 		ptrToResult interface{}
 		toInsert    interface{}
+		device      AboutDevice
+		expectedErr error
 		expected    interface{}
 	}{
-		{&[]Battery{}, &toInsertBattery, batteryData},
-		{&[]Call{}, &toInsertCall, callData},
-		{&[]App{}, &toInsertApp, appData},
-		{&[]Runservice{}, &toInsertRunservice, runserviceData},
+		{&[]Battery{}, &toInsertBattery, deviceInfos[0], nil, batteryData},
+		{&[]Call{}, &toInsertCall, deviceInfos[0], nil, callData},
+		{&[]App{}, &toInsertApp, deviceInfos[0], nil, appData},
+		{&[]Runservice{}, &toInsertRunservice, deviceInfos[0], nil, runserviceData},
+		{&[]Battery{}, &toInsertBattery, deviceInfos[1], errWrongDeviceID, toInsertBattery},
 	}
 
-	// TODO: Test with wrong device id
-	device := deviceInfos[0]
 	for _, test := range tests {
-		err := db.CreateFeatureForDevice(device, test.toInsert)
-		assert.NoError(t, err)
-
-		err = db.GetFeatureOfDevice(device, test.ptrToResult)
-		assert.NoError(t, err)
-		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
-		assert.Equal(t, test.expected, result)
+		err := db.CreateFeatureForDevice(test.device, test.toInsert)
+		if test.expectedErr != nil {
+			assert.Contains(t, err.Error(), test.expectedErr.Error())
+		} else if assert.NoError(t, err) {
+			err = db.GetFeatureOfDevice(test.device, test.ptrToResult)
+			assert.NoError(t, err)
+			result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
+			assert.Equal(t, test.expected, result)
+		}
 	}
 }
 
