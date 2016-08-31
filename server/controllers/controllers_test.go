@@ -292,8 +292,8 @@ func TestGetAllOfFeature(t *testing.T) {
 		feature  string
 		expected string
 	}{
-		{mocks.Users[0], "Battery", string(jsonResponse)},
-		{mocks.Users[1], "Battery", errForbidden},
+		{mocks.Users[0], "battery", string(jsonResponse)},
+		{mocks.Users[1], "battery", errForbidden},
 	}
 
 	pattern := "/data/all/features/{feature}"
@@ -317,11 +317,11 @@ func TestGetFeature(t *testing.T) {
 		feature  string
 		expected string
 	}{
-		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
-		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", errForbidden},
-		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, "Battery", errWrongDeviceOrUser},
-		{mocks.Users[0], mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt},
-		{mocks.Users[0], mocks.Users[0].ID, 25, "Battery", errWrongDeviceOrUser},
+		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, "battery", string(jsonResponse)},
+		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, "battery", errForbidden},
+		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, "battery", errWrongDeviceOrUser},
+		{mocks.Users[0], mocks.Users[0].ID, "hello", "battery", errDeviceIDNotInt},
+		{mocks.Users[0], mocks.Users[0].ID, 25, "battery", errWrongDeviceOrUser},
 	}
 
 	pattern := "/data/{user}/{device}/{feature}"

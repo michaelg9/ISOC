@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/michaelg9/ISOC/server/models"
 
@@ -313,7 +314,8 @@ func (env *Env) GetAllFeatures(w http.ResponseWriter, r *http.Request) {
 // feature.
 func (env *Env) GetAllOfFeature(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	feature := vars["feature"]
+	// Capitalize first letter of feature name
+	feature := strings.Title(vars["feature"])
 
 	isAdmin := userIsAuthorized(r, noUser)
 	if !isAdmin {
@@ -321,13 +323,8 @@ func (env *Env) GetAllOfFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var response models.Features
-	// Get the reflect value of the field with the name of the feature
-	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)
-	// Get a pointer to the feature value
-	featurePtr := featureValue.Addr().Interface()
-
-	err := env.DB.GetAllFeatureData(featurePtr)
+	// Get all data of the given feature
+	response, err := getFeatureResponse(env, feature)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -372,7 +369,9 @@ func (env *Env) GetFeature(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response, err := getFeatureResponse(env, vars["feature"], deviceID)
+	// Capitalize first letter of feature name
+	feature := strings.Title(vars["feature"])
+	response, err := getFeatureResponse(env, feature, deviceID)
 	if err == sql.ErrNoRows {
 		http.Error(w, errWrongFeature, http.StatusInternalServerError)
 		return
@@ -389,15 +388,21 @@ func (env *Env) GetFeature(w http.ResponseWriter, r *http.Request) {
 
 // getFeatureResponse queries the database to get the feature with the given name from the device
 // with the specified device ID.
-// TODO: Rename
-func getFeatureResponse(env *Env, feature string, deviceID int) (response models.Features, err error) {
+func getFeatureResponse(env *Env, feature string, args ...int) (response models.Features, err error) {
 	// Get the reflect value of the field with the name of the feature
 	featureValue := reflect.ValueOf(&response).Elem().FieldByName(feature)
 	// Get a pointer to the feature value
 	featurePtr := featureValue.Addr().Interface()
 
-	// Get the feature data from the specified device and save it to the response struct
-	err = env.DB.GetFeatureOfDevice(models.AboutDevice{ID: deviceID}, featurePtr)
+	// If a device ID was specified load only the data that is associated with the device,
+	// otherwise load all the data from the given feature.
+	if len(args) == 1 {
+		// Get the feature data from the specified device and save it to the response struct
+		deviceID := args[0]
+		err = env.DB.GetFeatureOfDevice(models.AboutDevice{ID: deviceID}, featurePtr)
+	} else {
+		err = env.DB.GetAllFeatureData(featurePtr)
+	}
 	return
 }
 
