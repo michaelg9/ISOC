@@ -526,6 +526,7 @@ func TestCreateFeatureForDevice(t *testing.T) {
 		{&[]Runservice{}, &toInsertRunservice, runserviceData},
 	}
 
+	// TODO: Test with wrong device id
 	device := deviceInfos[0]
 	for _, test := range tests {
 		err := db.CreateFeatureForDevice(device, test.toInsert)
