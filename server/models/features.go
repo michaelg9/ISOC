@@ -12,9 +12,11 @@ var (
 )
 
 // Features contains all the data that we store
-// TODO: Include other stuff as well
 type Features struct {
-	Battery []Battery `xml:"battery,omitempty" json:"battery,omitempty"`
+	Battery    []Battery    `xml:"battery,omitempty" json:"battery,omitempty"`
+	Call       []Call       `xml:"call,omitempty" json:"call,omitempty"`
+	App        []App        `xml:"app,omitempty" json:"app,omitempty"`
+	Runservice []Runservice `xml:"runservice,omitempty" json:"runservice,omitempty"`
 }
 
 // GetContents returns a slice of pointers to all the data of the device in the struct.

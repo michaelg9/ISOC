@@ -1,7 +1,7 @@
 // TODO: Comment
 
 var TokenAuth = (function() {
-    var tokenURL = "../auth/0.1/token";
+    var tokenURL = "/auth/0.1/token";
 
     var refreshAccessToken = function() {
         return $.post(tokenURL).done(function(data, textStatus, jqXHR) {
@@ -37,7 +37,7 @@ var TokenAuth = (function() {
 
     var login = function(email, password) {
         var loginParams = {email: email, password: password};
-        var loginURL = "../login?";
+        var loginURL = "/login?";
         return $.post({
             url: loginURL,
             data: loginParams
@@ -49,7 +49,7 @@ var TokenAuth = (function() {
     };
 
     var logout = function() {
-        var logoutURL = "../logout";
+        var logoutURL = "/logout";
         return $.post({
             url: logoutURL
         });

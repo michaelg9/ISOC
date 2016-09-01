@@ -5,7 +5,7 @@ $(document).ready(function(){
         var password = $("#password").val();
         TokenAuth.login(email, password).done(function() {
             // If login was successfull redirect to dashboad
-            window.location = "../dashboard";
+            window.location = "/dashboard";
         }).fail(function(data, textStatus, jqXHR) {
             // If login not successfull display warning
             $("#alert-wrong-password").html('<div class="alert alert-danger">Wrong password or email.</div>');

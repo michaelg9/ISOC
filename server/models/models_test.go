@@ -187,7 +187,10 @@ var devices = []Device{
 	Device{
 		AboutDevice: deviceInfos[0],
 		Data: Features{
-			Battery: batteryData[:1],
+			Battery:    batteryData[:1],
+			Call:       callData[:1],
+			App:        appData[:1],
+			Runservice: runserviceData[:1],
 		},
 	},
 }

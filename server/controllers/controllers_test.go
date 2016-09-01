@@ -266,7 +266,7 @@ func TestGetDevice(t *testing.T) {
 }
 
 func TestGetAllFeatures(t *testing.T) {
-	jsonResponse, _ := json.Marshal(models.Features{Battery: mocks.BatteryData[:1]})
+	jsonResponse, _ := json.Marshal(mocks.SavedFeatures)
 	var tests = []struct {
 		user     models.User
 		expected string

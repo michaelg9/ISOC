@@ -20,7 +20,7 @@ $(document).ready(function() {
     $(".logout").on("click", function() {
         TokenAuth.logout().done(function(data, textStatus, jqXHR) {
             if (data == "Success") {
-                window.location = "../";
+                window.location = "/";
             }
         }).fail(function() {
             // This should never happen

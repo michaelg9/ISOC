@@ -72,7 +72,10 @@ func (mdb *MockDB) DeleteDevice(aboutDevice models.AboutDevice) error {
 
 func (mdb *MockDB) GetAllFeatureData(ptrToFeature interface{}) error {
 	var getData = map[reflect.Type]interface{}{
-		reflect.TypeOf([]models.Battery{}): BatteryData[:1],
+		reflect.TypeOf([]models.Battery{}):    BatteryData[:1],
+		reflect.TypeOf([]models.Call{}):       CallData[:1],
+		reflect.TypeOf([]models.App{}):        AppData[:1],
+		reflect.TypeOf([]models.Runservice{}): RunserviceData[:1],
 	}
 	v := reflect.ValueOf(ptrToFeature).Elem()
 	v.Set(reflect.ValueOf(getData[v.Type()]))
@@ -82,7 +85,10 @@ func (mdb *MockDB) GetAllFeatureData(ptrToFeature interface{}) error {
 func (mdb *MockDB) GetFeatureOfDevice(aboutDevice models.AboutDevice, ptrToFeature interface{}) error {
 	if aboutDevice.ID == 1 {
 		var getData = map[reflect.Type]interface{}{
-			reflect.TypeOf([]models.Battery{}): BatteryData[:1],
+			reflect.TypeOf([]models.Battery{}):    BatteryData[:1],
+			reflect.TypeOf([]models.Call{}):       CallData[:1],
+			reflect.TypeOf([]models.App{}):        AppData[:1],
+			reflect.TypeOf([]models.Runservice{}): RunserviceData[:1],
 		}
 		v := reflect.ValueOf(ptrToFeature).Elem()
 		v.Set(reflect.ValueOf(getData[v.Type()]))

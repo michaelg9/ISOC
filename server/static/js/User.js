@@ -1,5 +1,5 @@
 var User = (function() {
-    var updateUserURL = "../update/user?";
+    var updateUserURL = "/update/user?";
 
     // Used to store the info about the current user
     var info = {};
@@ -36,7 +36,7 @@ var User = (function() {
 
     // Get new userdata from the server
     var updateUserInfo = function() {
-        var userDataURL = "../data/" + sessionStorage.userID;
+        var userDataURL = "/data/" + sessionStorage.userID;
         TokenAuth.makeAuthRequest(userDataURL, "GET", {}).done(function(data) {
             setUserInfo(data.user);
         }).fail(function (result) {
