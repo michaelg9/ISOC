@@ -1,14 +1,14 @@
 package mocks
 
+// IDEA: Save data with key as error message
+
 import "github.com/michaelg9/ISOC/server/models"
 
-// JWT is a sample JWT.
 var (
 	AccessToken  = "123"
 	RefreshToken = "1234"
 )
 
-// Users is a slice of sample users.
 var Users = []models.User{
 	models.User{
 		ID:           1,
@@ -18,13 +18,11 @@ var Users = []models.User{
 		Admin:        true,
 	},
 	models.User{
-		ID:     2,
-		Email:  "user@mail.com",
-		APIKey: "",
+		ID:    2,
+		Email: "user@mail.com",
 	},
 }
 
-// AboutDevices is a slice of sample AboutDevice structs.
 var AboutDevices = []models.AboutDevice{
 	models.AboutDevice{
 		ID:           1,
@@ -40,17 +38,29 @@ var AboutDevices = []models.AboutDevice{
 	},
 }
 
-// Devices is a slice of sample devices.
 var Devices = []models.Device{
 	models.Device{
 		AboutDevice: AboutDevices[0],
-		Data: models.TrackedData{
+		Data: models.Features{
 			Battery: BatteryData[:1],
 		},
 	},
 }
 
-// BatteryData is a slice of sample battery data.
+var SavedFeatures = models.Features{
+	Battery:    BatteryData[:1],
+	Call:       CallData[:1],
+	App:        AppData[:1],
+	Runservice: RunserviceData[:1],
+}
+
+var features = models.Features{
+	Battery:    BatteryData,
+	Call:       CallData,
+	App:        AppData,
+	Runservice: RunserviceData,
+}
+
 var BatteryData = []models.Battery{
 	models.Battery{
 		Value: 70,
@@ -62,19 +72,63 @@ var BatteryData = []models.Battery{
 	},
 }
 
-// Uploads is a slice of sample upload structs.
-var Uploads = []models.Upload{
-	// Should work
-	models.Upload{
-		Meta:        models.AboutDevice{ID: 1},
-		TrackedData: trackedData,
+var CallData = []models.Call{
+	models.Call{
+		Type:    "Outgoing",
+		Start:   "2016-05-31 11:50:00",
+		End:     "2016-05-31 11:51:00",
+		Contact: "43A",
 	},
-	// Should fail
-	models.Upload{
-		TrackedData: trackedData,
+	models.Call{
+		Type:    "Ingoing",
+		Start:   "2016-06-30 11:50:00",
+		End:     "2016-06-30 11:51:00",
+		Contact: "43A",
 	},
 }
 
-var trackedData = models.TrackedData{
-	Battery: BatteryData,
+var AppData = []models.App{
+	models.App{
+		Name:      "com.isoc.Monitor",
+		UID:       123,
+		Version:   "2.3",
+		Installed: "2016-05-31 11:50:00",
+		Label:     "Monitor",
+	},
+	models.App{
+		Name:      "com.isoc.MobileApp",
+		UID:       124,
+		Version:   "2.0",
+		Installed: "2016-05-31 11:51:00",
+		Label:     "MobileApp",
+	},
+}
+
+var RunserviceData = []models.Runservice{
+	models.Runservice{
+		AppName: "com.isoc.Monitor",
+		RX:      12,
+		TX:      10,
+		Start:   "2016-05-31 11:50:00",
+		End:     "2016-05-31 13:50:00",
+	},
+	models.Runservice{
+		AppName: "com.isoc.Monitor",
+		RX:      15,
+		TX:      0,
+		Start:   "2016-05-31 14:50:00",
+		End:     "2016-05-31 15:50:00",
+	},
+}
+
+var Uploads = []models.Upload{
+	// Should work
+	models.Upload{
+		Meta:     models.AboutDevice{ID: 1},
+		Features: features,
+	},
+	// Should fail
+	models.Upload{
+		Features: features,
+	},
 }

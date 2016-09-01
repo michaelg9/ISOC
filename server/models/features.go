@@ -7,13 +7,33 @@ import (
 	"github.com/fatih/structs"
 )
 
-const (
-	errDataNotStored = "Type of data is not stored."
+var (
+	errFeatureNotStored = errors.New("Type of data is not stored.")
 )
+
+// Features contains all the data that we store
+type Features struct {
+	Battery    []Battery    `xml:"battery,omitempty" json:"battery,omitempty"`
+	Call       []Call       `xml:"call,omitempty" json:"call,omitempty"`
+	App        []App        `xml:"app,omitempty" json:"app,omitempty"`
+	Runservice []Runservice `xml:"runservice,omitempty" json:"runservice,omitempty"`
+}
+
+// GetContents returns a slice of pointers to all the data of the device in the struct.
+// We need to return pointers in order to preserve the underlying type.
+func (deviceData *Features) GetContents() []interface{} {
+	v := reflect.Indirect(reflect.ValueOf(deviceData))
+	contents := make([]interface{}, v.NumField())
+
+	for i := range contents {
+		contents[i] = v.Field(i).Addr().Interface()
+	}
+
+	return contents
+}
 
 // Battery is the struct for the battery
 // percentage element
-// TODO: Add charging attribute
 type Battery struct {
 	Time  string `xml:"time,attr" json:"time" db:"timestamp"`
 	Value int    `xml:",chardata" json:"value" db:"batteryPercentage"`
@@ -64,16 +84,16 @@ var createQueries = map[string]string{
 
 // getQueries maps the key for the feature types to SELECT queries.
 var getQueries = map[string]string{
-	"Battery":    `SELECT timestamp, batteryPercentage FROM BatteryStatus WHERE device = :id;`,
-	"Call":       `SELECT callType, start, end, contact FROM ` + "`" + `Call` + "`" + ` WHERE device = :id;`,
-	"App":        `SELECT name, uid, version, installed, label FROM App WHERE device = :id;`,
-	"Runservice": `SELECT appName, rx, tx, start, end FROM Runservice WHERE device = :id;`,
+	"Battery":    `SELECT timestamp, batteryPercentage FROM BatteryStatus`,
+	"Call":       `SELECT callType, start, end, contact FROM ` + "`" + `Call` + "`",
+	"App":        `SELECT name, uid, version, installed, label FROM App`,
+	"Runservice": `SELECT appName, rx, tx, start, end FROM Runservice`,
 }
 
-// GetData gets the data from the given data type.
-func (db *DB) GetData(aboutDevice AboutDevice, ptrToData interface{}) error {
+// GetAllFeatureData gets all entries from a given feature (e.g. battery logs from all devices).
+func (db *DB) GetAllFeatureData(ptrToFeature interface{}) error {
 	// Get the reflect.Value to which the pointer points
-	value, err := getValueOfPtr(ptrToData)
+	value, err := getValueOfPtr(ptrToFeature)
 	if err != nil {
 		return err
 	}
@@ -81,22 +101,40 @@ func (db *DB) GetData(aboutDevice AboutDevice, ptrToData interface{}) error {
 	// Retrieve the SELECT query for the given feature type
 	query, ok := getQueries[typeName[value.Type()]]
 	if !ok {
-		return errors.New(errDataNotStored)
+		return errFeatureNotStored
 	}
 
-	stmt, err := db.PrepareNamed(query)
+	// Query the database and return result
+	return db.Select(ptrToFeature, query)
+}
+
+// GetFeatureOfDevice gets the data from the given data type.
+func (db *DB) GetFeatureOfDevice(aboutDevice AboutDevice, ptrToFeature interface{}) error {
+	// Get the reflect.Value to which the pointer points
+	value, err := getValueOfPtr(ptrToFeature)
+	if err != nil {
+		return err
+	}
+
+	// Retrieve the SELECT query for the given feature type
+	query, ok := getQueries[typeName[value.Type()]]
+	if !ok {
+		return errFeatureNotStored
+	}
+
+	stmt, err := db.PrepareNamed(query + ` WHERE device = :id`)
 	if err != nil {
 		return err
 	}
 
 	// Query the database and return result
-	return stmt.Select(ptrToData, aboutDevice)
+	return stmt.Select(ptrToFeature, aboutDevice)
 }
 
-// CreateData inserts the given data into the database.
-func (db *DB) CreateData(aboutDevice AboutDevice, ptrToData interface{}) error {
+// CreateFeatureForDevice inserts the given data into the database.
+func (db *DB) CreateFeatureForDevice(aboutDevice AboutDevice, ptrToFeature interface{}) error {
 	// Get the reflect.Value to which the pointer points
-	value, err := getValueOfPtr(ptrToData)
+	value, err := getValueOfPtr(ptrToFeature)
 	if err != nil {
 		return err
 	}
@@ -104,7 +142,7 @@ func (db *DB) CreateData(aboutDevice AboutDevice, ptrToData interface{}) error {
 	// Retrieve the INSERT query for the given feature type
 	query, ok := createQueries[typeName[value.Type()]]
 	if !ok {
-		return errors.New(errDataNotStored)
+		return errFeatureNotStored
 	}
 
 	// Insert each data point in the slice into the database

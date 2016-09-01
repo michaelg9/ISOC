@@ -1,26 +1,19 @@
-// Listener for Login button
 $(document).ready(function(){
+    // Listener for Login button
     $("#login-btn").on("click", function(){
         var email = $("#email").val();
         var password = $("#password").val();
-        var loginParams = {email: email, password: password};
-        var loginURL = "../login?";
-        $.post({
-            url: loginURL,
-            data: loginParams
-        }).done(function(data, textStatus, jqXHR) {
-            sessionStorage.userID = data.id;
-            sessionStorage.accessToken = data.accessToken;
-            window.location = "../dashboard";
+        TokenAuth.login(email, password).done(function() {
+            // If login was successfull redirect to dashboad
+            window.location = "/dashboard";
         }).fail(function(data, textStatus, jqXHR) {
+            // If login not successfull display warning
             $("#alert-wrong-password").html('<div class="alert alert-danger">Wrong password or email.</div>');
             return false;
         });
     });
-});
 
-// On enter hit click Login button
-$(document).ready(function() {
+    // On enter click Login button
     $(document).keypress(function(e) {
         var enter = 13;
         var key = e.which;

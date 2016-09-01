@@ -1,10 +1,10 @@
 package models
 
 // TODO: Test time input
-// TODO: Write table test
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -186,8 +186,11 @@ var deviceInfos = []AboutDevice{
 var devices = []Device{
 	Device{
 		AboutDevice: deviceInfos[0],
-		Data: TrackedData{
-			Battery: batteryData[:1],
+		Data: Features{
+			Battery:    batteryData[:1],
+			Call:       callData[:1],
+			App:        appData[:1],
+			Runservice: runserviceData[:1],
 		},
 	},
 }
@@ -337,9 +340,9 @@ func TestGetDeviceFromUser(t *testing.T) {
 	for _, test := range tests {
 		result, err := db.GetDeviceFromUser(test.user, test.device)
 		if test.expectedErr != nil {
-			assert.EqualError(t, test.expectedErr, err.Error())
+			assert.EqualError(t, err, test.expectedErr.Error())
 		} else if assert.NoError(t, err) {
-			assert.Equal(t, result, test.expected)
+			assert.Equal(t, test.expected, result)
 		}
 	}
 }
@@ -348,27 +351,50 @@ func TestGetDevicesFromUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := User{ID: 1}
-	expected := devices
+	tests := []struct {
+		user        User
+		expected    []Device
+		expectedErr error
+	}{
+		{User{ID: 1}, devices, nil},
+		{User{ID: 42}, []Device{}, nil},
+	}
 
-	result, err := db.GetDevicesFromUser(user)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		result, err := db.GetDevicesFromUser(test.user)
+		if test.expectedErr != nil {
+			assert.EqualError(t, err, test.expectedErr.Error())
+		} else if assert.NoError(t, err) {
+			assert.Equal(t, test.expected, result)
+		}
+	}
 }
 
 func TestGetDeviceInfos(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := User{ID: 1}
-	expected := deviceInfos[:1]
+	tests := []struct {
+		user        User
+		expected    []AboutDevice
+		expectedErr error
+	}{
+		{User{ID: 1}, deviceInfos[:1], nil},
+		{User{ID: 42}, []AboutDevice(nil), nil},
+	}
 
-	result, err := db.getDeviceInfos(user)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		result, err := db.getDeviceInfos(test.user)
+		if test.expectedErr != nil {
+			t.Log(result)
+			assert.EqualError(t, err, test.expectedErr.Error())
+		} else if assert.NoError(t, err) {
+			assert.Equal(t, test.expected, result)
+		}
+	}
 }
 
-func TestGetData(t *testing.T) {
+func TestGetFeatureOfDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
@@ -384,7 +410,47 @@ func TestGetData(t *testing.T) {
 
 	device := deviceInfos[0]
 	for _, test := range tests {
-		err := db.GetData(device, test.ptrToResult)
+		err := db.GetFeatureOfDevice(device, test.ptrToResult)
+		assert.NoError(t, err)
+		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
+		assert.Equal(t, test.expected, result)
+	}
+}
+
+func TestGetAllUsers(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	result, err := db.GetAllUsers()
+	assert.NoError(t, err)
+	assert.Equal(t, users[:1], result)
+}
+
+func TestGetAllDevices(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	result, err := db.GetAllDevices()
+	assert.NoError(t, err)
+	assert.Equal(t, deviceInfos[:1], result)
+}
+
+func TestGetAllFeatureData(t *testing.T) {
+	db := setup()
+	defer cleanUp(db)
+
+	var tests = []struct {
+		ptrToResult interface{}
+		expected    interface{}
+	}{
+		{&[]Battery{}, batteryData[:1]},
+		{&[]Call{}, callData[:1]},
+		{&[]App{}, appData[:1]},
+		{&[]Runservice{}, runserviceData[:1]},
+	}
+
+	for _, test := range tests {
+		err := db.GetAllFeatureData(test.ptrToResult)
 		assert.NoError(t, err)
 		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
 		assert.Equal(t, test.expected, result)
@@ -395,35 +461,56 @@ func TestCreateUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	newUser := users[1]
-	pwd, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
-	newUser.PasswordHash = string(pwd)
-	_, err := db.CreateUser(newUser)
-	assert.NoError(t, err)
+	tests := []struct {
+		newUser     User
+		password    string
+		expectedErr error
+	}{
+		{users[1], "123456", nil},
+	}
 
-	result, err := db.GetUser(newUser)
-	assert.NoError(t, err)
-	assert.Equal(t, newUser, result)
+	for _, test := range tests {
+		pwd, _ := bcrypt.GenerateFromPassword([]byte(test.password), bcrypt.DefaultCost)
+		test.newUser.PasswordHash = string(pwd)
+		_, err := db.CreateUser(test.newUser)
+		if test.expectedErr != nil {
+			assert.EqualError(t, test.expectedErr, err.Error())
+		} else if assert.NoError(t, err) {
+			result, err := db.GetUser(test.newUser)
+			assert.NoError(t, err)
+			assert.Equal(t, test.newUser, result)
+		}
+	}
 }
 
 func TestCreateDeviceForUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := users[0]
-	newDevice := deviceInfos[1]
+	tests := []struct {
+		user            User
+		newDevice       AboutDevice
+		existingDevices []AboutDevice
+		expectedErr     error
+	}{
+		{users[0], deviceInfos[1], deviceInfos[:1], nil},
+		{users[0], AboutDevice{ID: 3}, deviceInfos, nil},
+	}
 
-	_, err := db.CreateDeviceForUser(user, newDevice)
-	assert.NoError(t, err)
-
-	oldDevice := deviceInfos[0]
-	expected := []AboutDevice{oldDevice, newDevice}
-	result, err := db.getDeviceInfos(user)
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		_, err := db.CreateDeviceForUser(test.user, test.newDevice)
+		if test.expectedErr != nil {
+			assert.EqualError(t, test.expectedErr, err.Error())
+		} else if assert.NoError(t, err) {
+			expected := append(test.existingDevices, test.newDevice)
+			result, err := db.getDeviceInfos(test.user)
+			assert.NoError(t, err)
+			assert.Equal(t, expected, result)
+		}
+	}
 }
 
-func TestCreateData(t *testing.T) {
+func TestCreateFeatureForDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
@@ -432,26 +519,32 @@ func TestCreateData(t *testing.T) {
 	toInsertApp := appData[1:]
 	toInsertRunservice := runserviceData[1:]
 
+	errWrongDeviceID := errors.New("Error 1452: Cannot add or update a child row")
+
 	var tests = []struct {
 		ptrToResult interface{}
 		toInsert    interface{}
+		device      AboutDevice
+		expectedErr error
 		expected    interface{}
 	}{
-		{&[]Battery{}, &toInsertBattery, batteryData},
-		{&[]Call{}, &toInsertCall, callData},
-		{&[]App{}, &toInsertApp, appData},
-		{&[]Runservice{}, &toInsertRunservice, runserviceData},
+		{&[]Battery{}, &toInsertBattery, deviceInfos[0], nil, batteryData},
+		{&[]Call{}, &toInsertCall, deviceInfos[0], nil, callData},
+		{&[]App{}, &toInsertApp, deviceInfos[0], nil, appData},
+		{&[]Runservice{}, &toInsertRunservice, deviceInfos[0], nil, runserviceData},
+		{&[]Battery{}, &toInsertBattery, deviceInfos[1], errWrongDeviceID, toInsertBattery},
 	}
 
-	device := deviceInfos[0]
 	for _, test := range tests {
-		err := db.CreateData(device, test.toInsert)
-		assert.NoError(t, err)
-
-		err = db.GetData(device, test.ptrToResult)
-		assert.NoError(t, err)
-		result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
-		assert.Equal(t, test.expected, result)
+		err := db.CreateFeatureForDevice(test.device, test.toInsert)
+		if test.expectedErr != nil {
+			assert.Contains(t, err.Error(), test.expectedErr.Error())
+		} else if assert.NoError(t, err) {
+			err = db.GetFeatureOfDevice(test.device, test.ptrToResult)
+			assert.NoError(t, err)
+			result := reflect.Indirect(reflect.ValueOf(test.ptrToResult)).Interface()
+			assert.Equal(t, test.expected, result)
+		}
 	}
 }
 
@@ -459,61 +552,122 @@ func TestUpdateUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := users[0]
-	user.Email = "user2@mail.com"
-	pwd, err := bcrypt.GenerateFromPassword([]byte("12345"), bcrypt.DefaultCost)
-	assert.NoError(t, err)
-	user.PasswordHash = string(pwd)
-	user.APIKey = "1"
-	// user.Admin = false
-	err = db.UpdateUser(user)
-	assert.NoError(t, err)
+	tests := []struct {
+		newEmail    string
+		newPassword string
+		newAPIKey   string
+		//    isAdmin bool
+	}{
+		{"user2@mail.com", "12345", "1"},
+		{"user@mail.com", "", ""},
+		{"", "123456", ""},
+		{"", "", "1"},
+		{"", "", ""},
+	}
 
-	result, err := db.GetUser(user)
-	user.APIKey = result.APIKey
-	assert.NoError(t, err)
-	assert.Equal(t, user, result)
+	for _, test := range tests {
+		oldUser, _ := db.GetUser(User{ID: 1})
+
+		newUser := User{ID: 1, Admin: true}
+		newUser.Email = test.newEmail
+
+		if test.newPassword != "" {
+			pwd, _ := bcrypt.GenerateFromPassword([]byte(test.newPassword), bcrypt.DefaultCost)
+			newUser.PasswordHash = string(pwd)
+		} else {
+			newUser.PasswordHash = ""
+		}
+
+		newUser.APIKey = test.newAPIKey
+		err := db.UpdateUser(newUser)
+		assert.NoError(t, err)
+
+		result, err := db.GetUser(User{ID: 1})
+		assert.NoError(t, err)
+
+		if test.newEmail == "" {
+			newUser.Email = oldUser.Email
+		}
+		if test.newPassword == "" {
+			newUser.PasswordHash = oldUser.PasswordHash
+		}
+		if test.newAPIKey == "" {
+			newUser.APIKey = oldUser.APIKey
+		} else {
+			newUser.APIKey = result.APIKey
+		}
+
+		assert.Equal(t, newUser, result)
+	}
 }
 
 func TestUpdateDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	device := deviceInfos[0]
-	device.Manufacturer = "Apple"
-	device.Model = "iPhone 6"
-	device.OS = "iOS 10"
-	err := db.UpdateDevice(device)
-	assert.NoError(t, err)
+	tests := []struct {
+		newOS string
+	}{
+		{"iOS 10"},
+		{""},
+	}
 
-	expected := []AboutDevice{device}
-	result, err := db.getDeviceInfos(users[0])
-	assert.NoError(t, err)
-	assert.Equal(t, expected, result)
+	for _, test := range tests {
+		oldDevices, _ := db.getDeviceInfos(users[0])
+		newDevice := deviceInfos[0]
+		newDevice.OS = test.newOS
+		err := db.UpdateDevice(newDevice)
+		assert.NoError(t, err)
+
+		if test.newOS == "" {
+			newDevice.OS = oldDevices[0].OS
+		}
+		expected := []AboutDevice{newDevice}
+		result, _ := db.getDeviceInfos(users[0])
+		assert.Equal(t, expected, result)
+	}
 }
 
 func TestDeleteUser(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	user := users[0]
-	err := db.DeleteUser(user)
-	assert.NoError(t, err)
+	tests := []struct {
+		userID int
+	}{
+		{1},
+		{42},
+	}
 
-	expectedErr := sql.ErrNoRows
-	_, err = db.GetUser(user)
-	assert.Equal(t, expectedErr, err)
+	for _, test := range tests {
+		user := User{ID: test.userID}
+		err := db.DeleteUser(user)
+		assert.NoError(t, err)
+
+		expectedErr := sql.ErrNoRows
+		_, err = db.GetUser(user)
+		assert.EqualError(t, expectedErr, err.Error())
+	}
 }
 
 func TestDeleteDevice(t *testing.T) {
 	db := setup()
 	defer cleanUp(db)
 
-	device := deviceInfos[0]
-	err := db.DeleteDevice(device)
-	assert.NoError(t, err)
+	tests := []struct {
+		deviceID int
+	}{
+		{1},
+		{42},
+	}
 
-	result, err := db.getDeviceInfos(User{Email: "user@usermail.com"})
-	assert.NoError(t, err)
-	assert.Empty(t, result)
+	for _, test := range tests {
+		device := AboutDevice{ID: test.deviceID}
+		err := db.DeleteDevice(device)
+		assert.NoError(t, err)
+
+		expectedErr := sql.ErrNoRows
+		_, err = db.GetDeviceFromUser(users[0], Device{AboutDevice: device})
+		assert.EqualError(t, expectedErr, err.Error())
+	}
 }

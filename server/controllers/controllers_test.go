@@ -18,13 +18,34 @@ import (
 
 /* Test controller functions */
 
+// Taken from testInputXML.xml
+var testXML = `
+<xml>
+    <metadata>
+        <device>1</device>
+        <imei>123</imei>
+        <datanettype>LTE</datanettype>
+        <country>gb</country>
+        <network>O2 - UK</network>
+        <carrier>giffgaff</carrier>
+        <manufacturer>LGE</manufacturer>
+        <model>LG-D855</model>
+        <androidver>6.0</androidver>
+        <lastReboot>2016-06-12 19:20:34</lastReboot>
+        <timeZone>GMT +01:00</timeZone>
+        <defaultBrowser>com.android.chrome</defaultBrowser>
+    </metadata>
+</xml>
+`
+
 func TestSignUp(t *testing.T) {
-	validXML := models.Upload{Meta: mocks.AboutDevices[1]}
-	invalidXML := models.Upload{}
+	validXML, _ := xml.Marshal(models.Upload{Meta: mocks.AboutDevices[1]})
+	validXML2 := []byte(testXML)
+	invalidXML, _ := xml.Marshal(models.Upload{})
 	var tests = []struct {
 		email       string
 		password    string
-		requestBody models.Upload
+		requestBody []byte
 		expected    string
 	}{
 		{"user@mail.com", "123456", validXML, "2"},
@@ -32,20 +53,17 @@ func TestSignUp(t *testing.T) {
 		{"user@mail.com", "", validXML, errNoPasswordOrEmail},
 		{"", "123456", validXML, errNoPasswordOrEmail},
 		{"user@mail.com", "123456", invalidXML, errNoDevice},
+		{"user2@mail.com", "123456", validXML2, "2"},
 	}
 
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/signup?email=%v&password=%v", test.email, test.password)
 
-		rec := httptest.NewRecorder()
-		reqBody, _ := xml.Marshal(test.requestBody)
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
-
-		http.HandlerFunc(env.SignUp).ServeHTTP(rec, req)
-
-		obtained := rec.Body.String()
-		assert.Contains(t, obtained, test.expected)
+		args := OptionalParams{
+			RequestBody: string(test.requestBody),
+		}
+		testController(env.SignUp, "POST", url, test.expected, t, args)
 	}
 }
 
@@ -62,15 +80,12 @@ func TestUpload(t *testing.T) {
 	for _, test := range tests {
 		url := fmt.Sprint("/app/0.1/upload")
 
-		rec := httptest.NewRecorder()
 		reqBody, _ := xml.Marshal(test.requestBody)
-		req, _ := http.NewRequest("POST", url, bytes.NewBuffer(reqBody))
-		context.Set(req, UserKey, mocks.Users[0])
-
-		http.HandlerFunc(env.Upload).ServeHTTP(rec, req)
-
-		obtained := rec.Body.String()
-		assert.Equal(t, test.expected, obtained)
+		args := OptionalParams{
+			User:        mocks.Users[0],
+			RequestBody: string(reqBody),
+		}
+		testController(env.Upload, "POST", url, test.expected, t, args)
 	}
 }
 
@@ -92,7 +107,7 @@ func TestTokenLogin(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/auth/0.1/login?email=%v&password=%v", test.email, test.password)
-		testController(env.TokenLogin, "POST", url, test.expected, t)
+		testController(env.TokenLogin, "POST", url, test.expected, t, OptionalParams{})
 	}
 }
 
@@ -110,7 +125,7 @@ func TestToken(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/auth/0.1/token?refreshToken=%v", test.refreshToken)
-		testController(env.Token, "POST", url, test.expected, t)
+		testController(env.Token, "POST", url, test.expected, t, OptionalParams{})
 	}
 }
 
@@ -128,7 +143,7 @@ func TestRefreshToken(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/auth/0.1/refresh?refreshToken=%v", test.refreshToken)
-		testController(env.RefreshToken, "POST", url, test.expected, t)
+		testController(env.RefreshToken, "POST", url, test.expected, t, OptionalParams{})
 	}
 }
 
@@ -137,7 +152,7 @@ func TestTokenLogout(t *testing.T) {
 		refreshToken string
 		expected     string
 	}{
-		{mocks.RefreshToken, "Success"},
+		{mocks.RefreshToken, http.StatusText(http.StatusOK)},
 		{"", errNoToken},
 		{"12345", errTokenAlreadyInvalid},
 	}
@@ -145,7 +160,7 @@ func TestTokenLogout(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/auth/0.1/logout?token=%v", test.refreshToken)
-		testController(env.TokenLogout, "POST", url, test.expected, t)
+		testController(env.TokenLogout, "POST", url, test.expected, t, OptionalParams{})
 	}
 }
 
@@ -168,16 +183,11 @@ func TestUpdateUser(t *testing.T) {
 	for _, test := range tests {
 		url := fmt.Sprintf("/update/user?email=%v&password=%v&apiKey=%v", test.email, test.password, test.updateAPIKey)
 
-		// TODO: More general test function
-		rec := httptest.NewRecorder()
-		req, _ := http.NewRequest("POST", url, nil)
-		context.Set(req, UserKey, mocks.Users[0])
-
-		http.HandlerFunc(env.UpdateUser).ServeHTTP(rec, req)
-
-		obtained := rec.Body.String()
-		assert.Equal(t, test.expectedCode, rec.Code)
-		assert.Equal(t, test.expectedBody, obtained)
+		args := OptionalParams{
+			User:         mocks.Users[0],
+			ExpectedCode: test.expectedCode,
+		}
+		testController(env.UpdateUser, "POST", url, test.expectedBody, t, args)
 	}
 }
 
@@ -200,7 +210,31 @@ func TestGetUser(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/data/%v", test.id)
-		testControllerWithPattern(env.GetUser, "GET", url, pattern, test.expected, test.user, t)
+		args := OptionalParams{
+			User:    test.user,
+			Pattern: pattern,
+		}
+		testController(env.GetUser, "GET", url, test.expected, t, args)
+	}
+}
+
+func TestGetAllDevices(t *testing.T) {
+	jsonResponse, _ := json.Marshal(mocks.AboutDevices[:1])
+	var tests = []struct {
+		user     models.User
+		expected string
+	}{
+		{mocks.Users[0], string(jsonResponse)},
+		{mocks.Users[1], errForbidden},
+	}
+
+	url := "/data/all/devices"
+	env := newEnv()
+	for _, test := range tests {
+		args := OptionalParams{
+			User: test.user,
+		}
+		testController(env.GetAllDevices, "GET", url, test.expected, t, args)
 	}
 }
 
@@ -223,12 +257,59 @@ func TestGetDevice(t *testing.T) {
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/data/%v/%v", test.id, test.deviceID)
-		testControllerWithPattern(env.GetDevice, "GET", url, pattern, test.expected, test.user, t)
+		args := OptionalParams{
+			User:    test.user,
+			Pattern: pattern,
+		}
+		testController(env.GetDevice, "GET", url, test.expected, t, args)
+	}
+}
+
+func TestGetAllFeatures(t *testing.T) {
+	jsonResponse, _ := json.Marshal(mocks.SavedFeatures)
+	var tests = []struct {
+		user     models.User
+		expected string
+	}{
+		{mocks.Users[0], string(jsonResponse)},
+		{mocks.Users[1], errForbidden},
+	}
+
+	url := "/data/all/features"
+	env := newEnv()
+	for _, test := range tests {
+		args := OptionalParams{
+			User: test.user,
+		}
+		testController(env.GetAllFeatures, "GET", url, test.expected, t, args)
+	}
+}
+
+func TestGetAllOfFeature(t *testing.T) {
+	jsonResponse, _ := json.Marshal(models.Features{Battery: mocks.BatteryData[:1]})
+	var tests = []struct {
+		user     models.User
+		feature  string
+		expected string
+	}{
+		{mocks.Users[0], "battery", string(jsonResponse)},
+		{mocks.Users[1], "battery", errForbidden},
+	}
+
+	pattern := "/data/all/features/{feature}"
+	env := newEnv()
+	for _, test := range tests {
+		url := fmt.Sprintf("/data/all/features/%v", test.feature)
+		args := OptionalParams{
+			User:    test.user,
+			Pattern: pattern,
+		}
+		testController(env.GetAllOfFeature, "GET", url, test.expected, t, args)
 	}
 }
 
 func TestGetFeature(t *testing.T) {
-	jsonResponse, _ := json.Marshal(models.TrackedData{Battery: mocks.BatteryData[:1]})
+	jsonResponse, _ := json.Marshal(models.Features{Battery: mocks.BatteryData[:1]})
 	var tests = []struct {
 		user     models.User
 		id       int
@@ -236,18 +317,22 @@ func TestGetFeature(t *testing.T) {
 		feature  string
 		expected string
 	}{
-		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", string(jsonResponse)},
-		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, "Battery", errForbidden},
-		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, "Battery", errWrongDeviceOrUser},
-		{mocks.Users[0], mocks.Users[0].ID, "hello", "Battery", errDeviceIDNotInt},
-		{mocks.Users[0], mocks.Users[0].ID, 25, "Battery", errWrongDeviceOrUser},
+		{mocks.Users[0], mocks.Users[0].ID, mocks.AboutDevices[0].ID, "battery", string(jsonResponse)},
+		{models.User{ID: 42}, mocks.Users[0].ID, mocks.AboutDevices[0].ID, "battery", errForbidden},
+		{models.User{ID: 42}, 42, mocks.AboutDevices[0].ID, "battery", errWrongDeviceOrUser},
+		{mocks.Users[0], mocks.Users[0].ID, "hello", "battery", errDeviceIDNotInt},
+		{mocks.Users[0], mocks.Users[0].ID, 25, "battery", errWrongDeviceOrUser},
 	}
 
 	pattern := "/data/{user}/{device}/{feature}"
 	env := newEnv()
 	for _, test := range tests {
 		url := fmt.Sprintf("/data/%v/%v/%v", test.id, test.deviceID, test.feature)
-		testControllerWithPattern(env.GetFeature, "GET", url, pattern, test.expected, test.user, t)
+		args := OptionalParams{
+			User:    test.user,
+			Pattern: pattern,
+		}
+		testController(env.GetFeature, "GET", url, test.expected, t, args)
 	}
 }
 
@@ -278,28 +363,40 @@ func TestWriteResponse(t *testing.T) {
 
 /* Helper functions */
 
-func testController(controller http.HandlerFunc, method, url, expected string, t *testing.T) {
-	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest(method, url, nil)
-
-	http.HandlerFunc(controller).ServeHTTP(rec, req)
-
-	obtained := rec.Body.String()
-	assert.Contains(t, obtained, expected)
+type OptionalParams struct {
+	User         models.User
+	Pattern      string
+	ExpectedCode int
+	RequestBody  string
 }
 
-// TODO: Parameters as struct
-func testControllerWithPattern(controller http.HandlerFunc, method, url, pattern, expected string, user models.User, t *testing.T) {
+func testController(controller http.HandlerFunc, method, url, expected string, t *testing.T, args OptionalParams) {
 	rec := httptest.NewRecorder()
-	req, _ := http.NewRequest(method, url, nil)
-	context.Set(req, UserKey, user)
+	var req *http.Request
+	if args.RequestBody != "" {
+		req, _ = http.NewRequest(method, url, bytes.NewBuffer([]byte(args.RequestBody)))
+	} else {
+		req, _ = http.NewRequest(method, url, nil)
+	}
 
-	r := mux.NewRouter()
-	r.HandleFunc(pattern, controller)
-	r.ServeHTTP(rec, req)
+	userSpecified := args.User != models.User{}
+	if userSpecified {
+		context.Set(req, UserKey, args.User)
+	}
+
+	if args.Pattern != "" {
+		r := mux.NewRouter()
+		r.HandleFunc(args.Pattern, controller)
+		r.ServeHTTP(rec, req)
+	} else {
+		http.HandlerFunc(controller).ServeHTTP(rec, req)
+	}
 
 	obtained := rec.Body.String()
 	assert.Contains(t, obtained, expected)
+	if args.ExpectedCode != 0 {
+		assert.Equal(t, args.ExpectedCode, rec.Code)
+	}
 }
 
 func newEnv() Env {

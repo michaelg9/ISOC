@@ -53,6 +53,7 @@ var routes = Routes{
 		sessionAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.Admin },
 	},
+
 	/* Session authentication routes */
 	Route{
 		"SessionLogin",
@@ -68,6 +69,7 @@ var routes = Routes{
 		"",
 		func(env controllers.Env) http.HandlerFunc { return env.SessionLogout },
 	},
+
 	/* Token authentication routes */
 	Route{
 		"TokenLogin",
@@ -97,6 +99,7 @@ var routes = Routes{
 		"",
 		func(env controllers.Env) http.HandlerFunc { return env.TokenLogout },
 	},
+
 	/* API routes */
 	Route{
 		"SignUp",
@@ -132,6 +135,20 @@ var routes = Routes{
 		"/data/{user}/{device}",
 		tokenAuth,
 		func(env controllers.Env) http.HandlerFunc { return env.GetDevice },
+	},
+	Route{
+		"AllFeatures",
+		"GET",
+		"/data/all/features",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.GetAllFeatures },
+	},
+	Route{
+		"AllOfFeature",
+		"GET",
+		"/data/all/features/{feature}",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.GetAllOfFeature },
 	},
 	Route{
 		"Feature",

@@ -11,4 +11,3 @@ RUN go-wrapper download
 RUN go-wrapper install
 
 EXPOSE 3000
-EXPOSE 8080
