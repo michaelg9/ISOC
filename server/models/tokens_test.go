@@ -1,7 +1,5 @@
 package models
 
-// TODO: Tests for exported functions
-
 import (
 	"errors"
 	"os"
