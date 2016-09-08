@@ -78,8 +78,32 @@ Get data about user
 GET /data/[userID]?out=[format] (supported formats: JSON (default when not specified), XML)
 Authorization: Bearer [accessToken]
 
-Response:
-TODO: Make sample responses
+Response (prettified):
+{
+    "user": {
+        "id": 1,
+        "email": "user@usermail.com",
+        "admin": true
+    },
+    "devices": [{
+        "aboutDevice": {
+            "id": 1,
+            "imei": "1234567",
+            "manufacturer": "MyManufacturer",
+            "model": "MyModel",
+            "os": "MyOS"
+        },
+        "data": {
+            "battery": [{
+                "time":"2016-05-31 11:48:48",
+                "value":70
+            }, {
+                "time": "2016-05-31 12:00:00",
+                "value": 68
+            }]
+        }
+    }]
+}
 
 -----------------------------------------------------------------------------------------------------
 
@@ -88,8 +112,14 @@ Get data about all devices
 GET /data/all/devices
 Authorization: Bearer [accessToken]
 
-Response:
-TODO: Make sample responses
+Response (prettified):
+[{
+    "id": 1,
+    "imei": "1234567",
+    "manufacturer": "MyManufacturer",
+    "model": "MyModel",
+    "os": "MyOS"
+}]
 
 -----------------------------------------------------------------------------------------------------
 
@@ -99,7 +129,23 @@ GET /data/[userID]/[deviceID]
 Authorization: Bearer [accessToken]
 
 Response:
-TODO: Make sample responses
+{
+    "aboutDevice": {
+        "id": 1,
+        "imei": "1234567",
+        "manufacturer": "MyManufacturer",
+        "model": "MyModel",
+        "os": "MyOS"
+    "data": {
+        "battery": [{
+            "time": "2016-05-31 11:48:48",
+            "value": 70
+        }, {
+            "time": "2016-05-31 12:00:00",
+            "value": 68
+        }]
+    }
+}
 
 -----------------------------------------------------------------------------------------------------
 
@@ -108,8 +154,33 @@ Get all data from all features
 GET /data/all/features
 Authorization: Bearer [accessToken]
 
-Response:
-TODO: Make sample responses
+Response (prettified):
+{
+    "battery": [{
+        "time": "2016-05-31 11:48:48",
+        "value": 70
+    }],
+    "call": [{
+        "Type": "Outgoing",
+        "Start": "2016-05-31 11:50:00",
+        "End": "2016-05-31 11:51:00",
+        "Contact": "43A"
+    }],
+    "app": [{
+        "Name": "com.isoc.Monitor",
+        "UID": 123,
+        "Version": "2.3",
+        "Installed": "2016-05-31 11:50:00",
+        "Label": "Monitor"
+    }],
+    "runservice": [{
+        "AppName": "com.isoc.Monitor",
+        "RX": 12,
+        "TX": 10,
+        "Start": "2016-05-31 11:50:00",
+        "End": "2016-05-31 13:50:00"
+    }]
+}
 
 -----------------------------------------------------------------------------------------------------
 
@@ -118,8 +189,16 @@ Get all data from a specific feature
 GET /data/all/features/[featureName]
 Authorization: Bearer [accessToken]
 
-Response:
-TODO: Make sample responses
+Response (prettified, featureName: "battery"):
+{
+    "battery": [{
+        "time": "2016-05-31 11:48:48",
+        "value": 70
+    },  {
+        "time": "2016-05-31 12:00:00",
+        "value": 68
+    }]
+}
 
 -----------------------------------------------------------------------------------------------------
 
@@ -127,6 +206,17 @@ Get data about a feature from a certain device
 
 GET /data/[userID]/[deviceID]/[featureName]
 Authorization: Bearer [accessToken]
+
+Response (prettified, featureName: "battery"):
+{
+    "battery": [{
+        "time": "2016-05-31 11:48:48",
+        "value": 70
+    },  {
+        "time": "2016-05-31 12:00:00",
+        "value": 68
+    }]
+}
 
 -----------------------------------------------------------------------------------------------------
 
