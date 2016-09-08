@@ -1,10 +1,9 @@
 var User = (function() {
     var updateUserURL = "/update/user?";
 
-    // Used to store the info about the current user
-    var info = {};
-    var devices = [];
-    var currentDevice = {};
+    var info = {}; // Info about user
+    var devices = []; // Devices of the user
+    var currentDevice = {}; //  Currently selected device
 
     var getCurrentDevice = function() {
         return currentDevice;
@@ -30,8 +29,8 @@ var User = (function() {
     var setUserInfo = function (data) {
         // We have to update each attribute seperately because otherwise
         // rivetjs does not update the view
+        info.id = data.id;
         info.email = data.email;
-        info.apiKey = data.apiKey;
     };
 
     // Get new userdata from the server

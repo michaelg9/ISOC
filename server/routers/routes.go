@@ -130,6 +130,13 @@ var routes = Routes{
 		func(env controllers.Env) http.HandlerFunc { return env.GetUser },
 	},
 	Route{
+		"AllDevices",
+		"GET",
+		"/data/all/devices",
+		tokenAuth,
+		func(env controllers.Env) http.HandlerFunc { return env.GetAllDevices },
+	},
+	Route{
 		"Device",
 		"GET",
 		"/data/{user}/{device}",

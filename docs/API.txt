@@ -6,6 +6,7 @@ Response:
 {accessToken: [accessToken], refreshToken: [refreshToken]}
 
 -----------------------------------------------------------------------------------------------------
+
 Get a new access token
 
 POST /auth/0.1/token?refreshToken=[refreshToken]
@@ -14,6 +15,7 @@ Response:
 {accessToken: [accessToken]}
 
 -----------------------------------------------------------------------------------------------------
+
 Get a new refresh token
 
 POST /auth/0.1/refresh?refreshToken=[refreshToken]
@@ -21,14 +23,16 @@ POST /auth/0.1/refresh?refreshToken=[refreshToken]
 Response:
 {refreshToken: [refreshToken]}
 -----------------------------------------------------------------------------------------------------
+
 Logout/invalidate a refresh token
 
 POST /auth/0.1/logout?token=[refreshToken]
 
 -----------------------------------------------------------------------------------------------------
+
 Sign up a new user
 
-POST /signup?email=[email]&password=[password] HTTP/1.1
+POST /signup?email=[email]&password=[password]
 
 <xml>
     <metadata>
@@ -46,9 +50,119 @@ POST /signup?email=[email]&password=[password] HTTP/1.1
         <defaultBrowser>com.android.chrome</defaultBrowser>
     </metadata>
 </xml>
+
 -----------------------------------------------------------------------------------------------------
+
 Upload data from device
 
 POST /upload
+Authorization: Bearer [accessToken]
 
 Request body: See testInputXML.xml.
+
+-----------------------------------------------------------------------------------------------------
+
+Update a user
+
+POST /update/user?email=[newEmail]&password=[newPassword]
+Authorization: Bearer [accessToken]
+
+-----------------------------------------------------------------------------------------------------
+
+Get data about all users (TODO: Think about that one)
+
+-----------------------------------------------------------------------------------------------------
+
+Get data about user
+
+GET /data/[userID]?out=[format] (supported formats: JSON (default when not specified), XML)
+Authorization: Bearer [accessToken]
+
+Response:
+TODO: Make sample responses
+
+-----------------------------------------------------------------------------------------------------
+
+Get data about all devices
+
+GET /data/all/devices
+Authorization: Bearer [accessToken]
+
+Response:
+TODO: Make sample responses
+
+-----------------------------------------------------------------------------------------------------
+
+Get data about a device from a certain user
+
+GET /data/[userID]/[deviceID]
+Authorization: Bearer [accessToken]
+
+Response:
+TODO: Make sample responses
+
+-----------------------------------------------------------------------------------------------------
+
+Get all data from all features
+
+GET /data/all/features
+Authorization: Bearer [accessToken]
+
+Response:
+TODO: Make sample responses
+
+-----------------------------------------------------------------------------------------------------
+
+Get all data from a specific feature
+
+GET /data/all/features/[featureName]
+Authorization: Bearer [accessToken]
+
+Response:
+TODO: Make sample responses
+
+-----------------------------------------------------------------------------------------------------
+
+Get data about a feature from a certain device
+
+GET /data/[userID]/[deviceID]/[featureName]
+Authorization: Bearer [accessToken]
+
+-----------------------------------------------------------------------------------------------------
+
+Login for the website
+
+POST /login?email=[email]&password=[password]
+
+Response:
+{accessToken: "[accessToken]", ID: [userID]}
+
+-----------------------------------------------------------------------------------------------------
+
+Logout for the website
+
+POST /logout
+
+-----------------------------------------------------------------------------------------------------
+
+Landing page
+
+GET /
+
+-----------------------------------------------------------------------------------------------------
+
+Login page
+
+GET /login
+
+-----------------------------------------------------------------------------------------------------
+
+Dashboard page
+
+GET /dashboard
+
+-----------------------------------------------------------------------------------------------------
+
+Admin page (accessible over dashboard)
+
+GET /dashboard/admin

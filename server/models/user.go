@@ -2,24 +2,23 @@ package models
 
 // User is the struct of the stored user data
 type User struct {
-	ID           int    `db:"uid" json:"id"`
-	Email        string `db:"email" json:"email"`
-	PasswordHash string `db:"passwordHash" json:"-"`
-	APIKey       string `db:"apiKey" json:"apiKey"`
-	Admin        bool   `db:"admin" json:"admin"` // TODO: Use pointer
+	ID           int    `db:"uid" json:"id" xml:"id"`
+	Email        string `db:"email" json:"email" xml:"email"`
+	PasswordHash string `db:"passwordHash" json:"-" xml:"-"`
+	Admin        bool   `db:"admin" json:"admin" xml:"admin"`
 }
 
 // GetAllUsers gets all registered users.
 func (db *DB) GetAllUsers() (users []User, err error) {
-	getUsersQuery := `SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey, admin FROM User;`
+	getUsersQuery := `SELECT uid, email, passwordHash, admin FROM User;`
 	err = db.Select(&users, getUsersQuery)
 	return
 }
 
 // GetUser gets a user with the specified email
 func (db *DB) GetUser(user User) (fullUser User, err error) {
-	getUserQuery := `SELECT uid, email, passwordHash, COALESCE(apiKey, '') AS apiKey, admin FROM User
-		             WHERE email = :email OR apiKey = :apiKey OR uid = :uid;`
+	getUserQuery := `SELECT uid, email, passwordHash, admin FROM User
+		             WHERE email = :email OR uid = :uid;`
 	stmt, err := db.PrepareNamed(getUserQuery)
 	if err != nil {
 		return
@@ -46,8 +45,6 @@ func (db *DB) UpdateUser(user User) error {
 	queries := map[string]string{
 		"Email":        `UPDATE User SET email = :email WHERE uid = :uid;`,
 		"PasswordHash": `UPDATE User SET passwordHash = :passwordHash WHERE uid = :uid;`,
-		"APIKey":       `UPDATE User SET apiKey = REPLACE(UUID(), '-','') WHERE uid = :uid;`,
-		// "Admin":        `UPDATE User SET admin = :admin WHERE uid = :uid`, Doesn't work because of boolean
 	}
 
 	// Use custom update method
