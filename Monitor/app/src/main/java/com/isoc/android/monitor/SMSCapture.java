@@ -10,7 +10,8 @@ import android.os.Build;
 import android.provider.Telephony;
 
 /*****Use of external library libphonenumber (https://github.com/googlei18n/libphonenumber/) to normalize numbers.*********
- * Captures sms messages, triggered by the service.Normalizes the number first to match to the replacement integer
+ * Captures sms messages, triggered by the service.
+ * Normalizes the number first to match to the replacement integer
  * Only new sms are captured each time (with date after the saved captured date)
  */
 public class SMSCapture {
@@ -27,13 +28,16 @@ public class SMSCapture {
     }
 
     private static void getSMSLog(Context context, SQLiteDatabase db, String[] projection, Uri uri) {
+        //restore last captured sms's date to restore progress
         SharedPreferences preferences = context.getSharedPreferences(context.getString(R.string.shared_values_filename),Context.MODE_PRIVATE);
         long lastSMSDate=preferences.getLong("lastSMSDate",0);
+        //get all sms with date after lastSMSDate
         Cursor cursor = context.getContentResolver().query(uri, projection, projection[1]+">"+lastSMSDate, null, null);
         if (cursor==null) return;
 
         int[] indexes=new int[projection.length];
         for (int i =0;i<projection.length;i++) indexes[i]=cursor.getColumnIndex(projection[i]);
+        //we need country iso to normilize numbers, just as we do in Contact capturing
         String countryISO=ContactsCapture.getCountryISO(preferences,context);
         while (cursor.moveToNext()) {
             ContentValues log = new ContentValues();

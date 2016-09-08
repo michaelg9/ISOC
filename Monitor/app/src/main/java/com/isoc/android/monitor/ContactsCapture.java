@@ -13,21 +13,23 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import com.google.i18n.phonenumbers.Phonenumber;
 
 /****Use of external library libphonenumber (https://github.com/googlei18n/libphonenumber/) to normalize numbers.*********
-Call log is captured with the service on specific intervals. The time of the call field in the DB
+Call log is captured with the service on specific intervals. The time of the call field in our DB
  is unique so there are no duplicate entries from re-runs.
- Phone numbers are not sent for privacy. Instead, the table defined under CallLogNumberReplacements matches each unique number to
- an auto-increment number, and this number masks the real number.
-
+ Phone numbers are not sent for privacy. Instead, the table CallLogNumberReplacements matches each unique number
+ (after it's been normalized using libphonenumber) to an auto-increment integer, and this integer masks the real number
+ when we send the data to the server.
  */
 
 public class ContactsCapture {
 
 
     public static void getCallLog(Context context,SQLiteDatabase db) {
+        //we need to get the last captured call's date from preferences file "values"
         SharedPreferences preferences = context.getSharedPreferences(context.getString(R.string.shared_values_filename),Context.MODE_PRIVATE);
-        String[] projection=new String[]{CallLog.Calls.NUMBER,CallLog.Calls.TYPE,CallLog.Calls.DURATION,CallLog.Calls.DATE,CallLog.Calls.CACHED_NAME};
-        //to restore progress
+        //if there's a long different than 0, then we restore progress.
         long lastCallDate=preferences.getLong("lastCallDate",0);
+        String[] projection=new String[]{CallLog.Calls.NUMBER,CallLog.Calls.TYPE,CallLog.Calls.DURATION,CallLog.Calls.DATE,CallLog.Calls.CACHED_NAME};
+        //querying the call log for calls made after lastCallDate
         Cursor cursor = context.getContentResolver().query(CallLog.Calls.CONTENT_URI, projection,projection[3]+">"+lastCallDate, null, CallLog.Calls.DATE+ " DESC");
         if (cursor==null){
             return;
@@ -37,10 +39,13 @@ public class ContactsCapture {
         int durationIndex = cursor.getColumnIndex(CallLog.Calls.DURATION);
         int dateIndex = cursor.getColumnIndex(CallLog.Calls.DATE);
         int nameIndex = cursor.getColumnIndex(CallLog.Calls.CACHED_NAME);
+        //we need the sim operator county code to normalize numbers appropriately
         String countryISO=ContactsCapture.getCountryISO(preferences,context);
 
         while (cursor.moveToNext()) {
+            //log content values will be inserted into call log table
             ContentValues log = new ContentValues();
+            //replacement content values will be inserted into the number replacements table
             ContentValues replacement=new ContentValues();
             String number=formatNumber(cursor.getString(numberIndex),countryISO);
 
@@ -56,13 +61,15 @@ public class ContactsCapture {
             db.insertWithOnConflict(Database.DatabaseSchema.CallLogNumberReplacements.TABLE_NAME,null,replacement,SQLiteDatabase.CONFLICT_IGNORE);
             db.insertWithOnConflict(Database.DatabaseSchema.CallLog.TABLE_NAME,null,log,SQLiteDatabase.CONFLICT_IGNORE);
         }
-        //saving progress
+        //updating lastCallDate into the preferences file
         if (cursor.moveToFirst())
             preferences.edit().putLong("lastCallDate",cursor.getLong(dateIndex)).apply();
 
         cursor.close();
     }
 
+    //retrieves the sim operator's country iso code from telephony manager and then saves into the preferences file
+    //for faster access
     public static String getCountryISO(SharedPreferences preferences,Context context){
         String countryISO=preferences.getString("countryISO",null);
         if (countryISO==null) {
@@ -72,6 +79,9 @@ public class ContactsCapture {
         return countryISO;
     }
 
+    //normalizes a number using libphonenumber. if the number can't be formatted then it's used as-is
+    //the reason for normalizing is that we match a number replacement integer to a call log number. To do this
+    //efficiently, each number must always be in the same format (for example, country code is always present)
     public static String formatNumber(String number,String countryISO){
         String result;
         PhoneNumberUtil phoneUtil=com.google.i18n.phonenumbers.PhoneNumberUtil.getInstance();

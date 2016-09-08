@@ -16,15 +16,13 @@ import android.widget.Button;
 /**
  * TO DO:
  * LOCATION
- * TIMEZONE
+ * display some statistics from the gathered data
  * BROWSER HISTORY?
  * CELL TOWER CHANGE
- * String resources
- * capture accounts
  * ----------
  * BUGS:
  * Deprecated connectivity onReceive method, implement type?
- * Matching sockets to specific app.
+ * Matching sockets to specific app precisely
  * SYSTEM APPS REPORTING OLD INSTALLED DATE
  * ------
  */
@@ -63,6 +61,7 @@ public class MainFragment extends Fragment {
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
         toolbar.setTitle("Monitor");
 
+        //enable back key
         if (((AppCompatActivity) getActivity()).getSupportActionBar() != null)
             ((AppCompatActivity) getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(false);
 
@@ -83,6 +82,7 @@ public class MainFragment extends Fragment {
         return result;
     }
 
+    //shows gathered data in xml format
     public void showResults() {
         String results = getResults(getActivity());
         Bundle bundle = new Bundle();

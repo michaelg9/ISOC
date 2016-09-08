@@ -33,7 +33,7 @@ import java.util.List;
 /**
  * A login screen that offers login via email and password.
  * Triggered when there's no account stored in the Account manager
- * or if it the refresh token is expired.
+ * or if the refresh token is invalidated and the user clicks the notification that appears.
  * Only the email and the refreshToken (not the password) are saved
  * in the AccountManager for security purposes.
  * An AccessToken is requested each time we're about to upload xml data
@@ -176,7 +176,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             emails.add(cursor.getString(ProfileQuery.ADDRESS));
             cursor.moveToNext();
         }
-        //Adding monitor account emails too
+        //Adding monitor account usernames already stored in AccountManager
         AccountManager am = AccountManager.get(this);
         Account[] accounts=am.getAccountsByType(getString(R.string.authenticator_account_type));
         //returned account[] may be empty but never null
@@ -250,6 +250,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
         }
     }
 
+    //if there's no account stored in AccountManager, the user shouldn't be able to access the main activity
     @Override
     public void onBackPressed() {
         moveTaskToBack(true);
@@ -263,14 +264,15 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             AccountManager accountManager = AccountManager.get(getApplicationContext());
             accountManager.addAccountExplicitly(account,null,null);
             accountManager.setAuthToken(account, getString(R.string.token_refresh), refreshToken);
+            //we also save the date when refresh token was requested. To be refreshed again in 5 days
             accountManager.setUserData(account,getString(R.string.am_refreshDateKey),Long.toString(TimeCapture.getCurrentLongTime()));
+            //enabling the sync adapter
             ContentResolver.setSyncAutomatically(account,getString(R.string.provider_authority),true);
             //saving device id
             if (accountDetails.hasExtra(getString(R.string.am_deviceID))){
                 int dev=accountDetails.getIntExtra(getString(R.string.am_deviceID),-1);
                 Log.e("devID",Integer.toString(dev));
                 accountManager.setUserData(account,getString(R.string.am_deviceID),Integer.toString(dev));
-
             }
         }
         setAccountAuthenticatorResult(accountDetails.getExtras());
@@ -295,8 +297,8 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             Intent accountDetails=new Intent();
             accountDetails.putExtra(AccountManager.KEY_ACCOUNT_NAME,mEmail);
             accountDetails.putExtra(AccountManager.KEY_ACCOUNT_TYPE,getString(R.string.authenticator_account_type));
+            //if the user is registering, send a register request first
             if (!mIsLoggingIn){
-                //if the user is registering, send a register request first
                 String[] registerResponse=new ServerCommunication(getApplicationContext()).register(mEmail,mPassword);
                 if (!registerResponse[0].equals(REGISTER_SUCCESS)){
                     //if the request failed do not attempt to login
@@ -308,7 +310,7 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
                     accountDetails.putExtra(getString(R.string.am_deviceID),Integer.parseInt(registerResponse[1]));
                 }
             }
-            //if the register request was successful, save the device id and login
+            //if the register request was successful, continue with login
             String[] loginResponse=new ServerCommunication(getApplicationContext()).login(mEmail,mPassword);
             accountDetails.putExtra(loginResponse[0],loginResponse[1]);
             return accountDetails;
@@ -319,9 +321,11 @@ public class LoginActivity extends AccountAuthenticatorActivity implements Loade
             mAuthTask = null;
             showProgress(false);
             if (!accountDetails.hasExtra(AccountManager.KEY_ERROR_MESSAGE)) {
+                //if everything went fine
                 finishLogin(accountDetails);
                 finish();
             } else {
+                //else retry login
                 mErrorView.setVisibility(View.VISIBLE);
                 mErrorView.setText(accountDetails.getStringExtra(AccountManager.KEY_ERROR_MESSAGE));
                 mEmailView.setError(getString(R.string.login_try_again));

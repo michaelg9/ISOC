@@ -11,10 +11,10 @@ import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.util.Log;
 /*
-Intent service launched on a specific interval from the wakeful broadcast receiver ServiceReceiver
+Intent service launched on periodic intervals using the wakeful broadcast receiver ServiceReceiver
 Captures everything that isn't triggered by broadcasts.
-Alarms are used to re-launch the service.
-alarms are also used to send new data to the server
+Alarms are used to re-launch the service. The alarms are explicitly set each time (rather than repeating alarms)
+because I noticed that repeating alarms were removed after sleep mode
 */
 
 public class MyService extends IntentService {
@@ -28,6 +28,7 @@ public class MyService extends IntentService {
         Log.e("RecordService", "started: " + TimeCapture.getCurrentStringTime());
         SQLiteDatabase db = new Database(getApplicationContext()).getWritableDatabase();
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(this);
+        //trigger all enabled parts
         if (preferences.getBoolean(getString(R.string.calls_key), false))
             ContactsCapture.getCallLog(this, db);
         String packagesPreference = preferences.getString(getString(R.string.installed_packages_key), "none");

@@ -13,6 +13,7 @@ import java.util.List;
 
 
 /**
+ * Triggered by the service. captures installed packages and running services
  * TO DO:CPU time and memory of running services?
  * TO DO: indicate which apps provide public providers?
  * BUG: Some vendor / system apps report installed date close to 0...
@@ -25,6 +26,7 @@ public class PackageCapture {
         List<PackageInfo> packages = packageManager.getInstalledPackages(flags);
 
         for (int i = 0; i < packages.size(); i++) {
+            // if the user only wants system or only user packages to be captured, select appropriately
             if ((pref.equals("sys")) && (packages.get(i).applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != ApplicationInfo.FLAG_SYSTEM)
                 continue;
             else if ((pref.equals("usr")) && (packages.get(i).applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) == ApplicationInfo.FLAG_SYSTEM)

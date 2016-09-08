@@ -26,7 +26,8 @@ public class BatteryReceiver extends BroadcastReceiver {
     private class BatteryCapture {
         public void getBatteryStats(Context context) {
             IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-            Intent battery = context.getApplicationContext().registerReceiver(null, iFilter); //capturing a sticky broadcast doesn't need a receiver
+            //capturing a sticky broadcast doesn't need a receiver (null)
+            Intent battery = context.getApplicationContext().registerReceiver(null, iFilter);
             if (battery==null) return;
             ContentValues values=new ContentValues();
             String charging=resolveChargingMode(battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, -1));

@@ -9,9 +9,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.preference.PreferenceManager;
 
-/*
- * This receiver isn't disabled when the preference is disabled, because it's used
- * to also persist interface data and start the service on reboot and to save interface data on shutdown
+/* Triggered when an action like shutdown / boot / airplane mode is performed
+ * This receiver isn't disabled when the preference is disabled, because it's also used
+ * to persist interface data and start the service on reboot and to save interface data on shutdown
  */
 public class ActionReceiver extends BroadcastReceiver {
     public ActionReceiver() {

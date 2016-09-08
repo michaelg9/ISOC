@@ -16,6 +16,7 @@ import java.io.IOException;
 
 /**
  * Synchronizer module used by Android to automatically send our data
+ * Run by default once every 24h
  */
 public class Synchronizer extends AbstractThreadedSyncAdapter {
     private Context context;
@@ -42,6 +43,7 @@ public class Synchronizer extends AbstractThreadedSyncAdapter {
             //that re-authentication is needed */
             if (refreshToken==null) return;
             ServerCommunication serverCommunication= new ServerCommunication(context);
+            //request new access token
             String accessToken=serverCommunication.getAccessToken(refreshToken);
             String deviceID=am.getUserData(account,context.getString(R.string.am_deviceID));
             if (deviceID==null){
@@ -51,7 +53,7 @@ public class Synchronizer extends AbstractThreadedSyncAdapter {
             Log.e("devIDtoSEND",deviceID);
             String[] sendResponse=serverCommunication.sendData(accessToken,new XMLProduce(context,db).getXML(Integer.parseInt(deviceID)));
 
-            /* We request a rew refresh token if:
+            /* We request a new refresh token if:
             -the request was successful and it's been more than 5 days(432000000 mills) since the last refresh token renewal
             -accessToken is null (the request for a new access token failed)
             -the response code of the request to send the data is 401 (Unauthorized)

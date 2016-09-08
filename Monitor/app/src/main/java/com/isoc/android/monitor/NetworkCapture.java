@@ -28,20 +28,21 @@ import java.util.List;
 /**
  * Captures connectivity changes.
  *
- * Current mobile intf statistics can't reliably be captured using trafficstats, because it's buggy:
- * it may return -1 or 0 if the mobile intf is turned off, even if the actual value in the
- * respective file isn't 0.
+ * Current mobile interface statistics can't reliably be captured using trafficstats, because it's buggy:
+ * it may return -1 or 0 if the mobile interface is turned off, even if the actual value in the
+ * respective file ( in /sys/class/net/) isn't 0.
  *
- * The way used to captured mobile stats is as following:
- * 0) Check if we have saved the mobile intf name. If yes, use it to read files directly
- * 1)Try trafficstats. If the value returned isn't what expected go to 2. Otherwise use it to find intf name and save it.
- * 2)Usually the mobile intf is named rmnet0. Try to read its files. If no luck:
- * 3)Try intf ppp0 which is another possible name.
- * If everything fails, we return 0. However, when the mobile intf is turned on, Trafficstats
- * usually is accurate so we use that chance to determine the name of the intf (by comparing the returned value to all the
- * statistics files of the intfs listed in /sys/class/net/)
+ * The way used to capture mobile interface stats is as following:
+ * 0) Check if we have saved the mobile interface name. If yes, use it to read files directly
+ * 1)Try trafficstats. If the value returned isn't what expected (i.e. -1 or 0) go to 2. Otherwise use it to find the interface name and save it.
+ * 2)Usually the mobile interface is named "rmnet0". Try to read the files using this name
+ * 3)Try interface name "ppp0" which is another possible name.
+ * If everything fails, we return 0. However, when the mobile interface is turned on, Trafficstats
+ * usually is accurate so we use that chance to determine the name (by comparing the returned value to all the
+ * statistics files of the interfaces listed in /sys/class/net/)
  *
- *  Wireless intf statistics are read directly from their files --> We can find the intf name by comparing MAC addresses
+ *  Wifi statistics are read directly from their files --> We can find the interface name by comparing MAC addresses and then
+ *  save it in a preferences file
  */
 public class NetworkCapture {
 
@@ -52,20 +53,26 @@ public class NetworkCapture {
         String result = preferences.getString("wifiInterfaceName", null);
         if (result != null) return result;
 
+        //if we reach here, then there's no wifi name saved
         WifiManager wifi = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         WifiInfo wifiInfo = wifi.getConnectionInfo();
         try {
+            //wifiMAC keeps the MAC address without any colons
             String wifiMAC = wifiInfo.getMacAddress().replaceAll(":", "");
             for (Enumeration<NetworkInterface> list = NetworkInterface.getNetworkInterfaces(); list.hasMoreElements(); ) {
                 NetworkInterface i = list.nextElement();
                 byte[] intfMACBytes = i.getHardwareAddress();
                 StringBuilder intfMAC = new StringBuilder();
+                //we skip this intf is it's a loopback or if we didn't manage to get its mac address
                 if (!i.isLoopback() && intfMACBytes != null) {
                     for (byte b : intfMACBytes) {
+                        //we form this interface's MAC address byte by byte, comparing it with wifiMAC each time
                         intfMAC.append(String.format("%02x", b));
+                        //if they don't match, it's not the wifi intf
                         if (!wifiMAC.startsWith(intfMAC.toString())) break;
                     }
                 }
+                //if the mac addresses match, we need this interface's display name
                 if (wifiMAC.equals(intfMAC.toString()))
                     result = i.getDisplayName();
             }
@@ -76,8 +83,8 @@ public class NetworkCapture {
         return result;
     }
 
+    //reads the contents of a file
     public static String readStatsFromFile(String fileLocation) {
-        //reads the contents of a file in fileLocation.
         FileReader file = null;
         BufferedReader in = null;
         StringBuilder result = new StringBuilder();
@@ -109,9 +116,9 @@ public class NetworkCapture {
         return result.toString();
     }
 
+    //adds the latest current rx/tx to the totals and resets the currents
+    // (for both wifi & mobile). Executed when boot action is broadcasted.
     public static void saveCurrentStats(Context context) {
-        //adds the latest current rx/tx to the totals and resets the currents
-        // (for both wifi & mobile). Executed when boot action is broadcasted.
         SQLiteDatabase db = new Database(context).getWritableDatabase();
         //we can't use update method to directly add one column's value to another using ContentValues, so execute directly
         String query = String.format("UPDATE %s SET %s=%s+%s,%s=%s+%s,%s=0,%s=0 " +
@@ -136,41 +143,18 @@ public class NetworkCapture {
                 Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE);
         db.execSQL(query);
 
-        /*String query2=String.format("SELECT * FROM %s " +
-                        "WHERE %s=(SELECT MAX(%s) FROM %s WHERE %s LIKE 'wifi') OR " +
-                        "%s=(SELECT MAX(%s) FROM %s WHERE %s LIKE 'mobile')",
-                Database.DatabaseSchema.NetworkInterface.TABLE_NAME,
-                Database.DatabaseSchema.NetworkInterface._ID,
-                Database.DatabaseSchema.NetworkInterface._ID,
-                Database.DatabaseSchema.NetworkInterface.TABLE_NAME,
-                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE,
-                Database.DatabaseSchema.NetworkInterface._ID,
-                Database.DatabaseSchema.NetworkInterface._ID,
-                Database.DatabaseSchema.NetworkInterface.TABLE_NAME,
-                Database.DatabaseSchema.NetworkInterface.COLUMN_NAME_TYPE);
-        Cursor c = db.rawQuery(query2,null);
-        while (c.moveToNext()){
-            StringBuilder sb=new StringBuilder();
-            for (String s : c.getColumnNames()){
-                sb.append(s+':'+c.getString(c.getColumnIndex(s))+" ");
-            }
-            Log.e("ROW",sb.toString());
-        }c.close();*/
-
-
         db.close();
     }
 
+    //retrieves the value of mobile rx bytes.
     private static long getMobileRx(Context context) {
-        //gets the value of mobile rx bytes.
-        // If it's not working, fall back to reading directly common intf names
 
         //First we check if the mobile intf name is saved.
         SharedPreferences preferences = context.getSharedPreferences(context.getString(R.string.shared_values_filename),Context.MODE_PRIVATE);
         String mobileIntf = preferences.getString("mobileInterfaceName", null);
         if (mobileIntf != null) return Long.parseLong(readStatsFromFile("/sys/class/net/"+mobileIntf+"/statistics/rx_bytes"));
 
-        // We try Trafficstats. If it's working, we try to find intf name using the returned value and save it.
+        // if not, we try Trafficstats. If it's working, we try to find intf name using the returned value and save it.
         long result = TrafficStats.getMobileRxBytes();
         if (result > 0){
             String[] interfaces=(new File("/sys/class/net/")).list();
@@ -195,9 +179,8 @@ public class NetworkCapture {
         return 0;
     }
 
+    //retrieves the value of mobile tx bytes, using the same procedure as above
     private static long getMobileTx(Context context) {
-        //gets the value of mobile tx bytes.
-
         SharedPreferences preferences = context.getSharedPreferences(context.getString(R.string.shared_values_filename),Context.MODE_PRIVATE);
         String mobileIntf = preferences.getString("mobileInterfaceName", null);
         if (mobileIntf != null) return Long.parseLong(readStatsFromFile("/sys/class/net/"+mobileIntf+"/statistics/tx_bytes"));
@@ -215,6 +198,7 @@ public class NetworkCapture {
         return 0;
     }
 
+    //triggered by NetworkReceiver when an interface change is broadcasted
     public static void getTrafficStats(Context context, NetworkInfo affectedNet) {
         if (affectedNet == null) return;
         String time = TimeCapture.getCurrentStringTime();
@@ -270,8 +254,8 @@ public class NetworkCapture {
         db.close();
     }
 
+    //retrieves last scan's results, so we avoid draining the battery
     public static void getWifiAPs(Context context, SQLiteDatabase db) {
-        //retrieves last scan's results, so we avoid draining the battery
 
         WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
         List<ScanResult> scanResults = wifiManager.getScanResults();

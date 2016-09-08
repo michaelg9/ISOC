@@ -13,6 +13,10 @@ import android.widget.NumberPicker;
 /**
  * Custom preference for choosing an integer. Used to select the update interval of the service
  * and the interval to sent data to the server
+ * custom attributes:
+ * max: represents the maximum number that can be chosen
+ * min
+ * time: the quantity that these numbers represent (e.g. minutes, days..). Used to auto-update the summary
  */
 public class NumberPreference extends DialogPreference {
     private static final int DEFAULT_VALUE=5;
@@ -32,6 +36,7 @@ public class NumberPreference extends DialogPreference {
         setDialogLayoutResource(R.layout.number_preference);
         setNegativeButtonText("Cancel");
         setPositiveButtonText("OK");
+        //retrieve custom attributes from xml
         TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.number_preference, 0, 0);
         try{
             min=a.getInteger(R.styleable.number_preference_min, DEFAULT_MIN_VALUE);
@@ -57,6 +62,7 @@ public class NumberPreference extends DialogPreference {
 
     @Override
     protected void onDialogClosed(boolean positiveResult) {
+        //if user clicked OK then persist new value and update summary
         if (positiveResult) {
             int number = numberPicker.getValue();
             if (callChangeListener(number)){
@@ -100,6 +106,7 @@ public class NumberPreference extends DialogPreference {
     protected Parcelable onSaveInstanceState() {
         final Parcelable superState = super.onSaveInstanceState();
         final SavedState myState=new SavedState(superState);
+        //if numberPicker is visible, save the current number that the user is on
         if (numberPicker!=null)myState.value=numberPicker.getValue();
         return myState;
     }

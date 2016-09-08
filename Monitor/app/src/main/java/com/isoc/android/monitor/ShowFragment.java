@@ -12,7 +12,7 @@ import android.widget.TextView;
 
 
 /**
- * A fragment used to show the result string
+ * A fragment used to show the stored data in an xml string
  */
 public class ShowFragment extends android.app.Fragment {
 

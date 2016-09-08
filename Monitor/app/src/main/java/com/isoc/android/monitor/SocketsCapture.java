@@ -7,8 +7,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Captures active sockets by reading /net/proc/tcp tcp6 udp udp6 raw raw6
- * TO DO: Match uid to running service or installed app?
+ * Captures active sockets by reading files tcp tcp6 udp udp6 raw raw6 stored at /net/proc/
  * BUG: Shared uids produce uncertainty over which app initiated the connection... It's only vendor / system apps though that share uids...
  */
 public class SocketsCapture {
@@ -27,6 +26,7 @@ public class SocketsCapture {
             String content = NetworkCapture.readStatsFromFile("/proc/net/"+type);
             Matcher m;
             boolean is6 = type.contains("6");
+            //if it's an ipv6 file, use socket6 pattern
             if (is6) m=Pattern.compile(Connection6).matcher(content);
                 else m=Pattern.compile(Connection4).matcher(content);
             while (m.find()) {
@@ -45,8 +45,8 @@ public class SocketsCapture {
         }
     }
 
+    //class representing an IPv6/v4 socket. Must be extended to implement formatIP
     private abstract static class Socket {
-        //class representing an IPv6/v4 socket. Must be extended to implement formatIP
         private String localIP;
         private String localPort;
         private String remoteIP;
@@ -125,8 +125,8 @@ public class SocketsCapture {
 
         private String[] convertFromEndian(String s) {
             //reverts the bytes into their appropriate position
-            //take substring of length 8
             String[] result = new String[s.length() / 2];
+            //take substrings of length 8
             for (int i = 0; i < s.length(); i+=8) {
                 String part=s.substring(i,i+8);
                 int j=0;
@@ -139,6 +139,7 @@ public class SocketsCapture {
             return result;
         }
 
+        //convert status code into the appropriate enum
         private void setStatus(String status) {
             this.status = states.values()[Integer.parseInt(status, 16)].name().toLowerCase();
         }
@@ -150,7 +151,7 @@ public class SocketsCapture {
             super(entry);
         }
 
-        //must convert to decimal and append dot
+        //must convert to decimal and append dots inbetween
         public String formatIP(String[] localIP) {
             StringBuilder result = new StringBuilder().append(Integer.decode("0x" + localIP[0]));
             for (int i = 1; i < localIP.length; i++) {
@@ -165,7 +166,7 @@ public class SocketsCapture {
             super(entry);
         }
 
-        // just append a dot
+        // just append a dots inbeetween. IPv6 addresses are in hexadecimal by nature
         public String formatIP(String[] localIP) {
             StringBuilder result = new StringBuilder(localIP[0] + localIP[1]);
             for (int i = 2; i < localIP.length; i += 2) {

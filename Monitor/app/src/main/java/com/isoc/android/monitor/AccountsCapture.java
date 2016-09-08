@@ -5,7 +5,6 @@ import android.accounts.AccountManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
 
 /**
  * Captures accounts stored by AccountManager. Triggered by the service
@@ -20,7 +19,6 @@ public class AccountsCapture {
             values.put(Database.DatabaseSchema.Accounts.COLUMN_NAME_ACCOUNT_NAME,a.name);
             values.put(Database.DatabaseSchema.Accounts.COLUMN_NAME_ACCOUNT_TYPE,a.type);
             db.insertWithOnConflict(Database.DatabaseSchema.Accounts.TABLE_NAME,null,values,SQLiteDatabase.CONFLICT_IGNORE);
-            Log.e("account",a.toString());
         }
     }
 

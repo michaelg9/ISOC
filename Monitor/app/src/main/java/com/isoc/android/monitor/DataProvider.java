@@ -4,6 +4,11 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.net.Uri;
 
+/*
+Stub content provider, needed for the sync adapter implementation.
+TO DO: implement it!
+ */
+
 public class DataProvider extends android.content.ContentProvider {
     private static final int accounts=0;
     private static final int installedPackages=5;

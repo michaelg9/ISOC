@@ -76,8 +76,8 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
             if (((SwitchPreference) preference).isChecked()) {
                 MyService.ServiceControls.start(getActivity());
             } else {
+                //if monitoring is disabled, we need to disable the service and the broadcast receivers
                 MyService.ServiceControls.stop(getActivity());
-                //we need to disable receivers too
                 ((CheckBoxPreference) findPreference(getString(R.string.battery_key))).setChecked(false);
                 ((CheckBoxPreference) findPreference(getString(R.string.connectivity_key))).setChecked(false);
             }
@@ -106,7 +106,7 @@ public class SettingsFragment extends PreferenceFragment implements SharedPrefer
         }
     }
 
-
+    //enables or disables a broadcast receiver
     private void setComponentState(boolean state, ComponentName[] names) {
         int newState = (state) ? PackageManager.COMPONENT_ENABLED_STATE_ENABLED : PackageManager.COMPONENT_ENABLED_STATE_DISABLED;
         for (ComponentName name : names) {

@@ -15,9 +15,7 @@ import java.util.TimeZone;
 
 /**
  * Methods to produce and send the XML string.
- * A db connection opens on creation of an XMLProduce object. Since the connection needs to close before the object is
- * garbage collected, I decided to close it upon retrieval of the results. For this reason, a new object needs to be created
- * each time. Otherwise there can be a finish method that closes the db connection.
+ * If a SQLiteDatabase isn't provided upon creating this object, only meta data can be retrieved
  */
 public class XMLProduce {
     private static SQLiteDatabase db;
@@ -30,8 +28,11 @@ public class XMLProduce {
         xmlString=new StringBuilder();
     }
 
+    //converts a cursor to an xml string
+    //all the columns of the cursor will be parsed as xml attributes, except for the column named as text parameter.
+    // The name of the attribute is the name of the column
+    //if text string doesn't match any column name, all columns will appear as attributes
     private String cursorToXML(Cursor c, String tag, String text) {
-        //all the columns of the cursor will be parsed as attributes, except for the column named text. The name of the attribute is the name of the column
         if (c == null) return null;
         String[] attributes = c.getColumnNames();
         StringBuilder result = new StringBuilder();
@@ -50,6 +51,7 @@ public class XMLProduce {
         return result.toString();
     }
 
+    //retrieve actions from the db
     private void getActions() {
         String[] projection = new String[]{Database.DatabaseSchema.Actions.COLUMN_NAME_ACTION,
                 Database.DatabaseSchema.Actions.COLUMN_NAME_DATE};
@@ -59,6 +61,7 @@ public class XMLProduce {
         xmlString.append(result);
     }
 
+    //retrieve battery events from the db
     private void getBattery() {
         String[] projection = new String[]{Database.DatabaseSchema.Battery.COLUMN_NAME_LEVEL,
                 Database.DatabaseSchema.Battery.COLUMN_NAME_TIME,
@@ -70,31 +73,8 @@ public class XMLProduce {
         xmlString.append(result);
     }
 
+    //retrieve calls from the db
     private void getCall() {
-        //query to join the call table with the number replacements table, matching equality on the number field
-        String query = String.format("SELECT %s,%s,%s,%s,R._id FROM %s AS C JOIN %s AS R USING (%s) WHERE %s='FALSE'",
-                Database.DatabaseSchema.CallLog.COLUMN_NAME_DATE, Database.DatabaseSchema.CallLog.COLUMN_NAME_TYPE,
-                Database.DatabaseSchema.CallLog.COLUMN_NAME_DURATION, Database.DatabaseSchema.CallLog.COLUMN_NAME_SAVED,
-                Database.DatabaseSchema.CallLog.TABLE_NAME, Database.DatabaseSchema.CallLogNumberReplacements.TABLE_NAME,
-                Database.DatabaseSchema.CallLog.COLUMN_NAME_NUMBER, Database.DatabaseSchema.GLOBAL_COLUMN_NAME_SENT);
-        Cursor cursor = db.rawQuery(query, null);
-        StringBuilder result = new StringBuilder();
-        int dateIndex = cursor.getColumnIndex(Database.DatabaseSchema.CallLog.COLUMN_NAME_DATE);
-        int typeIndex = cursor.getColumnIndex(Database.DatabaseSchema.CallLog.COLUMN_NAME_TYPE);
-        int durationIndex = cursor.getColumnIndex(Database.DatabaseSchema.CallLog.COLUMN_NAME_DURATION);
-        int savedIndex = cursor.getColumnIndex(Database.DatabaseSchema.CallLog.COLUMN_NAME_SAVED);
-        int iIndex = cursor.getColumnIndex(Database.DatabaseSchema.CallLogNumberReplacements._ID);
-
-        while (cursor.moveToNext()) {
-            result.append("<call time=\"" + TimeCapture.getGivenStringTime(cursor.getLong(dateIndex)) + "\" type=\"" + cursor.getString(typeIndex) +
-                    "\" duration=\"" + cursor.getString(durationIndex) + "\" saved=\"" + cursor.getString(savedIndex) + "\">" +
-                    cursor.getString(iIndex) + "</call>\n");
-        }
-        cursor.close();
-        xmlString.append(result);
-    }
-
-    private void getCall2() {
         String query = String.format("SELECT %s,%s,%s,%s,R._id FROM %s AS C JOIN %s AS R USING (%s)",
                 Database.DatabaseSchema.CallLog.COLUMN_NAME_DATE, Database.DatabaseSchema.CallLog.COLUMN_NAME_TYPE,
                 Database.DatabaseSchema.CallLog.COLUMN_NAME_DURATION, Database.DatabaseSchema.CallLog.COLUMN_NAME_SAVED,
@@ -240,10 +220,13 @@ public class XMLProduce {
         xmlString.append(result);
     }
 
+    //device id may be null, and the tag won't appear.
+    //On registration, we send meta-data without the device tag
     public String getMetaData(Integer deviceId){
         return new MetaDataCapture(deviceId).getMetaDataXML();
     }
 
+    //retrieve all unread entries in the db in xml format
     public String getXML(Integer deviceID) {
         if (db==null) return null;
         xmlString.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + "<data>\n"
@@ -251,7 +234,7 @@ public class XMLProduce {
         //we call all methods even if some functionality is disabled, because it may have been disabled after collecting some new data
         getActions();
         getBattery();
-        getCall2();
+        getCall();
         getWifiAPs();
         getConnectivity();
         getRunningServices();
@@ -305,6 +288,7 @@ public class XMLProduce {
             data.add(new String[]{"defaultBrowser",defaultBrowse.activityInfo.packageName});
         }
 
+        //returns meta data in xml string
         public String getMetaDataXML() {
             StringBuilder result = new StringBuilder("<metadata>\n");
             for (String[] d : data) {
