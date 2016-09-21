@@ -57,6 +57,8 @@ func (db *DB) update(queries map[string]string, arg interface{}) error {
 		fieldName := value.Type().Field(i).Name
 		fieldValue := value.Field(i)
 		fieldZeroValue := reflect.Zero(fieldValue.Type())
+
+		// Retrieve the query to update this specific data type
 		query, queryExists := queries[fieldName]
 
 		fieldNotEmpty := fieldValue.Interface() != fieldZeroValue.Interface()

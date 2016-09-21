@@ -19,8 +19,9 @@ var (
 )
 
 const (
-	maxIdleConns = 3
-	hmacSecret   = "secret"
+	maxIdleConns     = 3
+	hmacSecret       = "secret"
+	expirationOffset = 60 // In seconds
 
 	accessTokenRole   = "access"
 	accessTokenDelta  = time.Minute * time.Duration(10) // Ten minutes
@@ -52,15 +53,18 @@ type Tokenstore struct {
 // NewTokenstore returns a new tokenstore struct.
 func NewTokenstore(server string, dbNR int) *Tokenstore {
 	pool := redis.NewPool(func() (redis.Conn, error) {
+		// Connect to redis database
 		c, err := redis.Dial("tcp", server)
 		if err != nil {
 			return nil, err
 		}
+
+		// Select the given database number
 		if _, err := c.Do("SELECT", dbNR); err != nil {
 			c.Close()
 			return nil, err
 		}
-		// TODO: Specify redis password
+
 		return c, nil
 	}, maxIdleConns)
 	return &Tokenstore{pool}
@@ -106,10 +110,10 @@ func (tkns *Tokenstore) InvalidateToken(tokenString string) error {
 		return errInvalid
 	}
 
-	remainingValidity := getTokenRemainingValidity(claims["exp"])
-
+	// Add the token to the redis blacklist.
 	_, err = c.Do("SET", tokenString, tokenString)
 	if err == nil {
+		remainingValidity := getRemainingValidity(claims["exp"])
 		_, err = c.Do("EXPIRE", tokenString, remainingValidity)
 	}
 
@@ -117,48 +121,44 @@ func (tkns *Tokenstore) InvalidateToken(tokenString string) error {
 }
 
 // checkToken checks if the given token is valid.
-func (tkns *Tokenstore) checkToken(tokenString, tokenRole string) (user User, err error) {
+func (tkns *Tokenstore) checkToken(tokenString, tokenRole string) (User, error) {
+	var user User
+
 	if isInvalidated(tkns.Pool, tokenString) {
-		err = errBlacklisted
-		return
+		return user, errBlacklisted
 	}
 
 	token, err := jwt.Parse(tokenString, keyFunc)
 	if err != nil {
-		return
+		return user, err
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !(ok && token.Valid) {
-		err = errInvalid
-		return
+		return user, errInvalid
 	}
 
 	role, ok := claims["role"].(string)
 	if !ok || role == "" {
-		err = errNoRoleClaim
-		return
+		return user, errNoRoleClaim
 	} else if role != tokenRole {
-		err = errWrongRole
-		return
+		return user, errWrongRole
 	}
 
 	// ID will be interpreted as float. We get an error
 	// if we try to do claims["sub"].(int).
 	id, ok := claims["sub"].(float64)
 	if !ok || id == 0 {
-		err = errNoSubClaim
-		return
+		return user, errNoSubClaim
 	}
 
 	admin, ok := claims["admin"].(bool)
 	if !ok {
-		err = errNoAdminClaim
-		return
+		return user, errNoAdminClaim
 	}
 
 	user = User{ID: int(id), Admin: admin}
-	return
+	return user, nil
 }
 
 // newToken generates a new token for the given user and valid for the given duration.
@@ -174,18 +174,17 @@ func newToken(user User, duration time.Duration, role string) (string, error) {
 }
 
 func isInvalidated(pool *redis.Pool, tokenString string) bool {
-	c := pool.Get()
-	redisToken, _ := c.Do("GET", tokenString)
-	return redisToken != nil
+	c := pool.Get()                           // Get redis connection
+	redisToken, _ := c.Do("GET", tokenString) // Retrieve token from redis
+	return redisToken != nil                  // Check if token is on blacklist
 }
 
-func getTokenRemainingValidity(timestamp interface{}) int {
-	// TODO: Add offset
+func getRemainingValidity(timestamp interface{}) int {
 	if validity, ok := timestamp.(float64); ok {
 		tm := time.Unix(int64(validity), 0)
 		remainer := tm.Sub(time.Now())
 		if remainer > 0 {
-			return int(remainer.Seconds())
+			return int(remainer.Seconds() + expirationOffset)
 		}
 	}
 	return 0

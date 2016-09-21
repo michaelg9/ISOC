@@ -1,7 +1,5 @@
 package mocks
 
-// IDEA: Save data with key as error message
-
 import "github.com/michaelg9/ISOC/server/models"
 
 var (
@@ -14,7 +12,6 @@ var Users = []models.User{
 		ID:           1,
 		Email:        "user@usermail.com",
 		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK", // Passord: 123456
-		APIKey:       "37e72ff927f511e688adb827ebf7e157",
 		Admin:        true,
 	},
 	models.User{

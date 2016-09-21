@@ -20,11 +20,10 @@ import (
 )
 
 const (
+	// TODO: Don't expose specific errors on final version due to security concerns
 	errNoPasswordOrEmail   = "No email and/or password specified."
 	errWrongPasswordEmail  = "Wrong password/email combination."
 	errNoDeviceID          = "No device ID specified."
-	errNoAPIKey            = "No API key specified."
-	errWrongAPIKey         = "Wrong API key."
 	errNoSessionSet        = "No session set to log-out."
 	errNoToken             = "No token given."
 	errTokenInvalid        = "Token is invalid."
@@ -160,7 +159,6 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	// If a value isn't given it defaults to the empty string, thus we don't update it.
 	user.Email = r.FormValue("email")
 	user.PasswordHash = r.FormValue("password")
-	user.APIKey = r.FormValue("apiKey")
 
 	if user.PasswordHash != "" {
 		// If password is non-empty create a new hash for the database.
@@ -170,13 +168,6 @@ func (env *Env) UpdateUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		user.PasswordHash = string(hashedPassword)
-	}
-
-	// For the API key we use 0/1 for false/true since the actual value of the key will be determined
-	// by the MySQL database by calling the UUID() function. Hence if the value is not 1 we set the
-	// value in the struct to be the empty string so that the apiKey won't be updated.
-	if user.APIKey != "1" {
-		user.APIKey = ""
 	}
 
 	if err := env.DB.UpdateUser(user); err != nil {

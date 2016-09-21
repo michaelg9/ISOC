@@ -1,7 +1,5 @@
 package models
 
-// TODO: Test time input
-
 import (
 	"database/sql"
 	"errors"
@@ -27,11 +25,9 @@ CREATE TABLE User (
   uid int(11) NOT NULL AUTO_INCREMENT,
   email varchar(20) NOT NULL,
   passwordHash char(64) NOT NULL,
-  apiKey varchar(32) DEFAULT NULL,
   admin tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (uid),
-  UNIQUE KEY email (email),
-  UNIQUE KEY apiKey (apiKey)
+  UNIQUE KEY email (email)
 );`
 
 var schemaDevice = `
@@ -101,7 +97,7 @@ CREATE TABLE Runservice (
 /* Database data */
 
 var insertionUser = `
-INSERT INTO User VALUES (1,'user@usermail.com','$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK','37e72ff927f511e688adb827ebf7e157', TRUE);
+INSERT INTO User VALUES (1,'user@usermail.com','$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK', TRUE);
 `
 
 var insertionDevice = `
@@ -155,14 +151,12 @@ var users = []User{
 		ID:           1,
 		Email:        "user@usermail.com",
 		PasswordHash: "$2a$10$539nT.CNbxpyyqrL9mro3OQEKuAjhTD3UjEa8JYPbZMZEM/HizvxK",
-		APIKey:       "37e72ff927f511e688adb827ebf7e157",
 		Admin:        true,
 	},
 	User{
-		ID:     2,
-		Email:  "user@mail.com",
-		APIKey: "",
-		Admin:  true,
+		ID:    2,
+		Email: "user@mail.com",
+		Admin: true,
 	},
 }
 
@@ -304,19 +298,18 @@ func TestGetUser(t *testing.T) {
 	var tests = []struct {
 		id       int
 		email    string
-		key      string
 		expected User
 	}{
-		{0, users[0].Email, "", users[0]},
-		{1, "", users[0].APIKey, users[0]},
-		{1, users[0].Email, users[0].APIKey, users[0]},
-		{0, users[0].Email, "1234", users[0]},
+		{0, users[0].Email, users[0]},
+		{1, "", users[0]},
+		{1, users[0].Email, users[0]},
+		{0, users[0].Email, users[0]},
 	}
 	db := setup()
 	defer cleanUp(db)
 
 	for _, test := range tests {
-		user := User{ID: test.id, Email: test.email, APIKey: test.key}
+		user := User{ID: test.id, Email: test.email}
 		result, err := db.GetUser(user)
 		assert.NoError(t, err)
 		assert.Equal(t, test.expected, result)
@@ -555,14 +548,12 @@ func TestUpdateUser(t *testing.T) {
 	tests := []struct {
 		newEmail    string
 		newPassword string
-		newAPIKey   string
-		//    isAdmin bool
 	}{
-		{"user2@mail.com", "12345", "1"},
-		{"user@mail.com", "", ""},
-		{"", "123456", ""},
-		{"", "", "1"},
-		{"", "", ""},
+		{"user2@mail.com", "12345"},
+		{"user@mail.com", ""},
+		{"", "123456"},
+		{"", ""},
+		{"", ""},
 	}
 
 	for _, test := range tests {
@@ -578,7 +569,6 @@ func TestUpdateUser(t *testing.T) {
 			newUser.PasswordHash = ""
 		}
 
-		newUser.APIKey = test.newAPIKey
 		err := db.UpdateUser(newUser)
 		assert.NoError(t, err)
 
@@ -590,11 +580,6 @@ func TestUpdateUser(t *testing.T) {
 		}
 		if test.newPassword == "" {
 			newUser.PasswordHash = oldUser.PasswordHash
-		}
-		if test.newAPIKey == "" {
-			newUser.APIKey = oldUser.APIKey
-		} else {
-			newUser.APIKey = result.APIKey
 		}
 
 		assert.Equal(t, newUser, result)
