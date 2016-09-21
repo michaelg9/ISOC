@@ -1,7 +1,5 @@
 package mocks
 
-// IDEA: Save data with key as error message
-
 import "github.com/michaelg9/ISOC/server/models"
 
 var (

@@ -42,6 +42,9 @@ func (db *DB) CreateUser(user User) (insertedID int, err error) {
 
 // UpdateUser update the specified user
 func (db *DB) UpdateUser(user User) error {
+	// TODO: Decide if user can be made Admin over the API, if yes we need
+	//       to make Admin a pointer since otherwise the update mechanism always
+	//       updates Admin to false (since false is the boolean default value)
 	queries := map[string]string{
 		"Email":        `UPDATE User SET email = :email WHERE uid = :uid;`,
 		"PasswordHash": `UPDATE User SET passwordHash = :passwordHash WHERE uid = :uid;`,

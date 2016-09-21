@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	// TODO: Don't expose specific errors on final version due to security concerns
 	errNoPasswordOrEmail   = "No email and/or password specified."
 	errWrongPasswordEmail  = "Wrong password/email combination."
 	errNoDeviceID          = "No device ID specified."
