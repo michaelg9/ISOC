@@ -11,20 +11,21 @@ import android.view.ViewGroup;
 import android.widget.NumberPicker;
 
 /**
- * Custom preference for choosing an integer. Used to select the update interval of the service
- * and the interval to sent data to the server
+ * Custom preference for choosing an integer. 
+ * Used to select the update interval of trigering MyService and the 
+ * interval to sent data to the server 
  * custom attributes:
- * max: represents the maximum number that can be chosen
- * min
- * time: the quantity that these numbers represent (e.g. minutes, days..). Used to auto-update the summary
+ * (e.g. minutes, days..). Used to auto-update the summary
  */
 public class NumberPreference extends DialogPreference {
-    private static final int DEFAULT_VALUE=5;
-    private static final int DEFAULT_MIN_VALUE=1;
-    private static final int DEFAULT_MAX_VALUE=60;
-
+    private static final int DEFAULT_VALUE = 5;
+    private static final int DEFAULT_MIN_VALUE = 1;
+    private static final int DEFAULT_MAX_VALUE = 60;
+    
+    //lower/ upper bounds
     private int min;
     private int max;
+    //time: the quantity that these numbers represent 
     private String time;
 
     private int timer;
@@ -36,37 +37,39 @@ public class NumberPreference extends DialogPreference {
         setDialogLayoutResource(R.layout.number_preference);
         setNegativeButtonText("Cancel");
         setPositiveButtonText("OK");
-        //retrieve custom attributes from xml
-        TypedArray a = context.getTheme().obtainStyledAttributes(attrs, R.styleable.number_preference, 0, 0);
-        try{
-            min=a.getInteger(R.styleable.number_preference_min, DEFAULT_MIN_VALUE);
-            max=a.getInteger(R.styleable.number_preference_max, DEFAULT_MAX_VALUE);
-            time=a.getString(R.styleable.number_preference_time);
-        }finally{
+        // retrieve custom attributes from xml
+        TypedArray a = context.getTheme().obtainStyledAttributes(attrs,
+                R.styleable.number_preference, 0, 0);
+        try {
+            min = a.getInteger(R.styleable.number_preference_min,
+                    DEFAULT_MIN_VALUE);
+            max = a.getInteger(R.styleable.number_preference_max,
+                    DEFAULT_MAX_VALUE);
+            time = a.getString(R.styleable.number_preference_time);
+        } finally {
             a.recycle();
         }
         setDialogIcon(null);
     }
-
-
+    //resets the summary each time user makes a change
     public void setSummary() {
-        super.setSummary("Every "+getTimer()+' '+time);
+        super.setSummary("Every " + getTimer() + ' ' + time);
     }
 
     @Override
     protected View onCreateView(ViewGroup parent) {
-        View result=super.onCreateView(parent);
+        View result = super.onCreateView(parent);
         setSummary();
         return result;
     }
 
     @Override
     protected void onDialogClosed(boolean positiveResult) {
-        //if user clicked OK then persist new value and update summary
+        // if user clicked OK then persist new value and update summary
         if (positiveResult) {
             int number = numberPicker.getValue();
-            if (callChangeListener(number)){
-                timer=number;
+            if (callChangeListener(number)) {
+                timer = number;
                 persistInt(timer);
                 setSummary();
             }
@@ -75,16 +78,16 @@ public class NumberPreference extends DialogPreference {
 
     @Override
     protected Object onGetDefaultValue(TypedArray a, int index) {
-        return a.getInt(index,DEFAULT_VALUE);
+        return a.getInt(index, DEFAULT_VALUE);
     }
 
     @Override
-    protected void onSetInitialValue(boolean restorePersistedValue, Object defaultValue) {
+    protected void onSetInitialValue(boolean restorePersistedValue,
+            Object defaultValue) {
         if (restorePersistedValue) {
             timer = getPersistedInt(DEFAULT_VALUE);
-        }
-        else{
-            timer =(Integer) defaultValue;
+        } else {
+            timer = (Integer) defaultValue;
             persistInt(timer);
         }
     }
@@ -92,7 +95,7 @@ public class NumberPreference extends DialogPreference {
     @Override
     protected void onBindDialogView(View view) {
         super.onBindDialogView(view);
-        numberPicker=(NumberPicker) view.findViewById(R.id.numpref_picker);
+        numberPicker = (NumberPicker) view.findViewById(R.id.numpref_picker);
         numberPicker.setMinValue(min);
         numberPicker.setMaxValue(max);
         numberPicker.setValue(timer);
@@ -105,27 +108,29 @@ public class NumberPreference extends DialogPreference {
     @Override
     protected Parcelable onSaveInstanceState() {
         final Parcelable superState = super.onSaveInstanceState();
-        final SavedState myState=new SavedState(superState);
-        //if numberPicker is visible, save the current number that the user is on
-        if (numberPicker!=null)myState.value=numberPicker.getValue();
+        final SavedState myState = new SavedState(superState);
+        // if numberPicker is visible, save the current number that the user is
+        // on
+        if (numberPicker != null)
+            myState.value = numberPicker.getValue();
         return myState;
     }
 
     @Override
     protected void onRestoreInstanceState(Parcelable state) {
-        if (state==null || !state.getClass().equals(SavedState.class)){
+        if (state == null || !state.getClass().equals(SavedState.class)) {
             super.onRestoreInstanceState(state);
             return;
         }
-        SavedState myState=(SavedState)state;
+        SavedState myState = (SavedState) state;
         super.onRestoreInstanceState(myState.getSuperState());
-        if (numberPicker!=null) numberPicker.setValue(myState.value);
+        if (numberPicker != null)
+            numberPicker.setValue(myState.value);
     }
 
     private static class SavedState extends BaseSavedState {
         // field that holds the setting's value
         int value;
-
 
         public SavedState(Parcelable superState) {
             super(superState);
@@ -145,17 +150,16 @@ public class NumberPreference extends DialogPreference {
         }
 
         // Standard creator object using an instance of this class
-        public static final Parcelable.Creator<SavedState> CREATOR =
-                new Parcelable.Creator<SavedState>() {
+        public static final Parcelable.Creator<SavedState> CREATOR = new Parcelable.Creator<SavedState>() {
 
-                    public SavedState createFromParcel(Parcel in) {
-                        return new SavedState(in);
-                    }
+            public SavedState createFromParcel(Parcel in) {
+                return new SavedState(in);
+            }
 
-                    public SavedState[] newArray(int size) {
-                        return new SavedState[size];
-                    }
-                };
+            public SavedState[] newArray(int size) {
+                return new SavedState[size];
+            }
+        };
     }
 
 }

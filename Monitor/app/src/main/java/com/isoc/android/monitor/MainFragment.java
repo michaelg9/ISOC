@@ -12,19 +12,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 
-
 /**
- * TO DO:
- * LOCATION
- * display some statistics from the gathered data
- * BROWSER HISTORY?
- * CELL TOWER CHANGE
- * ----------
- * BUGS:
- * Deprecated connectivity onReceive method, implement type?
- * Matching sockets to specific app precisely
- * SYSTEM APPS REPORTING OLD INSTALLED DATE
- * ------
+ * TODO: 
+ * LOCATION display some statistics from the gathered data BROWSER
+ * HISTORY? 
+ * CELL TOWER CHANGE 
+ * BUGS: Deprecated connectivity onReceive method, implement type? 
+ * Matching sockets to specific app precisely SYSTEM
+ * APPS REPORTING OLD INSTALLED DATE
  */
 
 public class MainFragment extends Fragment {
@@ -35,17 +30,20 @@ public class MainFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+            Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View view = inflater.inflate(R.layout.fragment_main, container, false);
-
 
         final Button deleteDB = (Button) view.findViewById(R.id.delete_db);
         deleteDB.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 getActivity().deleteDatabase(Database.DatabaseSchema.dbName);
-                getActivity().getSharedPreferences(getActivity().getString(R.string.shared_values_filename), Context.MODE_PRIVATE).edit().clear().apply();
+                getActivity()
+                        .getSharedPreferences(
+                                getActivity().getString(
+                                        R.string.shared_values_filename),
+                                Context.MODE_PRIVATE).edit().clear().apply();
             }
         });
 
@@ -61,9 +59,10 @@ public class MainFragment extends Fragment {
         Toolbar toolbar = (Toolbar) getActivity().findViewById(R.id.toolbar);
         toolbar.setTitle("Monitor");
 
-        //enable back key
+        // enable back key
         if (((AppCompatActivity) getActivity()).getSupportActionBar() != null)
-            ((AppCompatActivity) getActivity()).getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+            ((AppCompatActivity) getActivity()).getSupportActionBar()
+                    .setDisplayHomeAsUpEnabled(false);
 
         return view;
     }
@@ -71,24 +70,28 @@ public class MainFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //sets the default preferences values if any preference is unset
-        PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences, false);
+        // sets the default preferences values if any preference is unset
+        PreferenceManager.setDefaultValues(getActivity(), R.xml.preferences,
+                false);
     }
 
+    //retrieves the saved data
     public String getResults(Context context) {
-        SQLiteDatabase db=new Database(getActivity()).getReadableDatabase();
-        String result = new XMLProduce(context,db).getXML(null);
+        SQLiteDatabase db = new Database(getActivity()).getReadableDatabase();
+        String result = new XMLProduce(context, db).getXML(null);
         db.close();
         return result;
     }
 
-    //shows gathered data in xml format
+    // shows gathered data in xml format in ShowFragment
     public void showResults() {
         String results = getResults(getActivity());
         Bundle bundle = new Bundle();
         bundle.putString("results", results);
         ShowFragment showFragment = new ShowFragment();
         showFragment.setArguments(bundle);
-        getFragmentManager().beginTransaction().replace(R.id.fragment_container, showFragment).addToBackStack(null).commit();
+        getFragmentManager().beginTransaction()
+                .replace(R.id.fragment_container, showFragment)
+                .addToBackStack(null).commit();
     }
 }

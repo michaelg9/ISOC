@@ -7,18 +7,26 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 
 /**
- * Captures accounts stored by AccountManager. Triggered by the service
+ * Records accounts stored by AccountManager. 
+ * Triggered by the MyService
  */
 public class AccountsCapture {
-    public static void getAccounts(Context context, SQLiteDatabase db){
-        AccountManager am=AccountManager.get(context);
-        Account[] accounts=am.getAccounts();
-        //the array may be empty but not null
-        for (Account a: accounts){
-            ContentValues values=new ContentValues(2);
-            values.put(Database.DatabaseSchema.Accounts.COLUMN_NAME_ACCOUNT_NAME,a.name);
-            values.put(Database.DatabaseSchema.Accounts.COLUMN_NAME_ACCOUNT_TYPE,a.type);
-            db.insertWithOnConflict(Database.DatabaseSchema.Accounts.TABLE_NAME,null,values,SQLiteDatabase.CONFLICT_IGNORE);
+    public static void getAccounts(Context context, SQLiteDatabase db) {
+        AccountManager am = AccountManager.get(context);
+        Account[] accounts = am.getAccounts();
+        // the array may be empty but not null
+        for (Account a : accounts) {
+            ContentValues values = new ContentValues(2);
+            values.put(
+                    Database.DatabaseSchema.Accounts.COLUMN_NAME_ACCOUNT_NAME,
+                    a.name);
+            values.put(
+                    Database.DatabaseSchema.Accounts.COLUMN_NAME_ACCOUNT_TYPE,
+                    a.type);
+            //if there is already such entry, re-write it
+            db.insertWithOnConflict(
+                    Database.DatabaseSchema.Accounts.TABLE_NAME, null, values,
+                    SQLiteDatabase.CONFLICT_IGNORE);
         }
     }
 
