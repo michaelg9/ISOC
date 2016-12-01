@@ -55,6 +55,8 @@
 <!-- Main content -->
 <div class="container-fluid">
   <div class="row content">
+
+    <!-- Sidenav -->
     <div class="col-sm-3 sidenav hidden-xs">
       <h2>Monitor</h2>
       <ul class="nav nav-pills nav-stacked">
@@ -67,12 +69,19 @@
 
     <div class="col-sm-9 col-sm-offset-3">
       <div class="row">
+
+        <!-- Info about device -->
+        <!-- TODO: User should be able to select different devices -->
         <div class="col-sm-6">
           <div class="well">
             <h4>Device</h4>
             <div class="table-responsive">
               <table class="table borderless" id="deviceInfo">
                 <tbody>
+                  <tr>
+                    <td><b>Device ID:</b></td>
+                    <td>{deviceInfo.id}</td>
+                  </tr>
                   <tr>
                     <td><b>Model:</b></td>
                     <td>{deviceInfo.model}</td>
@@ -90,6 +99,8 @@
             </div>
           </div>
         </div>
+
+        <!-- Info about current logged in user -->
         <div class="col-sm-6">
           <div class="well">
             <h4>My Details</h4>
@@ -97,22 +108,24 @@
               <table class="table borderless" id="userInfo">
                 <tbody>
                   <tr>
+                    <td><b>User ID:</b></td>
+                    <td>{userInfo.id}</td>
+                  </tr>
+                  <tr>
                     <td><b>Email:</b></td>
                     <td>{userInfo.email}</td>
                     <td><a href="" id="editEmail">Edit</a></td>
-                  </tr>
-                  <tr>
-                    <td><b>API key:</b></td>
-                    <td>{userInfo.apiKey}</td>
-                    <td><a href="" id="updateAPIKey">Get new key</a></td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
         </div>
+
       </div>
       <div class="row">
+
+        <!-- Battery data with graph (graph could be removed for sake of simplicity) -->
         <div class="col-sm-6">
           <div class="well">
             <div class="box-header">
@@ -126,12 +139,16 @@
             <a class="btn btn-info" role="button" id="batteryJSON">Download JSON</a>
           </div>
         </div>
+
+        <!-- Placeholder for other feature -->
+        <!-- TODO: Use templates to auto-generate widget for each feature -->
         <div class="col-sm-6">
           <div class="well">
             <h4>Some other stuff</h4>
             <p>Some other graph...</p>
           </div>
         </div>
+
       </div>
     </div>
   </div>

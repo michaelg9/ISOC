@@ -87,7 +87,7 @@ func (db *DB) GetDevicesFromUser(user User) (devices []Device, err error) {
 func (db *DB) getDeviceInfos(user User) (devices []AboutDevice, err error) {
 	getDevicesQuery := `SELECT id, imei, manufacturer, modelName, osVersion
                 	   FROM Device, User
-                	   WHERE (uid = :uid OR apiKey = :apiKey) AND User.uid = Device.user;`
+                	   WHERE (uid = :uid) AND User.uid = Device.user;`
 	stmt, err := db.PrepareNamed(getDevicesQuery)
 	if err != nil {
 		return
